@@ -14,7 +14,9 @@ const io = new Server(server, {
   },
 });
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+}));
 app.use(express.json());
 
 import authRoutes from './routes/auth.routes';
@@ -22,6 +24,7 @@ import masterRoutes from './routes/master.routes';
 import weighmentRoutes from './routes/weighment.routes';
 import userRoutes from './routes/user.routes';
 import settingRoutes from './routes/setting.routes';
+import systemRoutes from './routes/system.routes';
 
 // Routes will be added here
 app.use('/api/auth', authRoutes);
@@ -29,6 +32,7 @@ app.use('/api/master', masterRoutes);
 app.use('/api/weighment', weighmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/system', systemRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });

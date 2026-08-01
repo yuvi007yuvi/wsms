@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -20,12 +23,24 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
+    if (err || !user) {
       res.status(403).json({ error: 'Invalid or expired token' });
       return;
     }
-    req.user = user as AuthRequest['user'];
+    
+    const decodedUser = user as AuthRequest['user'];
+    
+    if (decodedUser) {
+      // Verify user actually exists in the database
+      const dbUser = await prisma.user.findUnique({ where: { id: decodedUser.id } });
+      if (!dbUser) {
+        res.status(401).json({ error: 'User no longer exists' });
+        return;
+      }
+    }
+    
+    req.user = decodedUser;
     next();
   });
 };

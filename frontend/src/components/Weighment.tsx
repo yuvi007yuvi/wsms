@@ -199,7 +199,7 @@ export default function Weighment() {
             <SearchableSelect 
               value={vehicleId} 
               onValueChange={setVehicleId} 
-              options={vehicles.map(v => ({ label: `${v.vehicleNumber} (${v.type})`, value: v.id }))} 
+              options={vehicles.map(v => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
               placeholder={t('Search Vehicle...')} 
             />
           </div>
@@ -292,9 +292,12 @@ export default function Weighment() {
         <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardHeader className="py-3"><CardTitle className="text-sm text-muted-foreground">{t('Vehicle Info')}</CardTitle></CardHeader>
-            <CardContent className="space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Number:')}</span> <span className="font-medium">{selectedVehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Driver:')}</span> <span className="font-medium">{selectedVehicle?.driverName || '-'}</span></div>
+            <CardContent className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Number')}</span> <span className="font-medium text-right">{selectedVehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Type')}</span> <span className="font-medium text-right">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Driver')}</span> <span className="font-medium text-right">{selectedVehicle?.driverName || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Transporter')}</span> <span className="font-medium text-right">{selectedVehicle?.transporterName || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare Weight')}</span> <span className="font-medium text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
             </CardContent>
           </Card>
           

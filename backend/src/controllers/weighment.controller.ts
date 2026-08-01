@@ -21,13 +21,16 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
     const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks } = req.body;
     
     // Fetch vehicle for Tare Weight
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    const vehicle = await prisma.vehicle.findUnique({ 
+      where: { id: vehicleId },
+      include: { vehicleType: true }
+    });
     if (!vehicle) {
       res.status(400).json({ error: 'Vehicle not found' });
       return;
     }
 
-    const tareWeight = vehicle.predefinedTareWeight;
+    const tareWeight = vehicle.vehicleType?.tareWeight || 0;
     const netWeight = grossWeight - tareWeight;
 
     if (netWeight < 0) {

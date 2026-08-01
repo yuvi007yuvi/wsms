@@ -65,7 +65,7 @@ export default function Dashboard() {
       results = results.filter(s => new Date(s.date) <= to);
     }
     if (filterVehicleType !== 'all') {
-      results = results.filter(s => (s.vehicle?.type || '') === filterVehicleType);
+      results = results.filter(s => (s.vehicle?.vehicleType?.name || '') === filterVehicleType);
     }
     if (filterMaterial !== 'all') {
       results = results.filter(s => s.materialId === filterMaterial);
@@ -80,7 +80,7 @@ export default function Dashboard() {
 
   // Unique vehicle types for filter dropdown
   const vehicleTypes_list = useMemo(() => {
-    const types = new Set(vehiclesList.map(v => v.type));
+    const types = new Set(vehiclesList.map(v => v.vehicleType?.name).filter(Boolean));
     return Array.from(types);
   }, [vehiclesList]);
 
@@ -170,7 +170,7 @@ export default function Dashboard() {
     // Vehicle Type Breakdown (Today)
     const vehicleTypeMap = new Map();
     todaySlips.forEach(s => {
-      const vType = s.vehicle?.type || 'Unknown';
+      const vType = s.vehicle?.vehicleType?.name || 'Unknown';
       if (!vehicleTypeMap.has(vType)) {
         vehicleTypeMap.set(vType, { name: vType, count: 0, weight: 0 });
       }

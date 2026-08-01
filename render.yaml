@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: wsms-backend
+    env: node
+    buildCommand: "cd backend && npm install && npx prisma generate && npm run build"
+    startCommand: "cd backend && npm start"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wsms-db
+          property: connectionString
+      - key: FRONTEND_URL
+        value: "https://wsms-frontend.onrender.com" # You can update this later if custom domain used
+      - key: JWT_SECRET
+        generateValue: true
+
+  - type: web
+    name: wsms-frontend
+    env: static
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: "./frontend/dist"
+    envVars:
+      - key: VITE_API_URL
+        value: "https://wsms-backend.onrender.com/api"
+
+databases:
+  - name: wsms-db
+    databaseName: wsms
+    user: wsms_user

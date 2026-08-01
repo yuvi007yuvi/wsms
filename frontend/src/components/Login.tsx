@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
 import Cookies from 'js-cookie';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Activity, Server, Cpu, Database, Cable } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -15,6 +24,32 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [healthData, setHealthData] = useState<any>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const checkSystemHealth = async (silent = false) => {
+    if (!silent) setHealthLoading(true);
+    try {
+      const response = await api.get('/system/health');
+      setHealthData(response.data);
+    } catch (error) {
+      console.error('Health check failed', error);
+      if (!silent) {
+        toast({
+          title: 'Diagnostics Failed',
+          description: 'Unable to reach the backend server.',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      if (!silent) setHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkSystemHealth(true);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +100,107 @@ export default function Login() {
         <div className="flex items-center gap-2 text-sm text-emerald-400/50 font-medium">
           <ShieldCheck className="h-5 w-5" />
           Secure Operator Terminal
+        </div>
+
+        {/* System Diagnostics Button */}
+        <div className="absolute top-12 right-12 hidden lg:block">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => checkSystemHealth(false)}
+                className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 shadow-sm relative flex items-center pr-3 pl-2.5"
+              >
+                <div className="relative flex h-2 w-2 mr-2">
+                  {healthData?.status === 'healthy' ? (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </>
+                  ) : healthData?.status === 'degraded' ? (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  ) : (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300"></span>
+                  )}
+                </div>
+                <Activity className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> 
+                System Check
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> System Diagnostics</DialogTitle>
+                <DialogDescription>
+                  Real-time status of required system components.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                {healthLoading ? (
+                  <div className="text-center py-8 text-slate-500 animate-pulse">Running diagnostics...</div>
+                ) : healthData ? (
+                  <div className="space-y-4">
+                    {/* Database */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
+                      <Database className={`w-5 h-5 mt-0.5 ${healthData.components.database.status === 'connected' ? 'text-emerald-500' : 'text-red-500'}`} />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Database Connection</p>
+                        <p className="text-xs text-slate-500">{healthData.components.database.message}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Hardware */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
+                      <Cable className={`w-5 h-5 mt-0.5 ${healthData.components.hardware.status === 'connected' ? 'text-emerald-500' : 'text-amber-500'}`} />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Weighbridge Hardware</p>
+                        <p className="text-xs text-slate-500">{healthData.components.hardware.message}</p>
+                        {healthData.components.hardware.ports?.length > 0 && (
+                          <div className="mt-1 flex gap-1 flex-wrap">
+                            {healthData.components.hardware.ports.map((p: string) => (
+                              <span key={p} className="px-1.5 py-0.5 bg-slate-200 text-[10px] rounded-sm text-slate-600 font-mono">{p}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* System Requirements */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
+                      <Cpu className="w-5 h-5 mt-0.5 text-blue-500" />
+                      <div className="w-full">
+                        <p className="text-sm font-semibold text-slate-900 mb-2">Required Software Environment</p>
+                        <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-600">
+                          <div className="flex justify-between border-b border-slate-200 pb-1 mr-2">
+                            <span>Node.js:</span>
+                            <span className="font-mono text-emerald-600">{healthData.components.system.nodeVersion}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-200 pb-1 ml-2">
+                            <span>NPM:</span>
+                            <span className={`font-mono ${healthData.components.system.npmVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>{healthData.components.system.npmVersion}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-200 pb-1 mr-2">
+                            <span>PM2 (For Prod):</span>
+                            <span className={`font-mono ${healthData.components.system.pm2Version === 'Not Installed' ? 'text-amber-500' : 'text-emerald-600'}`}>{healthData.components.system.pm2Version}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-200 pb-1 ml-2">
+                            <span>Git:</span>
+                            <span className={`font-mono ${healthData.components.system.gitVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>{healthData.components.system.gitVersion}</span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-3 text-right">
+                          Memory: {healthData.components.system.memoryUsageMb} MB | Uptime: {Math.floor(healthData.components.system.uptimeSeconds / 60)}m
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-red-500">Failed to load diagnostics.</div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
