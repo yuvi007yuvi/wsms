@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Activity, Server, Cpu, Database, Cable } from 'lucide-react';
+import { Activity, Cpu, Database, Cable } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
