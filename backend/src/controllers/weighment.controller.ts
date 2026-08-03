@@ -13,7 +13,8 @@ const generateSlipNumber = async () => {
     }
   });
   const seq = String(count + 1).padStart(6, '0');
-  return `WS-${dateStr}-${seq}`;
+  const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `WS-${dateStr}-${seq}-${randomStr}`;
 };
 
 export const createWeighmentSlip = async (req: Request, res: Response) => {
