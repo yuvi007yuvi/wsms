@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma';
-import { PrismaClient as PgClient } from '@prisma/client-postgres';
+// @ts-ignore
+import { PrismaClient as PgClient } from '../../node_modules/@prisma/client-postgres';
 
 const pg = new PgClient();
 
@@ -105,6 +106,14 @@ export const processSyncQueue = async () => {
     for (const item of queueItems) {
       try {
         const payload = item.payload ? JSON.parse(item.payload) : {};
+        
+        // Remove nested relational objects from payload to prevent Prisma errors
+        for (const key in payload) {
+          if (typeof payload[key] === 'object' && payload[key] !== null && !(payload[key] instanceof Date)) {
+            delete payload[key];
+          }
+        }
+
         // Use any to bypass TS for dynamic model access
         const pgModel = (pg as any)[item.tableName.charAt(0).toLowerCase() + item.tableName.slice(1)];
 

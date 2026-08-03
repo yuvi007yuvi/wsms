@@ -52,7 +52,11 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  startSyncService();
-});
+if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startSyncService();
+  });
+}
+
+export default app;
