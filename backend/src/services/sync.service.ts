@@ -1,6 +1,6 @@
 import prisma from '../utils/prisma';
 // @ts-ignore
-import { PrismaClient as PgClient } from '../../node_modules/@prisma/client-postgres';
+import { PrismaClient as PgClient } from '@prisma/client-postgres';
 
 const pg = new PgClient();
 
