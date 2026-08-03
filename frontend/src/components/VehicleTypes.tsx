@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2 } from 'lucide-react';
+import { ImportExportButtons } from '@/components/ui/ImportExportButtons';
 import api from '@/lib/api';
 
 export default function VehicleTypes() {
@@ -15,7 +16,7 @@ export default function VehicleTypes() {
   const { toast } = useToast();
 
   const [name, setName] = useState('');
-  const [tareWeight, setTareWeight] = useState('');
+
 
   const fetchVehicleTypes = async () => {
     try {
@@ -33,11 +34,11 @@ export default function VehicleTypes() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/master/vehicle-types', { name, tareWeight: parseFloat(tareWeight) });
+      await api.post('/master/vehicle-types', { name });
       toast({ title: 'Vehicle Type saved successfully' });
       setOpen(false);
       setName('');
-      setTareWeight('');
+
       fetchVehicleTypes();
     } catch (error) {
       toast({ title: 'Error saving vehicle type', variant: 'destructive' });
@@ -62,10 +63,17 @@ export default function VehicleTypes() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Vehicle Type Master</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Add Vehicle Type</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <ImportExportButtons 
+            data={vehicleTypes} 
+            exportFilename="vehicle_types_master" 
+            importEndpoint="/master/vehicle-types/bulk" 
+            onImportSuccess={fetchVehicleTypes} 
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> Add Vehicle Type</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Vehicle Type</DialogTitle>
@@ -75,14 +83,12 @@ export default function VehicleTypes() {
                 <Label>Vehicle Type Name</Label>
                 <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Dumper" />
               </div>
-              <div className="space-y-2">
-                <Label>Tare Weight (kg)</Label>
-                <Input type="number" value={tareWeight} onChange={e => setTareWeight(e.target.value)} required placeholder="0" />
-              </div>
+
               <Button type="submit" className="w-full">Save Vehicle Type</Button>
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -91,21 +97,22 @@ export default function VehicleTypes() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type Name</TableHead>
-                <TableHead>Tare Weight (kg)</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+            <TableHeader className="bg-slate-100/80 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Type Name</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicleTypes.map((vt) => (
-                <TableRow key={vt.id}>
-                  <TableCell className="font-medium">{vt.name}</TableCell>
-                  <TableCell>{vt.tareWeight}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(vt.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
+              {vehicleTypes.map((vt, index) => (
+                <TableRow key={vt.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{vt.name}</TableCell>
+
+                  <TableCell className="py-3 px-4 text-right">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(vt.id)}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -16,12 +16,12 @@ router.use(authenticateToken);
 const setupRoutes = (path: string, controller: any) => {
   router.get(path, controller.getAll);
   router.get(`${path}/:id`, controller.getById);
+  router.post(`${path}/bulk`, controller.createBulk);
   router.post(path, controller.create);
   router.put(`${path}/:id`, controller.update);
   router.delete(`${path}/:id`, controller.delete);
 };
 
-router.post('/vehicles/bulk', vehicleController.createBulk);
 setupRoutes('/vehicles', vehicleController);
 setupRoutes('/vehicle-types', vehicleTypeController);
 setupRoutes('/materials', materialController);

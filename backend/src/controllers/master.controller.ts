@@ -64,6 +64,28 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
         }
         res.status(400).json({ error: `Failed to delete ${modelName}` });
       }
+    },
+    createBulk: async (req: Request, res: Response) => {
+      try {
+        if (!req.body.items || !Array.isArray(req.body.items)) {
+          return res.status(400).json({ error: 'Invalid data format. Expected { items: [] }' });
+        }
+        let count = 0;
+        for (const item of req.body.items) {
+          try {
+            // @ts-ignore
+            await prisma[modelName].create({ data: item });
+            count++;
+          } catch (e: any) {
+            // Ignore unique constraint violations (duplicates)
+            if (e.code !== 'P2002') throw e;
+          }
+        }
+        res.status(201).json({ success: true, count });
+      } catch (error) {
+        console.error(`Bulk import error for ${modelName}:`, error);
+        res.status(400).json({ error: `Failed to bulk import ${modelName}s` });
+      }
     }
   };
 };
@@ -106,4 +128,37 @@ export const vehicleController = {
 export const vehicleTypeController = createCrudHandlers('vehicleType');
 export const materialController = createCrudHandlers('material');
 export const sourceController = createCrudHandlers('source');
-export const destinationController = createCrudHandlers('destination');
+export const destinationController = {
+  ...createCrudHandlers('destination'),
+  create: async (req: Request, res: Response) => {
+    try {
+      if (req.body.isDefault) {
+        // @ts-ignore
+        await prisma.destination.updateMany({ data: { isDefault: false } });
+      }
+      // @ts-ignore
+      const data = await prisma.destination.create({ data: req.body });
+      res.status(201).json(data);
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({ error: 'Failed to create destination' });
+    }
+  },
+  update: async (req: Request, res: Response) => {
+    try {
+      if (req.body.isDefault) {
+        // @ts-ignore
+        await prisma.destination.updateMany({ data: { isDefault: false } });
+      }
+      // @ts-ignore
+      const data = await prisma.destination.update({
+        where: { id: req.params.id as string },
+        data: req.body
+      });
+      res.json(data);
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({ error: 'Failed to update destination' });
+    }
+  }
+};

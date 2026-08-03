@@ -30,7 +30,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       return;
     }
 
-    const tareWeight = vehicle.vehicleType?.tareWeight || 0;
+    const tareWeight = vehicle.tareWeight || 0;
     const netWeight = grossWeight - tareWeight;
 
     if (netWeight < 0) {
@@ -86,5 +86,24 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
     res.json(slips);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch slips' });
+  }
+};
+
+export const deleteWeighmentSlip = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // @ts-ignore
+    if (req.user?.role !== 'admin') {
+      res.status(403).json({ error: 'Only admins can delete slips' });
+      return;
+    }
+
+    await prisma.weighmentSlip.delete({
+      where: { id: id as string }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete slip' });
   }
 };

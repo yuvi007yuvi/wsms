@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const weighment_controller_1 = require("../controllers/weighment.controller");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authenticateToken);
+router.post('/', weighment_controller_1.createWeighmentSlip);
+router.get('/', weighment_controller_1.getWeighmentSlips);
+exports.default = router;

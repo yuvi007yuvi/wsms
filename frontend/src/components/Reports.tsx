@@ -4,9 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Printer, Search, Download, RefreshCw, FileText, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Printer, Search, Download, RefreshCw, FileText, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Reports() {
   const { t } = useTranslation();
@@ -21,6 +22,8 @@ export default function Reports() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const { toast } = useToast();
+  const userRole = localStorage.getItem('role') || 'operator';
 
   const fetchSlips = async () => {
     try {
@@ -87,6 +90,61 @@ export default function Reports() {
     return { totalNet, totalGross, count: filteredSlips.length };
   }, [filteredSlips]);
 
+  const [syncState, setSyncState] = useState<{ isSyncing: boolean, initialCount: number, currentCount: number }>({ isSyncing: false, initialCount: 0, currentCount: 0 });
+
+  const handleForceSync = async () => {
+    try {
+      // 1. Get initial count
+      const statusRes = await api.get('/system/sync-status');
+      const initialCount = statusRes.data.pendingCount || 0;
+      
+      if (initialCount === 0) {
+        toast({ title: 'Sync Data', description: 'All data is already synced.' });
+        return;
+      }
+
+      setSyncState({ isSyncing: true, initialCount, currentCount: initialCount });
+      
+      // 2. Trigger sync
+      await api.post('/system/sync-force');
+      
+      toast({
+        title: 'Sync Triggered',
+        description: `Starting sync of ${initialCount} records...`,
+      });
+
+      // 3. Poll for progress
+      const interval = setInterval(async () => {
+        try {
+          const res = await api.get('/system/sync-status');
+          const currentPending = res.data.pendingCount || 0;
+          
+          setSyncState(prev => ({ ...prev, currentCount: currentPending }));
+
+          if (currentPending === 0) {
+            clearInterval(interval);
+            setSyncState({ isSyncing: false, initialCount: 0, currentCount: 0 });
+            toast({
+              title: 'Sync Complete',
+              description: 'All records have been synced successfully.',
+              className: 'bg-green-500 text-white border-none'
+            });
+          }
+        } catch (e) {
+          // Ignore polling errors, just wait for next tick
+        }
+      }, 2500);
+
+    } catch (error) {
+      toast({
+        title: 'Sync Failed',
+        description: 'Could not trigger sync process.',
+        variant: 'destructive',
+      });
+      setSyncState({ isSyncing: false, initialCount: 0, currentCount: 0 });
+    }
+  };
+
   const handleExportCSV = () => {
     if (filteredSlips.length === 0) return;
     const headers = ['Slip Number', 'Date', 'Vehicle', 'Material', 'Source', 'Destination', 'Operator', 'Gross Wt', 'Tare Wt', 'Net Wt', 'Remarks'];
@@ -103,15 +161,16 @@ export default function Reports() {
         s.grossWeight,
         s.tareWeight,
         s.netWeight,
-        `"${s.remarks || ''}"`
+        `"${(s.remarks || '').replace(/"/g, '""')}"`
       ].join(','))
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `weighment_report_${new Date().toISOString().slice(0,10)}.csv`);
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `slips_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -122,6 +181,21 @@ export default function Reports() {
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this slip? This action cannot be undone.')) return;
+    try {
+      await api.delete(`/weighment/${id}`);
+      toast({ title: 'Slip deleted successfully' });
+      fetchSlips();
+    } catch (error: any) {
+      toast({ 
+        title: 'Error deleting slip', 
+        description: error.response?.data?.error || 'Unknown error occurred',
+        variant: 'destructive' 
+      });
+    }
   };
 
   const handleClearFilters = () => {
@@ -205,6 +279,17 @@ export default function Reports() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleForceSync} 
+                size="sm" 
+                className={`h-8 text-xs rounded-sm ${syncState.isSyncing ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                disabled={syncState.isSyncing}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncState.isSyncing ? 'animate-spin' : ''}`} /> 
+                {syncState.isSyncing 
+                  ? `Syncing ${Math.max(0, Math.min(100, Math.round(((syncState.initialCount - syncState.currentCount) / (syncState.initialCount || 1)) * 100)))}%` 
+                  : t('Sync Data')}
+              </Button>
               <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300" onClick={fetchSlips}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> {t('Refresh')}
               </Button>
@@ -266,6 +351,7 @@ export default function Reports() {
             <Table>
               <TableHeader className="bg-slate-100 sticky top-0 z-10 shadow-[0_1px_0_0_#CBD5E1]">
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 w-16">Sr. No.</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Date & Time')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Slip No')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Vehicle')}</TableHead>
@@ -279,8 +365,9 @@ export default function Reports() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedSlips.map((s) => (
+                {paginatedSlips.map((s, index) => (
                   <TableRow key={s.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
+                    <TableCell className="py-1.5 px-3 text-xs text-slate-600">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
                     <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short'})}</TableCell>
                     <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{s.slipNumber}</TableCell>
                     <TableCell className="py-1.5 px-3 text-xs font-bold text-slate-700">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
@@ -291,15 +378,22 @@ export default function Reports() {
                     <TableCell className="py-1.5 px-3 text-xs text-right font-bold text-slate-900 bg-blue-50/30">{s.netWeight}</TableCell>
                     <TableCell className="py-1.5 px-3 text-xs text-slate-500 truncate max-w-[150px]" title={s.remarks || ''}>{s.remarks || '-'}</TableCell>
                     <TableCell className="py-1.5 px-3 text-right">
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
-                        <Printer className="h-3 w-3 mr-1" /> {t('Print')}
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
+                          <Printer className="h-3 w-3 mr-1" /> {t('Print')}
+                        </Button>
+                        {userRole === 'admin' && (
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-red-600 hover:bg-red-100 rounded-sm" onClick={() => handleDelete(s.id)}>
+                            <Trash2 className="h-3 w-3 mr-1" /> {t('Delete')}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {paginatedSlips.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-6 text-slate-500">
+                    <TableCell colSpan={11} className="text-center py-6 text-slate-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="h-8 w-8 text-slate-300 mb-2" />
                         <p>{t('No weighment slips found. Generate a slip first.')}</p>

@@ -1,0 +1,54 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.login = void 0;
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const prisma_1 = __importDefault(require("../utils/prisma"));
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const login = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        // First run initialization logic (creates an admin if no users exist)
+        const userCount = await prisma_1.default.user.count();
+        if (userCount === 0) {
+            const hashedPassword = await bcrypt_1.default.hash('admin123', 10);
+            await prisma_1.default.user.create({
+                data: {
+                    username: 'admin',
+                    password: hashedPassword,
+                    role: 'admin',
+                    fullName: 'System Admin',
+                    designation: 'Administrator'
+                }
+            });
+            console.log('Created default admin user (admin / admin123)');
+        }
+        const user = await prisma_1.default.user.findUnique({ where: { username } });
+        if (!user || !user.isActive) {
+            res.status(401).json({ error: 'Invalid credentials or inactive account' });
+            return;
+        }
+        const isValidPassword = await bcrypt_1.default.compare(password, user.password);
+        if (!isValidPassword) {
+            res.status(401).json({ error: 'Invalid credentials' });
+            return;
+        }
+        const token = jsonwebtoken_1.default.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
+        // Audit log
+        await prisma_1.default.auditLog.create({
+            data: {
+                action: 'LOGIN',
+                userId: user.id,
+            }
+        });
+        res.json({ token, user: { id: user.id, username: user.username, role: user.role, fullName: user.fullName, designation: user.designation } });
+    }
+    catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+exports.login = login;

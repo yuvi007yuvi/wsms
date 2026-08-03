@@ -24,7 +24,7 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { companyName, address, logoUrl, printerConfig, slipFormat, theme } = req.body;
+    const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode } = req.body;
     
     const setting = await prisma.setting.update({
       where: { id: id as string },
@@ -34,12 +34,39 @@ export const updateSettings = async (req: Request, res: Response) => {
         logoUrl,
         printerConfig,
         slipFormat,
-        theme
+        theme,
+        mockMode: mockMode === true
       }
     });
     
     res.json(setting);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update settings' });
+  }
+};
+
+export const getRolePermissions = async (req: Request, res: Response) => {
+  try {
+    const permissions = await prisma.rolePermission.findMany();
+    res.json(permissions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch role permissions' });
+  }
+};
+
+export const upsertRolePermission = async (req: Request, res: Response) => {
+  try {
+    const { role, allowedModules } = req.body;
+    
+    // allowedModules should be a stringified JSON array
+    const permission = await prisma.rolePermission.upsert({
+      where: { role },
+      update: { allowedModules },
+      create: { role, allowedModules }
+    });
+    
+    res.json(permission);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to update role permissions' });
   }
 };

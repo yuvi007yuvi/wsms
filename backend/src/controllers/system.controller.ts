@@ -1,12 +1,34 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import { SerialPort } from 'serialport';
 import { exec } from 'child_process';
 import util from 'util';
 
 const execPromise = util.promisify(exec);
 
-const prisma = new PrismaClient();
+
+import { getSyncStatus } from '../services/sync.service';
+
+export const getSyncStatusInfo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const status = await getSyncStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch sync status' });
+  }
+};
+
+export const forceSync = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Import dynamically to avoid circular dependencies if any
+    const { processSyncQueue } = require('../services/sync.service');
+    // Do not await, let it run in background so frontend can poll
+    processSyncQueue().catch(console.error);
+    res.json({ message: 'Sync triggered successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to trigger sync' });
+  }
+};
 
 export const getSystemHealth = async (req: Request, res: Response): Promise<void> => {
   try {

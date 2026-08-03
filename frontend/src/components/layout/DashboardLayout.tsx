@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import api from '@/lib/api';
+import { format } from 'date-fns';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: FileText },
@@ -29,11 +31,51 @@ export default function DashboardLayout() {
   const designation = localStorage.getItem('designation');
   const displayName = fullName || userName || 'User';
   
+  const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
+  
+  const [syncStatus, setSyncStatus] = useState({ isOnline: true, lastSyncTime: new Date().toISOString(), pendingCount: 0 });
+
+  useEffect(() => {
+    const fetchSyncStatus = async () => {
+      try {
+        const res = await api.get('/system/sync-status');
+        setSyncStatus(res.data);
+      } catch (error) {
+        setSyncStatus(prev => ({ ...prev, isOnline: false }));
+      }
+    };
+    
+    fetchSyncStatus();
+    const interval = setInterval(fetchSyncStatus, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (userRole === 'admin') return; // Admin sees everything
+    
+    const fetchPermissions = async () => {
+      try {
+        const res = await api.get('/settings/role-permissions');
+        const roleData = res.data.find((p: any) => p.role === userRole);
+        if (roleData) {
+          setAllowedModules(JSON.parse(roleData.allowedModules));
+        } else {
+          // Default fallback if no permissions configured
+          setAllowedModules(navItems.map(i => i.name).filter(m => m !== 'Users' && m !== 'Settings'));
+        }
+      } catch (error) {
+        console.error('Failed to fetch role permissions', error);
+        // Default fallback on error
+        setAllowedModules(navItems.map(i => i.name).filter(m => m !== 'Users' && m !== 'Settings'));
+      }
+    };
+    fetchPermissions();
+  }, [userRole]);
+  
   const filteredNavItems = navItems.filter(item => {
-    if (userRole === 'operator' && (item.name === 'Users' || item.name === 'Settings')) {
-      return false;
-    }
-    return true;
+    if (userRole === 'admin') return true;
+    if (allowedModules === null) return false; // Still loading permissions
+    return allowedModules.includes(item.name);
   });
 
   const currentNavItem = navItems.find(item => location.pathname.startsWith(item.path)) || { name: 'Overview' };
@@ -115,6 +157,29 @@ export default function DashboardLayout() {
              <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
           </div>
           <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2 text-sm font-medium">
+                {syncStatus.isOnline ? (
+                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-2 py-1 rounded-sm border border-green-200">
+                    <span className="relative flex h-2 w-2">
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
+                    </span>
+                    <span className="text-xs">
+                      Cloud Online (Synced {syncStatus.lastSyncTime ? format(new Date(syncStatus.lastSyncTime), 'hh:mm:ss a') : 'just now'})
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    <span className="text-xs">
+                      Cloud Offline ({syncStatus.pendingCount} pending)
+                    </span>
+                  </div>
+                )}
+             </div>
+             
              <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
                 <span className="relative flex h-3 w-3">
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>

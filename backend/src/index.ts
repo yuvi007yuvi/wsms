@@ -25,6 +25,7 @@ import weighmentRoutes from './routes/weighment.routes';
 import userRoutes from './routes/user.routes';
 import settingRoutes from './routes/setting.routes';
 import systemRoutes from './routes/system.routes';
+import { startSyncService } from './services/sync.service';
 
 // Routes will be added here
 app.use('/api/auth', authRoutes);
@@ -53,4 +54,5 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startSyncService();
 });

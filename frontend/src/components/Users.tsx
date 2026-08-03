@@ -140,38 +140,40 @@ export default function Users() {
 
         <div className="flex-1 overflow-auto">
           <Table>
-            <TableHeader className="bg-slate-100 sticky top-0 z-10 shadow-[0_1px_0_0_#CBD5E1]">
+            <TableHeader className="bg-slate-100/80 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">Username</TableHead>
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">Name</TableHead>
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">Designation</TableHead>
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">Role</TableHead>
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">Actions</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Username</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Name</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Designation</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Role</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Status</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
-                  <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{u.username}</TableCell>
-                  <TableCell className="py-1.5 px-3 text-xs text-slate-600">{u.fullName || '-'}</TableCell>
-                  <TableCell className="py-1.5 px-3 text-xs text-slate-600">{u.designation || '-'}</TableCell>
-                  <TableCell className="py-1.5 px-3 text-xs text-slate-600 capitalize">{u.role}</TableCell>
-                  <TableCell className="py-1.5 px-3">
+              {users.map((u, index) => (
+                <TableRow key={u.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{u.username}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{u.fullName || '-'}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{u.designation || '-'}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role}</TableCell>
+                  <TableCell className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                       {u.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </TableCell>
-                  <TableCell className="py-1.5 px-3 text-right">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-100 rounded-sm" onClick={() => handleDelete(u.id)} disabled={u.username === 'admin'}>
-                      <Trash2 className="h-3 w-3" />
+                  <TableCell className="py-3 px-4 text-right">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(u.id)} disabled={u.username === 'admin'}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                     No users found.
                   </TableCell>
                 </TableRow>

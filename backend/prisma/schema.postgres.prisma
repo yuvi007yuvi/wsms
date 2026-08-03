@@ -1,0 +1,153 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-postgres"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password    String
+  fullName    String?
+  designation String?
+  role        String   @default("operator") // admin, operator, supervisor, manager
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  auditLogs       AuditLog[]
+  weighmentSlips  WeighmentSlip[]
+}
+
+model VehicleType {
+  id         String    @id @default(uuid())
+  name       String    @unique
+
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vehicles   Vehicle[]
+}
+
+model Vehicle {
+  id                  String   @id @default(uuid())
+  vehicleNumber       String   @unique
+  vehicleTypeId       String
+  vehicleType         VehicleType @relation(fields: [vehicleTypeId], references: [id])
+  driverName          String?
+  mobile              String?
+  owner               String?
+  tareWeight          Float    @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  weighmentSlips      WeighmentSlip[]
+}
+
+model Material {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  weighmentSlips WeighmentSlip[]
+}
+
+model Source {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  location    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  weighmentSlips WeighmentSlip[]
+}
+
+model Destination {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  location    String?
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  weighmentSlips WeighmentSlip[]
+}
+
+model WeighmentSlip {
+  id            String   @id @default(uuid())
+  slipNumber    String   @unique
+  date          DateTime @default(now())
+  
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  materialId    String
+  material      Material @relation(fields: [materialId], references: [id])
+  
+  sourceId      String
+  source        Source   @relation(fields: [sourceId], references: [id])
+  
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id])
+  
+  grossWeight   Float
+  tareWeight    Float
+  netWeight     Float
+  
+  operatorId    String
+  operator      User     @relation(fields: [operatorId], references: [id])
+  
+  remarks       String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  details   String?  // Can store JSON string
+  timestamp DateTime @default(now())
+}
+
+model Setting {
+  id            String   @id @default(uuid())
+  companyName   String
+  address       String
+  logoUrl       String?
+  printerConfig String?  // e.g., thermal, A4
+  slipFormat    String?
+  theme         String?
+  mockMode      Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
+model RolePermission {
+  id             String   @id @default(uuid())
+  role           String   @unique
+  allowedModules String   // JSON string array of module names
+  updatedAt      DateTime @updatedAt
+}
+
+model SyncQueue {
+  id        String   @id @default(uuid())
+  action    String   // 'CREATE', 'UPDATE', 'DELETE'
+  tableName String   // 'Vehicle', 'WeighmentSlip', etc.
+  recordId  String   // The ID of the affected record
+  payload   String?  // JSON representation of the data
+  createdAt DateTime @default(now())
+}

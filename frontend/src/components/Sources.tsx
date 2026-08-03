@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { ImportExportButtons } from '@/components/ui/ImportExportButtons';
 import api from '@/lib/api';
 
 export default function Sources() {
@@ -16,6 +17,7 @@ export default function Sources() {
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchSources = async () => {
     try {
@@ -33,16 +35,41 @@ export default function Sources() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/master/sources', { name, location });
-      toast({ title: 'Source saved successfully' });
+      if (editingId) {
+        await api.put(`/master/sources/${editingId}`, { name, location });
+        toast({ title: 'Source updated successfully' });
+      } else {
+        await api.post('/master/sources', { name, location });
+        toast({ title: 'Source saved successfully' });
+      }
       setOpen(false);
       setName('');
       setLocation('');
+      setEditingId(null);
       fetchSources();
     } catch (error) {
       toast({ title: 'Error saving source', variant: 'destructive' });
     }
   };
+
+  const handleEdit = (source: any) => {
+    setEditingId(source.id);
+    setName(source.name);
+    setLocation(source.location || '');
+    setOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setLocation('');
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) resetForm();
+  };
+
 
   const handleDelete = async (id: string) => {
     try {
@@ -61,59 +88,72 @@ export default function Sources() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold tracking-tight">Source Master</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Add Source</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Source</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Source Name</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., Zone 1" />
-              </div>
+        <h2 className="text-3xl font-bold tracking-tight">Ward and Work Master</h2>
+        <div className="flex gap-2">
+          <ImportExportButtons 
+            data={sources} 
+            exportFilename="ward_work_master" 
+            importEndpoint="/master/sources/bulk" 
+            onImportSuccess={fetchSources} 
+          />
+          <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}><Plus className="mr-2 h-4 w-4" /> Add Ward/Work</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingId ? 'Edit Ward/Work' : 'Add New Ward/Work'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Ward/Work Name</Label>
+                  <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., Zone 1" />
+                </div>
               <div className="space-y-2">
                 <Label>Location</Label>
                 <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g., North District" />
               </div>
-              <Button type="submit" className="w-full">Save Source</Button>
+              <Button type="submit" className="w-full">{editingId ? 'Update Ward/Work' : 'Save Ward/Work'}</Button>
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Registered Sources</CardTitle>
+          <CardTitle>Registered Wards and Works</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Source Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+            <TableHeader className="bg-slate-100/80 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Ward/Work Name</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Location</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sources.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell>{s.location}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
+              {sources.map((s, index) => (
+                <TableRow key={s.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{s.name}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{s.location || '-'}</TableCell>
+                  <TableCell className="py-3 px-4 text-right">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(s)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(s.id)}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
               {sources.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
-                    No sources found. Add one to get started.
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                    No wards/works found. Add one to get started.
                   </TableCell>
                 </TableRow>
               )}

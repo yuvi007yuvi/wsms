@@ -25,7 +25,7 @@ model User {
 model VehicleType {
   id         String    @id @default(uuid())
   name       String    @unique
-  tareWeight Float
+
   isActive   Boolean   @default(true)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -41,6 +41,7 @@ model Vehicle {
   driverName          String?
   mobile              String?
   owner               String?
+  tareWeight          Float    @default(0)
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -75,6 +76,7 @@ model Destination {
   name        String   @unique
   location    String?
   isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -128,5 +130,22 @@ model Setting {
   printerConfig String?  // e.g., thermal, A4
   slipFormat    String?
   theme         String?
+  mockMode      Boolean  @default(false)
   updatedAt     DateTime @updatedAt
+}
+
+model RolePermission {
+  id             String   @id @default(uuid())
+  role           String   @unique
+  allowedModules String   // JSON string array of module names
+  updatedAt      DateTime @updatedAt
+}
+
+model SyncQueue {
+  id        String   @id @default(uuid())
+  action    String   // 'CREATE', 'UPDATE', 'DELETE'
+  tableName String   // 'Vehicle', 'WeighmentSlip', etc.
+  recordId  String   // The ID of the affected record
+  payload   String?  // JSON representation of the data
+  createdAt DateTime @default(now())
 }
