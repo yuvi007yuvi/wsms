@@ -1,7 +1,5 @@
 import prisma from '../utils/prisma';
-
-// @ts-ignore
-import { PrismaClient as PgClient } from '../../node_modules/@prisma/client-postgres';
+import { PrismaClient as PgClient } from '@prisma/client-postgres';
 
 const pg = new PgClient();
 
@@ -19,6 +17,52 @@ export const getSyncStatus = async () => {
     };
   } catch (e) {
     return { isOnline: false, lastSyncTime, pendingCount: 0 };
+  }
+};
+
+export const pullMasterData = async () => {
+  try {
+    console.log('Sync Service: Pulling master data from cloud...');
+    
+    // 1. VehicleTypes
+    const cloudTypes = await pg.vehicleType.findMany();
+    for (const t of cloudTypes) {
+      await prisma.vehicleType.upsert({ where: { id: t.id }, update: t, create: t });
+    }
+    
+    // 2. Vehicles
+    const cloudVeh = await pg.vehicle.findMany();
+    for (const v of cloudVeh) {
+      await prisma.vehicle.upsert({ where: { id: v.id }, update: v, create: v });
+    }
+    
+    // 3. Materials
+    const cloudMat = await pg.material.findMany();
+    for (const m of cloudMat) {
+      await prisma.material.upsert({ where: { id: m.id }, update: m, create: m });
+    }
+    
+    // 4. Sources
+    const cloudSrc = await pg.source.findMany();
+    for (const s of cloudSrc) {
+      await prisma.source.upsert({ where: { id: s.id }, update: s, create: s });
+    }
+    
+    // 5. Destinations
+    const cloudDest = await pg.destination.findMany();
+    for (const d of cloudDest) {
+      await prisma.destination.upsert({ where: { id: d.id }, update: d, create: d });
+    }
+    
+    // 6. Users
+    const cloudUsers = await pg.user.findMany();
+    for (const u of cloudUsers) {
+      await prisma.user.upsert({ where: { id: u.id }, update: u, create: u });
+    }
+
+    console.log('Sync Service: Master data pull complete.');
+  } catch (err) {
+    console.error('Sync Service: Error pulling master data:', err);
   }
 };
 

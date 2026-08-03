@@ -21,9 +21,12 @@ export const getSyncStatusInfo = async (req: Request, res: Response): Promise<vo
 export const forceSync = async (req: Request, res: Response): Promise<void> => {
   try {
     // Import dynamically to avoid circular dependencies if any
-    const { processSyncQueue } = require('../services/sync.service');
+    const { processSyncQueue, pullMasterData } = require('../services/sync.service');
     // Do not await, let it run in background so frontend can poll
-    processSyncQueue().catch(console.error);
+    (async () => {
+      await pullMasterData();
+      await processSyncQueue();
+    })().catch(console.error);
     res.json({ message: 'Sync triggered successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to trigger sync' });

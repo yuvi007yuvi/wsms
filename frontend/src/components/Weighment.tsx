@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useToast } from '@/hooks/use-toast';
-import { Printer, Save, RefreshCw, Activity } from 'lucide-react';
+import { Printer, Save, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
