@@ -193,7 +193,7 @@ export default function DashboardLayout() {
              
              <button onClick={handleLogout} className="flex items-center justify-center text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2 py-1 rounded-sm transition-colors">
                <LogOut className="w-3 h-3 mr-1" />
-               Logout
+               {t('Logout')}
              </button>
              
              <div className="flex items-center gap-3">
