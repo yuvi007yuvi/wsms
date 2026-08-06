@@ -1,1 +1,0 @@
-const { PrismaClient } = require('./node_modules/@prisma/client'); const prisma = new PrismaClient(); async function main() { const types = await prisma.vehicleType.findMany({ include: { _count: { select: { vehicles: true } } } }); console.log(JSON.stringify(types, null, 2)); } main().finally(() => prisma.$disconnect());
