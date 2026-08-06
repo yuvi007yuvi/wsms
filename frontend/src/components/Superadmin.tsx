@@ -222,7 +222,7 @@ export default function Superadmin() {
                       <span className="text-xs text-slate-400 italic">None</span>
                     )}
                   </TableCell>
-                  <TableCell>{p._count?.users || 0}</TableCell>
+                  <TableCell>{p.users?.length || 0}</TableCell>
                   <TableCell>{p._count?.vehicles || 0}</TableCell>
                   <TableCell>{p._count?.weighmentSlips || 0}</TableCell>
                   <TableCell>{p.subscriptionExpiry ? format(new Date(p.subscriptionExpiry), 'dd MMM yyyy, hh:mm a') : 'Lifetime'}</TableCell>

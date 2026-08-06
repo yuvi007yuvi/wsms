@@ -54,7 +54,9 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         netWeight,
         // @ts-ignore
         operatorId: req.user.id, // from auth middleware
-        remarks
+        remarks,
+        // @ts-ignore
+        projectId: req.user.projectId || null
       },
       include: {
         vehicle: true,

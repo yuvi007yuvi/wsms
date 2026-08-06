@@ -29,9 +29,15 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
     },
     create: async (req: Request, res: Response) => {
       try {
+        const payload = { ...req.body };
+        if (modelName === 'vehicle') {
+          // @ts-ignore
+          payload.projectId = req.user?.projectId || null;
+        }
+
         // @ts-ignore
         const data = await prisma[modelName].create({
-          data: req.body
+          data: payload
         });
         res.status(201).json(data);
       } catch (error) {
@@ -41,10 +47,16 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
     },
     update: async (req: Request, res: Response) => {
       try {
+        const payload = { ...req.body };
+        if (modelName === 'vehicle') {
+          // @ts-ignore
+          payload.projectId = req.user?.projectId || null;
+        }
+
         // @ts-ignore
         const data = await prisma[modelName].update({
           where: { id: req.params.id },
-          data: req.body
+          data: payload
         });
         res.json(data);
       } catch (error) {

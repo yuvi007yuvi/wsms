@@ -19,6 +19,7 @@ const navItems = [
   { name: 'Users', path: '/users', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },
   { name: 'Superadmin', path: '/superadmin', icon: Shield },
+  { name: 'Billing', path: '/billing', icon: FileText },
 ];
 
 export default function DashboardLayout() {
@@ -81,7 +82,7 @@ export default function DashboardLayout() {
   }, [userRole]);
   
   const filteredNavItems = navItems.filter(item => {
-    if (item.name === 'Superadmin') return userRole === 'superadmin';
+    if (item.name === 'Superadmin' || item.name === 'Billing') return userRole === 'superadmin';
     if (userRole === 'superadmin' || userRole === 'admin') return true;
     if (allowedModules === null) return false; // Still loading permissions
     return allowedModules.includes(item.name);
