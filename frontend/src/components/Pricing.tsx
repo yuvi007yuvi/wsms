@@ -121,7 +121,7 @@ export default function Pricing() {
           Flexible Pricing for Every Municipal & Waste Operations Scale
         </h1>
         <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
-          Choose the right WSMS plan for your weighbridge facility. Scale seamlessly from single collection hubs to full municipal waste management networks with maintenance completely covered.
+          Choose the right WeighT360Pro plan for your weighbridge facility. Scale seamlessly from single collection hubs to full municipal waste management networks with maintenance completely covered.
         </p>
 
         {/* Monthly vs Annual Toggle */}
@@ -228,7 +228,7 @@ export default function Pricing() {
       <div className="pt-8 space-y-4">
         <div className="text-center space-y-1">
           <h2 className="text-2xl font-bold text-slate-900">Detailed Feature Comparison</h2>
-          <p className="text-xs text-slate-500">Compare capability matrices across WSMS commercial editions.</p>
+          <p className="text-xs text-slate-500">Compare capability matrices across WeighT360Pro commercial editions.</p>
         </div>
 
         <div className="bg-white border border-slate-300 rounded-sm shadow-sm overflow-hidden">

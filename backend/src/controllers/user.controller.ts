@@ -2,6 +2,12 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import prisma from '../utils/prisma';
 
+let PgClient: any = null;
+try {
+  PgClient = require('@prisma/client-postgres').PrismaClient;
+} catch (e) {}
+const pg = PgClient ? new PgClient() : null;
+
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
@@ -91,6 +97,18 @@ export const updateUser = async (req: Request, res: Response) => {
 
     if (authUser?.role === 'superadmin' && projectId !== undefined) {
       dataToUpdate.projectId = projectId || null;
+      
+      // If assigning a project, ensure it exists in the local SQLite DB to satisfy foreign key constraints
+      if (projectId && pg) {
+        const pgProject = await pg.project.findUnique({ where: { id: projectId } });
+        if (pgProject) {
+          await prisma.project.upsert({
+            where: { id: projectId },
+            create: pgProject,
+            update: pgProject
+          });
+        }
+      }
     }
 
     const user = await prisma.user.update({
@@ -98,6 +116,14 @@ export const updateUser = async (req: Request, res: Response) => {
       data: dataToUpdate,
       select: { id: true, username: true, role: true, isActive: true, fullName: true, designation: true }
     });
+    
+    // Also update in cloud DB if configured
+    if (pg) {
+      await pg.user.update({
+        where: { id },
+        data: dataToUpdate,
+      }).catch(console.error);
+    }
 
     res.json(user);
   } catch (error) {

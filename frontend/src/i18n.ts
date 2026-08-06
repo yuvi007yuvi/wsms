@@ -18,7 +18,7 @@ const resources = {
       "Users": "Users",
       "Settings": "Settings",
       
-      "NATURE GREEN": "NATURE GREEN",
+      "WeighT360Pro": "WeighT360Pro",
       "Designed & Developed by": "Designed & Developed by",
       
       "Weighbridge Connected": "Weighbridge Connected",
@@ -151,7 +151,7 @@ const resources = {
       "Users": "उपयोगकर्ता",
       "Settings": "सेटिंग्स",
       
-      "NATURE GREEN": "नेचर ग्रीन",
+      "WeighT360Pro": "WeighT360Pro",
       "Designed & Developed by": "द्वारा डिज़ाइन और विकसित",
       
       "Weighbridge Connected": "कांटा जुड़ा हुआ है",

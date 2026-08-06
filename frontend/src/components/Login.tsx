@@ -65,7 +65,7 @@ export default function Login() {
       localStorage.setItem('designation', response.data.user.designation || '');
       toast({
         title: 'Login Successful',
-        description: 'Welcome to WSMS Portal',
+        description: 'Welcome to WeighT360Pro Portal',
       });
       navigate('/dashboard');
     } catch (error: any) {
@@ -90,7 +90,7 @@ export default function Login() {
           </div>
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 uppercase">Nature Green</h1>
-            <h2 className="text-xl font-medium text-emerald-200/80 tracking-wide uppercase">Weighment Slip Management System</h2>
+            <h2 className="text-xl font-medium text-emerald-200/80 tracking-wide uppercase">WeighT360Pro</h2>
           </div>
           <div className="w-16 h-1 bg-emerald-500 mt-6"></div>
           
@@ -278,9 +278,9 @@ export default function Login() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-xl text-emerald-800">WSMS Installation Guide</DialogTitle>
+                  <DialogTitle className="text-xl text-emerald-800">WeighT360Pro Installation Guide</DialogTitle>
                   <DialogDescription>
-                    Requirements and step-by-step instructions for deploying the Weighment Slip Management System.
+                    Requirements and step-by-step instructions for deploying the WeighT360Pro.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4 text-sm text-slate-700">
@@ -299,7 +299,7 @@ export default function Login() {
                     <h3 className="font-bold text-lg text-slate-900 mb-2">Installation Steps</h3>
                     <div className="space-y-4">
                       <p><strong>1. Environment Setup</strong><br/>
-                      Install Node.js and Git. Extract or clone the WSMS project folder to your local drive (e.g., <code>D:\WSMS</code>).</p>
+                      Install Node.js and Git. Extract or clone the project folder to your local drive.</p>
                       
                       <p><strong>2. Backend Configuration</strong><br/>
                       Navigate to the <code>backend</code> directory. Create a <code>.env</code> file based on your environment and configure the <code>DATABASE_URL</code> (PostgreSQL) and <code>PORT</code>.</p>

@@ -109,8 +109,8 @@ export default function DashboardLayout() {
 
         <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
           <Link to="/" className="flex flex-col items-center gap-1">
-            <img src="/images.jpg" alt="Nature Green" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
-            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-sm mt-1 text-center">{t('NATURE GREEN')}</span>}
+            <img src="/images.jpg" alt="WeighT360Pro" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
+            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-sm mt-1 text-center">{t('WeighT360Pro')}</span>}
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-2 overflow-x-hidden">
@@ -155,7 +155,7 @@ export default function DashboardLayout() {
       <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible">
         <header className="flex h-12 items-center gap-4 border-b bg-white px-4 shadow-sm z-10 lg:px-6 justify-between no-print">
           <div className="flex items-center gap-2 text-sm">
-             <span className="font-semibold text-slate-800 hidden md:inline-block">{t('NATURE GREEN')}</span>
+             <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
              <span className="text-slate-300 hidden md:inline-block">/</span>
              <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
           </div>
