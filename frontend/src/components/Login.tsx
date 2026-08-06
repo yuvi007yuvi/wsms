@@ -108,10 +108,10 @@ export default function Login() {
       <div className="hidden lg:flex w-1/2 bg-[#022c22] flex-col justify-between p-12 text-emerald-50">
         <div className="space-y-6 mt-12">
           <div className="bg-white p-3 inline-block rounded-sm shadow-md">
-            <img src="/images.jpg" alt="Nature Green" className="h-20 w-20 object-contain" />
+            <img src="/images.jpg" alt="WeighT360Pro" className="h-20 w-20 object-contain" />
           </div>
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 uppercase">Nature Green</h1>
+          <div className="text-center relative z-10">
+            <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 uppercase">WeighT360Pro</h1>
             <h2 className="text-xl font-medium text-emerald-200/80 tracking-wide uppercase">WeighT360Pro</h2>
           </div>
           <div className="w-16 h-1 bg-emerald-500 mt-6"></div>
@@ -284,10 +284,11 @@ export default function Login() {
           
           {/* Mobile Header (Hidden on Desktop) */}
           <div className="lg:hidden flex flex-col items-center text-center space-y-4 mb-8">
-            <div className="bg-white p-2 inline-block rounded-sm shadow border border-slate-100">
-              <img src="/images.jpg" alt="Nature Green" className="h-16 w-16 object-contain" />
+            <div className="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 mb-3 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <img src="/images.jpg" alt="WeighT360Pro" className="h-16 w-16 object-contain relative z-10 drop-shadow-sm" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 uppercase">Nature Green</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">WeighT360Pro</h1>
             <p className="text-sm font-medium text-slate-500 uppercase">Weighment Portal</p>
           </div>
 
