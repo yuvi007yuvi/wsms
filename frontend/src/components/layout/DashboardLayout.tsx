@@ -33,7 +33,7 @@ export default function DashboardLayout() {
   const designation = localStorage.getItem('designation');
   const displayName = fullName || userName || 'User';
   const projectName = localStorage.getItem('projectName');
-  const subscriptionExpiry = localStorage.getItem('subscriptionExpiry');
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(localStorage.getItem('subscriptionExpiry'));
   
   const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
   
@@ -44,6 +44,10 @@ export default function DashboardLayout() {
       try {
         const res = await api.get('/system/sync-status');
         setSyncStatus(res.data);
+        if (res.data.subscriptionExpiry) {
+          setSubscriptionExpiry(res.data.subscriptionExpiry);
+          localStorage.setItem('subscriptionExpiry', res.data.subscriptionExpiry);
+        }
       } catch (error) {
         setSyncStatus(prev => ({ ...prev, isOnline: false }));
       }
@@ -114,7 +118,24 @@ export default function DashboardLayout() {
             <img src="/images.jpg" alt="WeighT360Pro" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-sm mt-1 text-center">{t('WeighT360Pro')}</span>}
           </Link>
+          
+          {/* Project Badge moved here */}
+          {!isCollapsed && projectName && (
+            <div className="mt-3 flex flex-col items-center bg-blue-50/80 rounded border border-blue-100 shadow-sm overflow-hidden w-full">
+              <span className="font-bold text-blue-700 px-2 py-1 text-xs uppercase text-center w-full truncate" title={projectName}>
+                {projectName}
+              </span>
+              {subscriptionExpiry && (
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-1 border-t border-blue-200 w-full text-center">
+                  {new Date(subscriptionExpiry) > new Date() 
+                    ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left` 
+                    : 'Expired'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
+        
         <div className="flex-1 overflow-auto py-2 overflow-x-hidden">
           <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
             {filteredNavItems.map((item) => {
@@ -140,8 +161,20 @@ export default function DashboardLayout() {
           </nav>
         </div>
 
-        {/* Logout Button */}
-        <div className="p-2 mt-auto">
+        {/* Sidebar Footer Controls */}
+        <div className="p-2 mt-auto flex flex-col gap-2 border-t border-green-200/80 bg-white/40">
+          <button 
+            onClick={toggleLanguage} 
+            className={cn(
+              "flex items-center justify-center text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 py-1.5 rounded-sm transition-colors w-full",
+              isCollapsed ? "px-0" : "px-2"
+            )}
+            title={isCollapsed ? (i18n.language === 'en' ? 'हिन्दी' : 'English') : undefined}
+          >
+            {!isCollapsed && <span className="mr-1.5">Language:</span>}
+            {i18n.language === 'en' ? 'हिन्दी' : 'English'}
+          </button>
+          
           <button 
             onClick={handleLogout} 
             className={cn(
@@ -153,95 +186,82 @@ export default function DashboardLayout() {
             <LogOut className={cn("w-4 h-4", !isCollapsed && "mr-1.5")} />
             {!isCollapsed && t('Logout')}
           </button>
-        </div>
-
-        {/* Developer Credit */}
-        {!isCollapsed && (
-          <div className="mt-auto border-t border-green-200/80 p-4 bg-white/40">
-            <div className="text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
+          
+          {/* Developer Credit */}
+          {!isCollapsed && (
+            <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
                <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
-               <span className="font-extrabold text-sm bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
+               <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
                  YUVRAJ SINGH TOMAR
                </span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible">
-        <header className="flex h-12 items-center gap-4 border-b bg-white px-4 shadow-sm z-10 lg:px-6 justify-between no-print">
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible relative pb-6"> {/* pb-6 to make space for bottom bar */}
+        
+        {/* Clean Header */}
+        <header className="flex h-12 items-center gap-4 border-b bg-white px-4 shadow-sm z-10 lg:px-6 justify-between no-print shrink-0">
+          {/* Left: Breadcrumbs Only */}
           <div className="flex items-center gap-2 text-sm">
              <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
              <span className="text-slate-300 hidden md:inline-block">/</span>
              <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
-             {projectName && (
-               <div className="flex items-center gap-1">
-                 <span className="text-slate-300 mx-1">/</span>
-                 <div className="flex items-center bg-blue-50 rounded border border-blue-100 shadow-sm overflow-hidden">
-                   <span className="font-bold text-blue-700 px-2 py-0.5 text-xs uppercase truncate max-w-[200px]" title={projectName}>
-                     {projectName}
-                   </span>
-                   {subscriptionExpiry && (
-                     <span className="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 border-l border-blue-200">
-                       {new Date(subscriptionExpiry) > new Date() 
-                         ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left` 
-                         : 'Expired'}
-                     </span>
-                   )}
-                 </div>
-               </div>
-             )}
           </div>
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 text-sm font-medium">
-                {syncStatus.isOnline ? (
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-2 py-1 rounded-sm border border-green-200">
-                    <span className="relative flex h-2 w-2">
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
-                    </span>
-                    <span className="text-xs">
-                      Cloud Online (Synced {syncStatus.lastSyncTime ? format(new Date(syncStatus.lastSyncTime), 'hh:mm:ss a') : 'just now'})
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                    <span className="text-xs">
-                      Cloud Offline ({syncStatus.pendingCount} pending)
-                    </span>
-                  </div>
-                )}
+          
+          {/* Right: User Profile Only */}
+          <div className="flex items-center gap-3">
+             <div className="hidden md:flex flex-col items-end text-xs">
+               <span className="font-bold text-slate-800">{displayName}</span>
+               <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || userRole}</span>
              </div>
-             
-             <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
-                <span className="relative flex h-3 w-3">
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-                </span>
-                {t('Weighbridge Disconnected')}
-             </div>
-             
-             <button onClick={toggleLanguage} className="text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-sm">
-               {i18n.language === 'en' ? 'हिन्दी' : 'English'}
-             </button>
-             
-             <div className="flex items-center gap-3">
-               <div className="hidden md:flex flex-col items-end text-xs">
-                 <span className="font-bold text-slate-800">{displayName}</span>
-                 <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || userRole}</span>
-               </div>
-               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
-                 {displayName[0].toUpperCase()}
-               </div>
+             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
+               {displayName[0].toUpperCase()}
              </div>
           </div>
         </header>
+
+        {/* Scrollable Content */}
         <main className="flex-1 overflow-auto p-4 md:p-6 print:p-0 print:overflow-visible">
           <Outlet />
         </main>
+        
+        {/* Fixed Bottom Status Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-6 border-t bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.05)] flex items-center justify-between px-4 z-10 no-print text-[10px]">
+          {/* Left Status: Cloud Sync */}
+          <div className="flex items-center">
+            {syncStatus.isOnline ? (
+              <div className="flex items-center gap-1.5 text-green-700 font-medium">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
+                </span>
+                <span>
+                  Cloud Online (Synced {syncStatus.lastSyncTime ? format(new Date(syncStatus.lastSyncTime), 'hh:mm:ss a') : 'just now'})
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-amber-700 font-medium">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                </span>
+                <span>
+                  Cloud Offline ({syncStatus.pendingCount} pending items)
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Status: Weighbridge */}
+          <div className="flex items-center gap-1.5 text-red-600 font-medium">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+            </span>
+            {t('Weighbridge Disconnected')}
+          </div>
+        </div>
       </div>
     </div>
   );

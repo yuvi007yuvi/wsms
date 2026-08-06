@@ -34,25 +34,11 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       // Verify user actually exists in the database and is active
       const dbUser = await prisma.user.findUnique({ 
         where: { id: decodedUser.id },
-        include: { project: true }
       });
       
       if (!dbUser || !dbUser.isActive) {
         res.status(401).json({ error: 'User no longer exists or is inactive' });
         return;
-      }
-      
-      // Enforce project expiry and status
-      if (dbUser.project) {
-        if (!dbUser.project.isActive) {
-          const reason = (dbUser.project as any).disableReason || 'Your subscription is disabled by the administrator.';
-          res.status(401).json({ error: reason });
-          return;
-        }
-        if (dbUser.project.subscriptionExpiry && new Date() > new Date(dbUser.project.subscriptionExpiry)) {
-          res.status(401).json({ error: 'Your subscription has expired. Please contact support.' });
-          return;
-        }
       }
     }
     

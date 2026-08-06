@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { checkSubscription } from '../middleware/checkSubscription';
 import {
   vehicleController,
   vehicleTypeController,
@@ -11,7 +12,7 @@ import {
 const router = Router();
 
 // Apply auth middleware to all master routes
-router.use(authenticateToken);
+router.use(authenticateToken, checkSubscription);
 
 const setupRoutes = (path: string, controller: any) => {
   router.get(path, controller.getAll);

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import Login from './components/Login';
+import SubscriptionExpired from './components/SubscriptionExpired';
 import Weighment from './components/Weighment';
 import { Toaster } from './components/ui/toaster';
 import './i18n';
@@ -23,6 +24,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/subscription-expired" element={<SubscriptionExpired />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardLayout />}>

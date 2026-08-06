@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import { Server } from 'socket.io';
+import cron from 'node-cron';
+import prisma from './utils/prisma';
 
 dotenv.config();
 
@@ -60,5 +62,55 @@ if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
     startSyncService();
   });
 }
+
+// Try to load cloud pg client
+let PgClient: any = null;
+try {
+  PgClient = require('@prisma/client-postgres').PrismaClient;
+} catch (e) {}
+const pg = PgClient ? new PgClient() : null;
+
+// Scheduled cron job to check subscription expirations every hour
+cron.schedule('0 * * * *', async () => {
+  console.log('Running subscription expiry check cron job...');
+  try {
+    const now = new Date();
+    // Use raw query or updateMany if supported, but here we just find and update
+    const expiredProjects = await prisma.project.findMany({
+      where: {
+        isActive: true,
+        subscriptionExpiry: {
+          lte: now
+        }
+      }
+    });
+
+    if (expiredProjects.length > 0) {
+      console.log(`Found ${expiredProjects.length} expired projects. Disabling them...`);
+      for (const project of expiredProjects) {
+        // Disable locally
+        await prisma.project.update({
+          where: { id: project.id },
+          data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
+        });
+        
+        // Disable in cloud if available
+        if (pg) {
+          try {
+            await pg.project.update({
+              where: { id: project.id },
+              data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
+            });
+          } catch(e) {
+            console.error('Failed to disable project in cloud DB', e);
+          }
+        }
+        console.log(`Disabled project: ${project.name}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error in subscription expiry cron job:', error);
+  }
+});
 
 export default app;

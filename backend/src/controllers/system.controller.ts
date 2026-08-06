@@ -9,10 +9,25 @@ const execPromise = util.promisify(exec);
 
 import { getSyncStatus } from '../services/sync.service';
 
-export const getSyncStatusInfo = async (req: Request, res: Response): Promise<void> => {
+export const getSyncStatusInfo = async (req: any, res: Response): Promise<void> => {
   try {
     const status = await getSyncStatus();
-    res.json(status);
+    
+    // Also include project subscription status so frontend updates its timer dynamically
+    let subscriptionExpiry = null;
+    let isActive = true;
+    if (req.user && req.user.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        include: { project: true }
+      });
+      if (user?.project) {
+        subscriptionExpiry = user.project.subscriptionExpiry;
+        isActive = user.project.isActive;
+      }
+    }
+
+    res.json({ ...status, subscriptionExpiry, isActive });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch sync status' });
   }

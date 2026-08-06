@@ -36,13 +36,23 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (user.project) {
-      if (!user.project.isActive) {
-        const reason = (user.project as any).disableReason || 'Your subscription is disabled by the administrator.';
-        res.status(401).json({ error: reason });
+      const now = new Date();
+      if (user.project.subscriptionExpiry && now > new Date(user.project.subscriptionExpiry)) {
+        if (user.project.isActive) {
+          // Auto-disable if expired
+          await prisma.project.update({
+            where: { id: user.project.id },
+            data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
+          });
+        }
+        res.status(403).json({ success: false, message: 'Subscription Expired' });
         return;
       }
-      if (user.project.subscriptionExpiry && new Date() > new Date(user.project.subscriptionExpiry)) {
-        res.status(401).json({ error: 'Your subscription has expired. Please contact support.' });
+      
+      if (!user.project.isActive) {
+        // Just general disabled (e.g. by superadmin, not naturally expired just now)
+        const reason = user.project.disableReason || 'Subscription Expired';
+        res.status(403).json({ success: false, message: reason });
         return;
       }
     }

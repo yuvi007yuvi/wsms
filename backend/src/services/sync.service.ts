@@ -71,6 +71,12 @@ export const pullMasterData = async () => {
       await prisma.user.upsert({ where: { id: u.id }, update: u, create: u });
     }
 
+    // 7. Projects
+    const cloudProjects = await pg.project.findMany();
+    for (const p of cloudProjects) {
+      await prisma.project.upsert({ where: { id: p.id }, update: p, create: p });
+    }
+
     console.log('Sync Service: Master data pull complete.');
   } catch (err) {
     console.error('Sync Service: Error pulling master data:', err);
@@ -187,4 +193,10 @@ export const startSyncService = () => {
   console.log('Sync Service: Started background worker');
   // Run every 10 seconds
   setInterval(processSyncQueue, 10000);
+
+  // Pull master data every 1 minute
+  setInterval(pullMasterData, 60000);
+  
+  // Initial pull
+  pullMasterData();
 };
