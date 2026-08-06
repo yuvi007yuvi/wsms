@@ -132,5 +132,73 @@ export const superadminController = {
       console.error(error);
       res.status(400).json({ error: 'Failed to assign user' });
     }
+  },
+
+  getInvoices: async (req: Request, res: Response) => {
+    try {
+      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      const invoices = await pg.invoice.findMany({
+        include: { items: true, project: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' }
+      });
+      res.json(invoices);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch invoices' });
+    }
+  },
+
+  createInvoice: async (req: Request, res: Response) => {
+    try {
+      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      const { invoiceNumber, date, projectId, clientName, clientAddress, clientPhone, subtotal, taxRate, total, items } = req.body;
+
+      const invoice = await pg.invoice.create({
+        data: {
+          invoiceNumber,
+          date: new Date(date),
+          projectId: projectId || null,
+          clientName,
+          clientAddress,
+          clientPhone,
+          subtotal,
+          taxRate,
+          total,
+          items: {
+            create: items.map((item: any) => ({
+              description: item.description,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }
+        },
+        include: { items: true }
+      });
+      res.status(201).json(invoice);
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({ error: 'Failed to create invoice' });
+    }
+  },
+
+  deleteInvoice: async (req: Request, res: Response) => {
+    try {
+      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      const { id } = req.params;
+      
+      // Need to delete items first since cascade delete might not be set up
+      await pg.invoiceItem.deleteMany({
+        where: { invoiceId: id }
+      });
+      
+      await pg.invoice.delete({
+        where: { id }
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete invoice' });
+    }
   }
 };

@@ -25,4 +25,8 @@ router.put('/projects/:id', superadminController.updateProject);
 router.get('/users', superadminController.getUsers);
 router.put('/projects/:projectId/assign-user', superadminController.assignUser);
 
+router.get('/invoices', superadminController.getInvoices);
+router.post('/invoices', superadminController.createInvoice);
+router.delete('/invoices/:id', superadminController.deleteInvoice);
+
 export default router;

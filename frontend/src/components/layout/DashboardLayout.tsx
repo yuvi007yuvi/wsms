@@ -117,7 +117,7 @@ export default function DashboardLayout() {
         <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
           <Link to="/" className="flex flex-col items-center gap-1">
             <img src="/images.jpg" alt="WeighT360Pro" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
-            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-sm mt-1 text-center">{t('WeighT360Pro')}</span>}
+            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{t('WeighT360Pro')}</span>}
           </Link>
           
           {/* Project Badge moved here */}
