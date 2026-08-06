@@ -1,8 +1,14 @@
 import prisma from '../utils/prisma';
-// @ts-ignore
-import { PrismaClient as PgClient } from '@prisma/client-postgres';
 
-const pg = new PgClient();
+let PgClient: any = null;
+try {
+  // @ts-ignore
+  PgClient = require('@prisma/client-postgres').PrismaClient;
+} catch (e) {
+  // @prisma/client-postgres not generated or not available
+}
+
+const pg = PgClient ? new PgClient() : null;
 
 let isSyncing = false;
 export let isOnline = true;
@@ -22,6 +28,10 @@ export const getSyncStatus = async () => {
 };
 
 export const pullMasterData = async () => {
+  if (!pg) {
+    console.log('Sync Service: Cloud postgres client not configured. Skipping master data pull.');
+    return;
+  }
   try {
     console.log('Sync Service: Pulling master data from cloud...');
     
@@ -69,6 +79,10 @@ export const pullMasterData = async () => {
 
 export const processSyncQueue = async () => {
   if (isSyncing) return;
+  if (!pg) {
+    isOnline = false;
+    return;
+  }
   isSyncing = true;
 
   try {

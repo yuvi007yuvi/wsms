@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
@@ -15,6 +15,7 @@ const navItems = [
   { name: 'Sources', path: '/sources', icon: MapPin },
   { name: 'Destinations', path: '/destinations', icon: Anchor },
   { name: 'Slip History', path: '/reports', icon: FileText },
+  { name: 'Pricing Plans', path: '/pricing', icon: CreditCard },
   { name: 'Users', path: '/users', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];

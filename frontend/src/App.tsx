@@ -15,6 +15,7 @@ import Destinations from './components/Destinations';
 import Users from './components/Users';
 import Settings from './components/Settings';
 import Reports from './components/Reports';
+import Pricing from './components/Pricing';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             <Route path="sources" element={<Sources />} />
             <Route path="destinations" element={<Destinations />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="pricing" element={<Pricing />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
           </Route>

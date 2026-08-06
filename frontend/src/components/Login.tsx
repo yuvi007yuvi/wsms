@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
 import Cookies from 'js-cookie';
+import { getPreciseApiError } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -33,12 +34,13 @@ export default function Login() {
     try {
       const response = await api.get('/system/health');
       setHealthData(response.data);
-    } catch (error) {
-      console.error('Health check failed', error);
+    } catch (error: any) {
       if (!silent) {
+        console.error('Health check failed', error);
+        const errInfo = getPreciseApiError(error, 'Unable to reach the backend server.', 'Diagnostics Failed');
         toast({
-          title: 'Diagnostics Failed',
-          description: 'Unable to reach the backend server.',
+          title: errInfo.title,
+          description: errInfo.description,
           variant: 'destructive',
         });
       }
@@ -66,10 +68,11 @@ export default function Login() {
         description: 'Welcome to WSMS Portal',
       });
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
+      const errInfo = getPreciseApiError(error, 'Invalid credentials or inactive account', 'Login Failed');
       toast({
-        title: 'Login Failed',
-        description: 'Invalid credentials or inactive account',
+        title: errInfo.title,
+        description: errInfo.description,
         variant: 'destructive',
       });
     } finally {

@@ -16,6 +16,7 @@ const MODULES = [
   'Sources',
   'Destinations',
   'Slip History',
+  'Pricing Plans',
   'Users',
   'Settings'
 ];
