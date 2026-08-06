@@ -3,11 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Zap, Building2, ShieldCheck, Scale, RefreshCw, HelpCircle, ArrowRight, Wrench } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Pricing() {
-  const { t } = useTranslation();
   const { toast } = useToast();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
 
