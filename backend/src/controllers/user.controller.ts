@@ -54,11 +54,26 @@ export const createUser = async (req: Request, res: Response) => {
         fullName,
         designation,
         role: role || 'operator'
-      },
-      select: { id: true, username: true, role: true, isActive: true, fullName: true, designation: true }
+      }
     });
     
-    res.status(201).json(user);
+    // Also update in cloud DB if configured
+    if (pg) {
+      await pg.user.create({
+        data: {
+          id: user.id,
+          username,
+          password: hashedPassword,
+          fullName,
+          designation,
+          role: role || 'operator'
+        }
+      }).catch(console.error);
+    }
+    
+    // Remove password before returning
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(201).json(userWithoutPassword);
   } catch (error) {
     console.error(error);
     res.status(400).json({ error: 'Failed to create user' });
@@ -113,8 +128,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const user = await prisma.user.update({
       where: { id },
-      data: dataToUpdate,
-      select: { id: true, username: true, role: true, isActive: true, fullName: true, designation: true }
+      data: dataToUpdate
     });
     
     // Also update in cloud DB if configured
@@ -125,7 +139,8 @@ export const updateUser = async (req: Request, res: Response) => {
       }).catch(console.error);
     }
 
-    res.json(user);
+    const { password: _, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
   } catch (error) {
     console.error(error);
     res.status(400).json({ error: 'Failed to update user' });

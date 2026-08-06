@@ -35,13 +35,21 @@ export const forceSync = async (req: Request, res: Response): Promise<void> => {
 
 export const getSystemHealth = async (req: Request, res: Response): Promise<void> => {
   try {
-    // 1. Check Database Connection
+    // 1. Check Database Connections
     let dbStatus = 'disconnected';
+    let cloudDbStatus = 'disconnected';
     try {
       await prisma.$queryRaw`SELECT 1`;
       dbStatus = 'connected';
     } catch (dbError) {
       dbStatus = 'error';
+    }
+    
+    try {
+      const { isOnline } = require('../services/sync.service');
+      cloudDbStatus = isOnline ? 'connected' : 'error';
+    } catch (e) {
+      cloudDbStatus = 'error';
     }
 
     // 2. Check Hardware (Serial Ports)
@@ -86,6 +94,10 @@ export const getSystemHealth = async (req: Request, res: Response): Promise<void
           status: dbStatus,
           message: dbStatus === 'connected' ? 'Database is online and responsive' : 'Failed to connect to database',
         },
+        cloudDatabase: {
+          status: cloudDbStatus,
+          message: cloudDbStatus === 'connected' ? 'Cloud database is connected' : 'Cloud database unreachable',
+        },
         hardware: {
           status: hardwareStatus,
           message: hardwareStatus === 'connected' ? `${availablePorts.length} COM port(s) detected` : 'No serial weighbridge connections found (Mock Mode Only)',
@@ -104,5 +116,36 @@ export const getSystemHealth = async (req: Request, res: Response): Promise<void
   } catch (error) {
     console.error('Health check error:', error);
     res.status(500).json({ error: 'Internal Server Error during health check' });
+  }
+};
+
+export const installTools = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const checkCommand = async (cmd: string): Promise<boolean> => {
+      try {
+        await execPromise(cmd);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    let installed = [];
+    
+    // Check and install PM2 if missing
+    const hasPm2 = await checkCommand('pm2 -v');
+    if (!hasPm2) {
+      try {
+        await execPromise('npm install -g pm2');
+        installed.push('pm2');
+      } catch (e) {
+        console.error('Failed to install PM2', e);
+      }
+    }
+    
+    res.json({ message: 'Installation process completed', installed });
+  } catch (error) {
+    console.error('Install tools error:', error);
+    res.status(500).json({ error: 'Failed to install tools' });
   }
 };

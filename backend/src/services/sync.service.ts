@@ -163,11 +163,13 @@ export const processSyncQueue = async () => {
         // Successfully synced, remove from queue
         await prisma.syncQueue.delete({ where: { id: item.id } });
 
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Sync Service: Failed to process item ${item.id} (${item.action} ${item.tableName})`, err);
-        // We do not delete it, so it retries later.
-        // Wait, if it fails consistently, it will block the queue. We should probably add a retryCount.
-        // For now, let it retry indefinitely or until the user fixes the data.
+        // If an AuditLog fails (e.g. foreign key for a local-only user), delete it to prevent queue blocking and log spam
+        if (item.tableName === 'AuditLog') {
+          console.warn(`Sync Service: Deleting failed AuditLog from queue to prevent blocking.`);
+          await prisma.syncQueue.delete({ where: { id: item.id } });
+        }
       }
     }
 

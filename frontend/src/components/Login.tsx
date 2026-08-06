@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Activity, Cpu, Database, Cable } from 'lucide-react';
+import { Activity, Cpu, Database, Cable, Cloud, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -28,6 +28,7 @@ export default function Login() {
   
   const [healthData, setHealthData] = useState<any>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [installingTools, setInstallingTools] = useState(false);
 
   const checkSystemHealth = async (silent = false) => {
     if (!silent) setHealthLoading(true);
@@ -49,6 +50,27 @@ export default function Login() {
     }
   };
 
+  const handleInstallTools = async () => {
+    setInstallingTools(true);
+    try {
+      await api.post('/system/install-tools');
+      toast({
+        title: 'Installation Complete',
+        description: 'Missing tools have been successfully installed.',
+      });
+      // Refresh health check
+      checkSystemHealth(true);
+    } catch (error: any) {
+      toast({
+        title: 'Installation Failed',
+        description: 'Failed to auto-install some tools. You may need to install them manually.',
+        variant: 'destructive',
+      });
+    } finally {
+      setInstallingTools(false);
+    }
+  };
+
   useEffect(() => {
     checkSystemHealth(true);
   }, []);
@@ -58,7 +80,7 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { username, password });
-      Cookies.set('token', response.data.token, { expires: 1 });
+      Cookies.set('token', response.data.token);
       localStorage.setItem('role', response.data.user.role);
       localStorage.setItem('username', response.data.user.username || '');
       localStorage.setItem('fullName', response.data.user.fullName || '');
@@ -106,13 +128,12 @@ export default function Login() {
         </div>
 
         {/* System Diagnostics Button */}
-        <div className="absolute top-12 right-12 hidden lg:block">
-          <Dialog>
+        <div className="absolute top-12 right-12 hidden lg:block z-50">
+          <Dialog onOpenChange={(open) => { if (open) checkSystemHealth(false); }}>
             <DialogTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => checkSystemHealth(false)}
                 className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 shadow-sm relative flex items-center pr-3 pl-2.5"
               >
                 <div className="relative flex h-2 w-2 mr-2">
@@ -144,20 +165,38 @@ export default function Login() {
                   <div className="text-center py-8 text-slate-500 animate-pulse">Running diagnostics...</div>
                 ) : healthData ? (
                   <div className="space-y-4">
-                    {/* Database */}
+                    {/* Database (Local) */}
                     <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
                       <Database className={`w-5 h-5 mt-0.5 ${healthData.components.database.status === 'connected' ? 'text-emerald-500' : 'text-red-500'}`} />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Database Connection</p>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-slate-900">Local Cache Database</p>
+                          {healthData.components.database.status === 'connected' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                        </div>
                         <p className="text-xs text-slate-500">{healthData.components.database.message}</p>
                       </div>
                     </div>
                     
+                    {/* Cloud Database */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
+                      <Cloud className={`w-5 h-5 mt-0.5 ${healthData.components.cloudDatabase?.status === 'connected' ? 'text-blue-500' : 'text-slate-400'}`} />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-slate-900">Cloud Master Database</p>
+                          {healthData.components.cloudDatabase?.status === 'connected' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                        </div>
+                        <p className="text-xs text-slate-500">{healthData.components.cloudDatabase?.message || 'Checking cloud connection...'}</p>
+                      </div>
+                    </div>
+
                     {/* Hardware */}
                     <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
                       <Cable className={`w-5 h-5 mt-0.5 ${healthData.components.hardware.status === 'connected' ? 'text-emerald-500' : 'text-amber-500'}`} />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Weighbridge Hardware</p>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-slate-900">Weighbridge Hardware</p>
+                          {healthData.components.hardware.status === 'connected' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-amber-500" />}
+                        </div>
                         <p className="text-xs text-slate-500">{healthData.components.hardware.message}</p>
                         {healthData.components.hardware.ports?.length > 0 && (
                           <div className="mt-1 flex gap-1 flex-wrap">
@@ -171,25 +210,39 @@ export default function Login() {
 
                     {/* System Requirements */}
                     <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100">
-                      <Cpu className="w-5 h-5 mt-0.5 text-blue-500" />
+                      <Cpu className="w-5 h-5 mt-0.5 text-slate-700" />
                       <div className="w-full">
                         <p className="text-sm font-semibold text-slate-900 mb-2">Required Software Environment</p>
-                        <div className="grid grid-cols-2 gap-y-2 text-xs text-slate-600">
-                          <div className="flex justify-between border-b border-slate-200 pb-1 mr-2">
-                            <span>Node.js:</span>
-                            <span className="font-mono text-emerald-600">{healthData.components.system.nodeVersion}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600">
+                          <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+                            <span className="flex items-center gap-1 shrink-0">Node.js:</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-emerald-600 truncate">{healthData.components.system.nodeVersion}</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            </div>
                           </div>
-                          <div className="flex justify-between border-b border-slate-200 pb-1 ml-2">
-                            <span>NPM:</span>
-                            <span className={`font-mono ${healthData.components.system.npmVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>{healthData.components.system.npmVersion}</span>
+                          <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+                            <span className="flex items-center gap-1 shrink-0">NPM:</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`font-mono truncate ${healthData.components.system.npmVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>{healthData.components.system.npmVersion}</span>
+                              {healthData.components.system.npmVersion !== 'Not Installed' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                            </div>
                           </div>
-                          <div className="flex justify-between border-b border-slate-200 pb-1 mr-2">
-                            <span>PM2 (For Prod):</span>
-                            <span className={`font-mono ${healthData.components.system.pm2Version === 'Not Installed' ? 'text-amber-500' : 'text-emerald-600'}`}>{healthData.components.system.pm2Version}</span>
+                          <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+                            <span className="flex items-center gap-1 shrink-0">PM2:</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`font-mono truncate ${healthData.components.system.pm2Version === 'Not Installed' ? 'text-amber-500' : 'text-emerald-600'}`}>{healthData.components.system.pm2Version}</span>
+                              {healthData.components.system.pm2Version !== 'Not Installed' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                            </div>
                           </div>
-                          <div className="flex justify-between border-b border-slate-200 pb-1 ml-2">
-                            <span>Git:</span>
-                            <span className={`font-mono ${healthData.components.system.gitVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>{healthData.components.system.gitVersion}</span>
+                          <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+                            <span className="flex items-center gap-1 shrink-0">Git:</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`font-mono truncate ${healthData.components.system.gitVersion === 'Not Installed' ? 'text-red-500' : 'text-emerald-600'}`}>
+                                {healthData.components.system.gitVersion?.replace('git version ', '')}
+                              </span>
+                              {healthData.components.system.gitVersion !== 'Not Installed' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                            </div>
                           </div>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-3 text-right">
@@ -197,6 +250,24 @@ export default function Login() {
                         </p>
                       </div>
                     </div>
+                    
+                    {/* Auto Install Button */}
+                    {(healthData.components.system.pm2Version === 'Not Installed' || 
+                      healthData.components.system.npmVersion === 'Not Installed') && (
+                      <div className="pt-2">
+                        <Button 
+                          onClick={handleInstallTools} 
+                          disabled={installingTools}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+                        >
+                          {installingTools ? (
+                            <><Activity className="w-4 h-4 mr-2 animate-spin" /> Installing Tools...</>
+                          ) : (
+                            <><Database className="w-4 h-4 mr-2" /> Auto-Install Missing Dependencies</>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-red-500">Failed to load diagnostics.</div>
