@@ -267,6 +267,65 @@ export default function Login() {
               {loading ? 'Authenticating...' : <><Lock className="w-4 h-4 mr-2" /> Secure Sign In</>}
             </Button>
           </form>
+
+          {/* Installation Guide Link */}
+          <div className="mt-6 text-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button type="button" className="text-xs text-slate-500 hover:text-emerald-600 font-medium underline underline-offset-2 transition-colors">
+                  Installation Guide & System Requirements
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-xl text-emerald-800">WSMS Installation Guide</DialogTitle>
+                  <DialogDescription>
+                    Requirements and step-by-step instructions for deploying the Weighment Slip Management System.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4 text-sm text-slate-700">
+                  <div>
+                    <h3 className="font-bold text-lg text-slate-900 mb-2">System Requirements</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>OS:</strong> Windows 10/11 (64-bit) or Windows Server 2016+</li>
+                      <li><strong>Node.js:</strong> v18.x or v20.x (LTS recommended)</li>
+                      <li><strong>Database:</strong> PostgreSQL (Cloud or Local) and SQLite (Local sync cache)</li>
+                      <li><strong>Hardware:</strong> Serial Port (RS232/USB) for Weighbridge indicator integration</li>
+                      <li><strong>Memory & CPU:</strong> Minimum 4GB RAM, dual-core processor</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg text-slate-900 mb-2">Installation Steps</h3>
+                    <div className="space-y-4">
+                      <p><strong>1. Environment Setup</strong><br/>
+                      Install Node.js and Git. Extract or clone the WSMS project folder to your local drive (e.g., <code>D:\WSMS</code>).</p>
+                      
+                      <p><strong>2. Backend Configuration</strong><br/>
+                      Navigate to the <code>backend</code> directory. Create a <code>.env</code> file based on your environment and configure the <code>DATABASE_URL</code> (PostgreSQL) and <code>PORT</code>.</p>
+                      
+                      <p><strong>3. Database Initialization</strong><br/>
+                      Open a terminal in the <code>backend</code> directory and run:<br/>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npm install</code>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npx prisma generate</code>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npx prisma generate --schema=prisma/schema.postgres.prisma</code>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npx prisma migrate deploy</code>
+                      </p>
+
+                      <p><strong>4. Frontend Setup</strong><br/>
+                      Open a terminal in the <code>frontend</code> directory and run:<br/>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npm install</code>
+                      <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 block mt-1 font-mono text-xs">npm run build</code>
+                      </p>
+
+                      <p><strong>5. Running the Application</strong><br/>
+                      Use the <code>start.bat</code> script located in the root directory. This will automatically launch both the backend server and frontend development server in separate console windows.</p>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Footer Credit */}
