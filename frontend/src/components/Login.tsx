@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, AlertTriangle, ServerCrash, WifiOff } from 'lucide-react';
 import api from '@/lib/api';
 import Cookies from 'js-cookie';
 import { getPreciseApiError } from '@/lib/utils';
@@ -29,6 +29,7 @@ export default function Login() {
   const [healthData, setHealthData] = useState<any>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [installingTools, setInstallingTools] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const checkSystemHealth = async (silent = false) => {
     if (!silent) setHealthLoading(true);
@@ -78,6 +79,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError(null);
     try {
       const response = await api.post('/auth/login', { username, password });
       Cookies.set('token', response.data.token);
@@ -85,6 +87,8 @@ export default function Login() {
       localStorage.setItem('username', response.data.user.username || '');
       localStorage.setItem('fullName', response.data.user.fullName || '');
       localStorage.setItem('designation', response.data.user.designation || '');
+      localStorage.setItem('projectName', response.data.user.projectName || '');
+      localStorage.setItem('subscriptionExpiry', response.data.user.subscriptionExpiry || '');
       toast({
         title: 'Login Successful',
         description: 'Welcome to WeighT360Pro Portal',
@@ -92,11 +96,7 @@ export default function Login() {
       navigate('/dashboard');
     } catch (error: any) {
       const errInfo = getPreciseApiError(error, 'Invalid credentials or inactive account', 'Login Failed');
-      toast({
-        title: errInfo.title,
-        description: errInfo.description,
-        variant: 'destructive',
-      });
+      setLoginError(errInfo.description);
     } finally {
       setLoading(false);
     }
@@ -295,8 +295,26 @@ export default function Login() {
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Operator Login</h2>
             <p className="text-sm text-slate-500 mt-1">Enter your assigned credentials to continue.</p>
           </div>
+          
+          {loginError && (
+            <div className="flex items-start gap-3 p-4 rounded-md bg-red-50 border border-red-200 shadow-sm animate-in fade-in zoom-in duration-300">
+              {loginError.toLowerCase().includes('database') ? (
+                <Database className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              ) : loginError.toLowerCase().includes('server') ? (
+                <ServerCrash className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              ) : loginError.toLowerCase().includes('connectivity') ? (
+                <WifiOff className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              )}
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-red-900 leading-tight">System Error Detected</span>
+                <span className="text-xs text-red-700 mt-1">{loginError}</span>
+              </div>
+            </div>
+          )}
 
-          <form onSubmit={handleLogin} className="space-y-6 mt-8">
+          <form onSubmit={handleLogin} className="space-y-6 mt-4">
             <div className="space-y-2">
               <Label htmlFor="username" className="text-xs uppercase tracking-wider font-bold text-slate-700">Username</Label>
               <Input

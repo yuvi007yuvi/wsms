@@ -37,7 +37,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     if (user.project) {
       if (!user.project.isActive) {
-        res.status(401).json({ error: 'Your subscription is disabled by the administrator.' });
+        const reason = (user.project as any).disableReason || 'Your subscription is disabled by the administrator.';
+        res.status(401).json({ error: reason });
         return;
       }
       if (user.project.subscriptionExpiry && new Date() > new Date(user.project.subscriptionExpiry)) {
@@ -66,7 +67,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
-    res.json({ token, user: { id: user.id, username: user.username, role: user.role, fullName: user.fullName, designation: user.designation } });
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role, fullName: user.fullName, designation: user.designation, projectName: user.project?.name, subscriptionExpiry: user.project?.subscriptionExpiry } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });

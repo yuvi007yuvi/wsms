@@ -163,6 +163,7 @@ model Project {
   id                 String          @id @default(uuid())
   name               String          @unique
   subscriptionExpiry DateTime?
+  disableReason      String?
   isActive           Boolean         @default(true)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt

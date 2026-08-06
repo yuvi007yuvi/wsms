@@ -15,7 +15,10 @@ export const superadminController = {
       const projects = await pg.project.findMany({
         include: {
           _count: {
-            select: { users: true, vehicles: true, weighmentSlips: true }
+            select: { vehicles: true, weighmentSlips: true }
+          },
+          users: {
+            select: { id: true, username: true, fullName: true }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -50,13 +53,14 @@ export const superadminController = {
     try {
       if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       
-      const { name, subscriptionExpiry, isActive } = req.body;
+      const { name, subscriptionExpiry, isActive, disableReason } = req.body;
       const project = await pg.project.update({
         where: { id: req.params.id },
         data: {
           name,
           subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null,
-          isActive
+          isActive,
+          disableReason: isActive === false ? disableReason : null
         }
       });
       res.json(project);

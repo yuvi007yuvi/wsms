@@ -4,7 +4,7 @@ import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, C
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: FileText },
@@ -32,6 +32,8 @@ export default function DashboardLayout() {
   const fullName = localStorage.getItem('fullName');
   const designation = localStorage.getItem('designation');
   const displayName = fullName || userName || 'User';
+  const projectName = localStorage.getItem('projectName');
+  const subscriptionExpiry = localStorage.getItem('subscriptionExpiry');
   
   const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
   
@@ -173,6 +175,23 @@ export default function DashboardLayout() {
              <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
              <span className="text-slate-300 hidden md:inline-block">/</span>
              <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
+             {projectName && (
+               <div className="flex items-center gap-1">
+                 <span className="text-slate-300 mx-1">/</span>
+                 <div className="flex items-center bg-blue-50 rounded border border-blue-100 shadow-sm overflow-hidden">
+                   <span className="font-bold text-blue-700 px-2 py-0.5 text-xs uppercase truncate max-w-[200px]" title={projectName}>
+                     {projectName}
+                   </span>
+                   {subscriptionExpiry && (
+                     <span className="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 border-l border-blue-200">
+                       {new Date(subscriptionExpiry) > new Date() 
+                         ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left` 
+                         : 'Expired'}
+                     </span>
+                   )}
+                 </div>
+               </div>
+             )}
           </div>
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-2 text-sm font-medium">
