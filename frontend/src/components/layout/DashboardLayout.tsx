@@ -138,6 +138,21 @@ export default function DashboardLayout() {
           </nav>
         </div>
 
+        {/* Logout Button */}
+        <div className="p-2 mt-auto">
+          <button 
+            onClick={handleLogout} 
+            className={cn(
+              "flex items-center justify-center text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 py-1.5 rounded-sm transition-colors w-full",
+              isCollapsed ? "px-0" : "px-2"
+            )}
+            title={isCollapsed ? t('Logout') : undefined}
+          >
+            <LogOut className={cn("w-4 h-4", !isCollapsed && "mr-1.5")} />
+            {!isCollapsed && t('Logout')}
+          </button>
+        </div>
+
         {/* Developer Credit */}
         {!isCollapsed && (
           <div className="mt-auto border-t border-green-200/80 p-4 bg-white/40">
@@ -192,11 +207,6 @@ export default function DashboardLayout() {
              
              <button onClick={toggleLanguage} className="text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-sm">
                {i18n.language === 'en' ? 'हिन्दी' : 'English'}
-             </button>
-             
-             <button onClick={handleLogout} className="flex items-center justify-center text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2 py-1 rounded-sm transition-colors">
-               <LogOut className="w-3 h-3 mr-1" />
-               {t('Logout')}
              </button>
              
              <div className="flex items-center gap-3">
