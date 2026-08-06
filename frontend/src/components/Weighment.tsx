@@ -45,7 +45,7 @@ export default function Weighment() {
 
   // Derived State
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
-  const tareWeight = selectedVehicle?.tareWeight || 0;
+  const tareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
   const netWeight = Math.max(0, liveWeight - tareWeight);
 
   // Fetch Master Data

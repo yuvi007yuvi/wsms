@@ -20,6 +20,11 @@ export default function Users() {
   const [fullName, setFullName] = useState('');
   const [designation, setDesignation] = useState('');
   const [role, setRole] = useState('operator');
+  const [projectId, setProjectId] = useState('');
+  
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const userRole = localStorage.getItem('role') || 'operator';
 
   const fetchUsers = async () => {
     try {
@@ -30,25 +35,64 @@ export default function Users() {
     }
   };
 
+  const fetchProjects = async () => {
+    try {
+      const res = await api.get('/superadmin/projects');
+      setProjects(res.data);
+    } catch (error) {
+      console.error('Failed to fetch projects', error);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
-  }, []);
+    if (userRole === 'superadmin') {
+      fetchProjects();
+    }
+  }, [userRole]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/users', { username, password, role, fullName, designation });
-      toast({ title: 'User saved successfully' });
+      const payload: any = { username, role, fullName, designation };
+      if (password) payload.password = password;
+      if (userRole === 'superadmin') payload.projectId = projectId;
+
+      if (editingUserId) {
+        await api.put(`/users/${editingUserId}`, payload);
+        toast({ title: 'User updated successfully' });
+      } else {
+        await api.post('/users', payload);
+        toast({ title: 'User created successfully' });
+      }
+      
       setOpen(false);
-      setUsername('');
-      setPassword('');
-      setFullName('');
-      setDesignation('');
-      setRole('operator');
+      resetForm();
       fetchUsers();
-    } catch (error) {
-      toast({ title: 'Error saving user', variant: 'destructive' });
+    } catch (error: any) {
+      toast({ title: error.response?.data?.error || 'Error saving user', variant: 'destructive' });
     }
+  };
+
+  const resetForm = () => {
+    setEditingUserId(null);
+    setUsername('');
+    setPassword('');
+    setFullName('');
+    setDesignation('');
+    setRole('operator');
+    setProjectId('');
+  };
+
+  const handleEdit = (u: any) => {
+    setEditingUserId(u.id);
+    setUsername(u.username);
+    setPassword('');
+    setFullName(u.fullName || '');
+    setDesignation(u.designation || '');
+    setRole(u.role);
+    setProjectId(u.projectId || '');
+    setOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -72,15 +116,18 @@ export default function Users() {
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h2>
           <p className="text-sm text-slate-500">Manage system access, roles, and user accounts.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => {
+          setOpen(val);
+          if (!val) resetForm();
+        }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="h-8 text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 rounded-sm">
+            <Button size="sm" className="h-8 text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 rounded-sm" onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" /> Add User
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
+              <DialogTitle>{editingUserId ? 'Edit User' : 'Add New User'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSave} className="grid grid-cols-2 gap-4 mt-4">
               <div className="space-y-2">
@@ -88,8 +135,8 @@ export default function Users() {
                 <Input value={username} onChange={e => setUsername(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Password</Label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                <Label>Password {editingUserId && <span className="text-xs text-muted-foreground">(Leave blank to keep current)</span>}</Label>
+                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required={!editingUserId} />
               </div>
               <div className="space-y-2">
                 <Label>Full Name</Label>
@@ -111,7 +158,25 @@ export default function Users() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full col-span-2 h-10 mt-2 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm">Save User</Button>
+              {userRole === 'superadmin' && (
+                <div className="space-y-2 col-span-2">
+                  <Label>Project (Assign Project)</Label>
+                  <Select value={projectId} onValueChange={setProjectId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">-- No Project --</SelectItem>
+                      {projects.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <Button type="submit" className="w-full col-span-2 h-10 mt-2 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm">
+                {editingUserId ? 'Update User' : 'Save User'}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -165,6 +230,9 @@ export default function Users() {
                     </span>
                   </TableCell>
                   <TableCell className="py-3 px-4 text-right">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(u)}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(u.id)} disabled={u.username === 'admin'}>
                       <Trash2 className="h-4 w-4" />
                     </Button>

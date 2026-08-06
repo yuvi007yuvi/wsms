@@ -16,6 +16,7 @@ import Users from './components/Users';
 import Settings from './components/Settings';
 import Reports from './components/Reports';
 import Pricing from './components/Pricing';
+import Superadmin from './components/Superadmin';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
             <Route path="pricing" element={<Pricing />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="superadmin" element={<Superadmin />} />
           </Route>
         </Route>
       </Routes>

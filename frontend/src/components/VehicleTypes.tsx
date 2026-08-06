@@ -16,8 +16,7 @@ export default function VehicleTypes() {
   const { toast } = useToast();
 
   const [name, setName] = useState('');
-
-
+  const [tareWeight, setTareWeight] = useState('');
   const fetchVehicleTypes = async () => {
     try {
       const res = await api.get('/master/vehicle-types');
@@ -34,10 +33,11 @@ export default function VehicleTypes() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/master/vehicle-types', { name });
+      await api.post('/master/vehicle-types', { name, tareWeight: parseFloat(tareWeight) || 0 });
       toast({ title: 'Vehicle Type saved successfully' });
       setOpen(false);
       setName('');
+      setTareWeight('');
 
       fetchVehicleTypes();
     } catch (error) {
@@ -83,6 +83,10 @@ export default function VehicleTypes() {
                 <Label>Vehicle Type Name</Label>
                 <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Dumper" />
               </div>
+              <div className="space-y-2">
+                <Label>Default Tare Weight (KG)</Label>
+                <Input type="number" value={tareWeight} onChange={e => setTareWeight(e.target.value)} placeholder="0" />
+              </div>
 
               <Button type="submit" className="w-full">Save Vehicle Type</Button>
             </form>
@@ -101,6 +105,7 @@ export default function VehicleTypes() {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Type Name</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Default Tare</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -109,6 +114,7 @@ export default function VehicleTypes() {
                 <TableRow key={vt.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
                   <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{vt.name}</TableCell>
+                  <TableCell className="py-3 px-4 text-sm text-slate-600">{vt.tareWeight || 0} kg</TableCell>
 
                   <TableCell className="py-3 px-4 text-right">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(vt.id)}>

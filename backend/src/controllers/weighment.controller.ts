@@ -31,7 +31,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       return;
     }
 
-    const tareWeight = vehicle.tareWeight || 0;
+    const tareWeight = vehicle.tareWeight || vehicle.vehicleType?.tareWeight || 0;
     const netWeight = grossWeight - tareWeight;
 
     if (netWeight < 0) {

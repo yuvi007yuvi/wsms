@@ -25,11 +25,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       console.log('Created default admin user (admin / admin123)');
     }
 
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findUnique({ 
+      where: { username },
+      include: { project: true }
+    });
     
     if (!user || !user.isActive) {
       res.status(401).json({ error: 'Invalid credentials or inactive account' });
       return;
+    }
+
+    if (user.project) {
+      if (!user.project.isActive) {
+        res.status(401).json({ error: 'Your subscription is disabled by the administrator.' });
+        return;
+      }
+      if (user.project.subscriptionExpiry && new Date() > new Date(user.project.subscriptionExpiry)) {
+        res.status(401).json({ error: 'Your subscription has expired. Please contact support.' });
+        return;
+      }
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);

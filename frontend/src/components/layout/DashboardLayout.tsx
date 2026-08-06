@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Pricing Plans', path: '/pricing', icon: CreditCard },
   { name: 'Users', path: '/users', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },
+  { name: 'Superadmin', path: '/superadmin', icon: Shield },
 ];
 
 export default function DashboardLayout() {
@@ -74,7 +75,8 @@ export default function DashboardLayout() {
   }, [userRole]);
   
   const filteredNavItems = navItems.filter(item => {
-    if (userRole === 'admin') return true;
+    if (item.name === 'Superadmin') return userRole === 'superadmin';
+    if (userRole === 'superadmin' || userRole === 'admin') return true;
     if (allowedModules === null) return false; // Still loading permissions
     return allowedModules.includes(item.name);
   });
@@ -105,14 +107,14 @@ export default function DashboardLayout() {
           <ChevronLeft className={cn("w-4 h-4 transition-transform", isCollapsed && "rotate-180")} />
         </button>
 
-        <div className="flex flex-col items-center justify-center p-6 border-b border-green-200/60 bg-white/40">
-          <Link to="/" className="flex flex-col items-center gap-2">
-            <img src="/images.jpg" alt="Nature Green" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-10 w-10" : "h-16 w-16")} />
-            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-base mt-1 text-center">{t('NATURE GREEN')}</span>}
+        <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
+          <Link to="/" className="flex flex-col items-center gap-1">
+            <img src="/images.jpg" alt="Nature Green" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
+            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-sm mt-1 text-center">{t('NATURE GREEN')}</span>}
           </Link>
         </div>
-        <div className="flex-1 overflow-auto py-4 overflow-x-hidden">
-          <nav className="grid items-start px-3 text-sm font-medium gap-1">
+        <div className="flex-1 overflow-auto py-2 overflow-x-hidden">
+          <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
             {filteredNavItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
               return (
@@ -120,7 +122,7 @@ export default function DashboardLayout() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 transition-colors font-semibold",
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors font-semibold",
                     isActive
                       ? "bg-green-600 text-white shadow-sm"
                       : "text-green-800 hover:text-green-950 hover:bg-white/60",
