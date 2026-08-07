@@ -235,8 +235,8 @@ export default function Dashboard() {
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-  const ChangeIndicator = ({ value }: { value: number }) => (
-    <span className={`flex items-center gap-0.5 text-[10px] font-bold ${value >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+  const ChangeIndicator = ({ value, invert = false }: { value: number, invert?: boolean }) => (
+    <span className={`flex items-center gap-0.5 text-[11px] font-bold mt-2 ${invert ? 'text-white/90' : (value >= 0 ? 'text-green-600' : 'text-red-500')} ${invert && 'bg-white/20 inline-flex px-2 py-0.5 rounded-full backdrop-blur-sm'}`}>
       {value >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
       {Math.abs(value)}% {t('vs yesterday')}
     </span>
@@ -329,58 +329,64 @@ export default function Dashboard() {
 
       {/* Row 1: Key Stats (6 cards) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Slips Today')}</h3>
-            <FileText className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-5 shadow-lg shadow-purple-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Slips Today')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><FileText className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.totalSlipsToday}</div>
-          <ChangeIndicator value={stats.slipChange} />
+          <div className="text-3xl font-black relative z-10">{stats.totalSlipsToday}</div>
+          <div className="relative z-10"><ChangeIndicator value={stats.slipChange} invert /></div>
         </div>
 
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Net Weight')}</h3>
-            <Scale className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 shadow-lg shadow-emerald-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Net Weight')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><Scale className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.totalNetWeight.toLocaleString()} <span className="text-sm text-slate-500">KG</span></div>
-          <ChangeIndicator value={stats.weightChange} />
+          <div className="text-3xl font-black relative z-10">{stats.totalNetWeight.toLocaleString()} <span className="text-sm font-medium text-white/70">KG</span></div>
+          <div className="relative z-10"><ChangeIndicator value={stats.weightChange} invert /></div>
         </div>
 
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Gross Weight')}</h3>
-            <Weight className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-5 shadow-lg shadow-blue-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Gross Weight')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><Weight className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.totalGrossWeight.toLocaleString()} <span className="text-sm text-slate-500">KG</span></div>
-          <p className="text-[10px] text-slate-400 font-medium">{t('Tare')}: {stats.totalTareWeight.toLocaleString()} KG</p>
+          <div className="text-3xl font-black relative z-10">{stats.totalGrossWeight.toLocaleString()} <span className="text-sm font-medium text-white/70">KG</span></div>
+          <p className="text-xs text-white/80 font-semibold mt-2 bg-white/20 inline-flex px-2 py-0.5 rounded-full relative z-10">{t('Tare')}: {stats.totalTareWeight.toLocaleString()} KG</p>
         </div>
 
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Vehicle Visits')}</h3>
-            <Truck className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-5 shadow-lg shadow-orange-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Vehicle Visits')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><Truck className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.vehicleVisits}</div>
-          <p className="text-[10px] text-slate-400 font-medium">{stats.uniqueVehiclesToday} {t('unique vehicles')}</p>
+          <div className="text-3xl font-black relative z-10">{stats.vehicleVisits}</div>
+          <p className="text-xs text-white/80 font-semibold mt-2 bg-white/20 inline-flex px-2 py-0.5 rounded-full relative z-10">{stats.uniqueVehiclesToday} {t('unique vehicles')}</p>
         </div>
 
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Avg Net Wt')}</h3>
-            <TrendingUp className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl p-5 shadow-lg shadow-pink-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Avg Net Wt')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><TrendingUp className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.avgNetWeight.toLocaleString()} <span className="text-sm text-slate-500">KG</span></div>
-          <p className="text-[10px] text-slate-400 font-medium">{t('Per slip average')}</p>
+          <div className="text-3xl font-black relative z-10">{stats.avgNetWeight.toLocaleString()} <span className="text-sm font-medium text-white/70">KG</span></div>
+          <p className="text-xs text-white/80 font-semibold mt-2 bg-white/20 inline-flex px-2 py-0.5 rounded-full relative z-10">{t('Per slip average')}</p>
         </div>
 
-        <div className="bg-white border border-slate-300 rounded-sm p-4 shadow-sm">
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('Peak Hour')}</h3>
-            <Clock className="h-4 w-4 text-slate-400" />
+        <div className="bg-gradient-to-br from-indigo-500 to-blue-700 rounded-xl p-5 shadow-lg shadow-indigo-500/20 text-white relative overflow-hidden group">
+          <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="flex items-center justify-between pb-3 relative z-10">
+            <h3 className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('Peak Hour')}</h3>
+            <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm"><Clock className="h-4 w-4 text-white" /></div>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.peakHour.name}</div>
-          <p className="text-[10px] text-slate-400 font-medium">{stats.peakHour.slips} {t('slips generated')}</p>
+          <div className="text-3xl font-black relative z-10">{stats.peakHour.name}</div>
+          <p className="text-xs text-white/80 font-semibold mt-2 bg-white/20 inline-flex px-2 py-0.5 rounded-full relative z-10">{stats.peakHour.slips} {t('slips generated')}</p>
         </div>
       </div>
 
