@@ -61,8 +61,10 @@ export default function Billing() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   
   // Payment Details
-  const [accountNumber, setAccountNumber] = useState('');
-  const [ifscCode, setIfscCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('6146185809');
+  const [ifscCode, setIfscCode] = useState('KKBK0005960');
+  const [upiId, setUpiId] = useState('7869708888@kotakbank');
+  const [upiName, setUpiName] = useState('YUVRAJ SINGH TOMAR');
 
   const fetchInvoices = () => {
     api.get('/superadmin/invoices').then(res => setInvoices(res.data)).catch(err => console.error(err));
@@ -272,13 +274,25 @@ export default function Billing() {
               <Label>Tax Rate (%)</Label>
               <Input type="number" min="0" max="100" value={taxRate} onChange={e => setTaxRate(Number(e.target.value))} />
             </div>
-            <div className="space-y-2">
-              <Label>Bank Account Number</Label>
-              <Input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} placeholder="Enter Account Number" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bank Account Number</Label>
+                <Input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} placeholder="Enter Account Number" />
+              </div>
+              <div className="space-y-2">
+                <Label>IFSC Code</Label>
+                <Input value={ifscCode} onChange={e => setIfscCode(e.target.value)} placeholder="Enter IFSC Code" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>IFSC Code</Label>
-              <Input value={ifscCode} onChange={e => setIfscCode(e.target.value)} placeholder="Enter IFSC Code" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>UPI ID</Label>
+                <Input value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="e.g. name@bank" />
+              </div>
+              <div className="space-y-2">
+                <Label>UPI Name</Label>
+                <Input value={upiName} onChange={e => setUpiName(e.target.value)} placeholder="e.g. John Doe" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -480,9 +494,13 @@ export default function Billing() {
               <div className="font-bold mt-1">INR {numberToWords(total)}</div>
             </div>
             <div className="w-1/2 text-sm border-l border-black -my-2 py-2 px-2 -mr-2">
-              <span className="text-xs text-gray-700 font-bold underline mb-1 block">Company's Bank Details</span>
-              <div><span className="text-gray-600">A/c No.:</span> <span className="font-bold">{accountNumber || '-'}</span></div>
-              <div><span className="text-gray-600">IFSC:</span> <span className="font-bold">{ifscCode || '-'}</span></div>
+              <span className="text-xs text-gray-700 font-bold underline mb-1 block">Company's Bank & UPI Details</span>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                <div><span className="text-gray-600">A/c No.:</span> <span className="font-bold">{accountNumber || '-'}</span></div>
+                <div><span className="text-gray-600">UPI ID:</span> <span className="font-bold">{upiId || '-'}</span></div>
+                <div><span className="text-gray-600">IFSC:</span> <span className="font-bold">{ifscCode || '-'}</span></div>
+                <div><span className="text-gray-600">Name:</span> <span className="font-bold">{upiName || '-'}</span></div>
+              </div>
             </div>
           </div>
           

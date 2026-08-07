@@ -162,6 +162,7 @@ model SyncQueue {
 model Project {
   id                 String          @id @default(uuid())
   name               String          @unique
+  address            String?
   subscriptionExpiry DateTime?
   disableReason      String?
   isActive           Boolean         @default(true)

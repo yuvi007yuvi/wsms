@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
-import api from '@/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Pencil } from 'lucide-react';
+import { Pencil, MapPin, Calendar, Clock, Plus } from 'lucide-react';
 
 export default function Superadmin() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -243,13 +241,12 @@ export default function Superadmin() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project Name</TableHead>
+                <TableHead>Project Details</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Users</TableHead>
                 <TableHead>Vehicles</TableHead>
                 <TableHead>Slips</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Duration</TableHead>
+                <TableHead>Subscription</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -257,7 +254,17 @@ export default function Superadmin() {
             <TableBody>
               {projects.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1.5 max-w-[300px]">
+                      <span className="font-bold text-sm text-slate-800">{p.name}</span>
+                      {p.address && (
+                        <div className="flex items-start gap-1 text-xs text-slate-500">
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="line-clamp-2">{p.address}</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {p.users && p.users.length > 0 ? (
                       <div className="flex flex-col gap-1">
@@ -271,16 +278,30 @@ export default function Superadmin() {
                       <span className="text-xs text-slate-400 italic">None</span>
                     )}
                   </TableCell>
-                  <TableCell>{p.users?.length || 0}</TableCell>
-                  <TableCell>{p._count?.vehicles || 0}</TableCell>
-                  <TableCell>{p._count?.weighmentSlips || 0}</TableCell>
-                  <TableCell>{p.subscriptionExpiry ? format(new Date(p.subscriptionExpiry), 'dd MMM yyyy, hh:mm a') : 'Lifetime'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {p.subscriptionExpiry ? (
-                      new Date(p.subscriptionExpiry) > new Date() 
-                        ? `${formatDistanceToNow(new Date(p.subscriptionExpiry))} left`
-                        : `Expired ${formatDistanceToNow(new Date(p.subscriptionExpiry))} ago`
-                    ) : '-'}
+                  <TableCell>
+                    <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-md text-xs">{p.users?.length || 0}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="bg-amber-50 text-amber-700 font-semibold px-2.5 py-1 rounded-md text-xs">{p._count?.vehicles || 0}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-md text-xs">{p._count?.weighmentSlips || 0}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                        {p.subscriptionExpiry ? format(new Date(p.subscriptionExpiry), 'dd MMM yyyy') : 'Lifetime'}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <Clock className="h-3 w-3" />
+                        {p.subscriptionExpiry ? (
+                          new Date(p.subscriptionExpiry) > new Date() 
+                            ? `${formatDistanceToNow(new Date(p.subscriptionExpiry))} left`
+                            : <span className="text-red-500 font-semibold">Expired {formatDistanceToNow(new Date(p.subscriptionExpiry))} ago</span>
+                        ) : 'No Expiry'}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Switch checked={p.isActive} onCheckedChange={() => toggleStatus(p)} />
@@ -300,12 +321,21 @@ export default function Superadmin() {
               ))}
               {projects.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
                     No projects found.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
+            <TableFooter>
+              <TableRow className="font-bold bg-muted/50">
+                <TableCell colSpan={2} className="text-right">Total (All Projects):</TableCell>
+                <TableCell><span className="bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded-md text-sm">{projects.reduce((sum, p) => sum + (p.users?.length || 0), 0)}</span></TableCell>
+                <TableCell><span className="bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md text-sm">{stats.vehicles}</span></TableCell>
+                <TableCell><span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-md text-sm">{stats.slips}</span></TableCell>
+                <TableCell colSpan={3}></TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </CardContent>
       </Card>
