@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Activity, Cpu, Database, Cable, Cloud, CheckCircle2, XCircle } from 'lucide-react';
+import NetworkBackground from './NetworkBackground';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -105,24 +106,31 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full flex bg-white">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex w-1/2 bg-[#022c22] flex-col justify-between p-12 text-emerald-50">
-        <div className="space-y-6 mt-12">
-          <div className="bg-white p-3 inline-block rounded-sm shadow-md">
-            <img src="/images.jpg" alt="WeighT360Pro" className="h-20 w-20 object-contain" />
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 flex-col justify-between p-12 text-emerald-50 relative overflow-hidden">
+        {/* Decorative Glowing Orbs */}
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/20 rounded-full blur-[120px] pointer-events-none animate-blob"></div>
+        <div className="absolute bottom-[-10%] right-[-20%] w-[400px] h-[400px] bg-teal-600/20 rounded-full blur-[100px] pointer-events-none animate-blob" style={{ animationDelay: '2s' }}></div>
+        
+        {/* Neuron Network Animation */}
+        <NetworkBackground />
+        
+        <div className="space-y-8 mt-12 relative z-10">
+          <div className="inline-block">
+            <img src="/images.jpg" alt="WeighT360Pro" className="h-40 w-40 object-contain drop-shadow-2xl rounded-2xl bg-white p-2" />
           </div>
-          <div className="text-center relative z-10">
-            <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 uppercase">WeighT360Pro</h1>
-            <h2 className="text-xl font-medium text-emerald-200/80 tracking-wide uppercase">WeighT360Pro</h2>
+          <div className="relative z-10">
+            <h1 className="text-5xl font-black tracking-tight text-white mb-2 uppercase drop-shadow-sm">WeighT360Pro</h1>
+            <h2 className="text-sm font-bold text-emerald-400 tracking-[0.3em] uppercase">Enterprise Portal</h2>
           </div>
-          <div className="w-16 h-1 bg-emerald-500 mt-6"></div>
+          <div className="w-20 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mt-6 shadow-lg"></div>
           
-          <p className="max-w-md text-emerald-200/60 leading-relaxed mt-6">
+          <p className="max-w-md text-emerald-100/80 leading-relaxed mt-6 text-lg font-medium">
             Enterprise-grade industrial weighing operations and logistics tracking portal. 
-            Authorized personnel only.
+            <span className="block mt-2 text-emerald-400/80 text-sm font-semibold">Authorized personnel only.</span>
           </p>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-emerald-400/50 font-medium">
+        <div className="flex items-center gap-2 text-sm text-emerald-400/80 font-semibold relative z-10">
           <ShieldCheck className="h-5 w-5" />
           Secure Operator Terminal
         </div>
@@ -279,8 +287,11 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 sm:px-16 md:px-24 xl:px-32 relative">
-        <div className="max-w-md w-full mx-auto space-y-8">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 sm:px-16 md:px-24 xl:px-32 relative overflow-hidden bg-white">
+        {/* Neuron Network Animation on Right Side */}
+        <NetworkBackground />
+        
+        <div className="max-w-md w-full mx-auto space-y-8 relative z-10 bg-white/60 p-8 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.05)] backdrop-blur-sm border border-white/50">
           
           {/* Mobile Header (Hidden on Desktop) */}
           <div className="lg:hidden flex flex-col items-center text-center space-y-4 mb-8">
@@ -325,7 +336,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-12 rounded-sm border-slate-300 focus-visible:ring-emerald-600 focus-visible:border-emerald-600 bg-slate-50 focus:bg-white transition-colors"
+                className="h-12 rounded-lg border-slate-200 shadow-sm focus-visible:ring-emerald-500 focus-visible:border-emerald-500 bg-slate-50/50 focus:bg-white transition-all font-medium"
               />
             </div>
             
@@ -341,7 +352,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-12 pr-10 rounded-sm border-slate-300 focus-visible:ring-emerald-600 focus-visible:border-emerald-600 bg-slate-50 focus:bg-white transition-colors"
+                  className="h-12 pr-10 rounded-lg border-slate-200 shadow-sm focus-visible:ring-emerald-500 focus-visible:border-emerald-500 bg-slate-50/50 focus:bg-white transition-all font-medium"
                 />
                 <button
                   type="button"
@@ -353,7 +364,7 @@ export default function Login() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-sm uppercase tracking-widest font-bold bg-[#064e3b] hover:bg-[#022c22] text-white rounded-sm transition-all" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-sm uppercase tracking-widest font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl text-white rounded-lg transition-all" disabled={loading}>
               {loading ? 'Authenticating...' : <><Lock className="w-4 h-4 mr-2" /> Secure Sign In</>}
             </Button>
           </form>

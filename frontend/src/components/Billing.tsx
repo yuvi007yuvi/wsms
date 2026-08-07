@@ -34,6 +34,7 @@ const numberToWords = (num: number): string => {
   return str.trim() ? str.trim() + ' Only' : 'Zero Only';
 };
 
+const numberToHindiWords = (num: number): string => {
 export default function Billing() {
   const navigate = useNavigate();
   
