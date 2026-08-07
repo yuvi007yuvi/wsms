@@ -19,6 +19,7 @@ import Reports from './components/Reports';
 import Pricing from './components/Pricing';
 import Superadmin from './components/Superadmin';
 import Billing from './components/Billing';
+import Diagnostics from './components/Diagnostics';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="superadmin" element={<Superadmin />} />
             <Route path="billing" element={<Billing />} />
+            <Route path="diagnostics" element={<Diagnostics />} />
           </Route>
         </Route>
       </Routes>

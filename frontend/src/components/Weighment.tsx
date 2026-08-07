@@ -8,6 +8,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useToast } from '@/hooks/use-toast';
 import { Printer, Save, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { io } from 'socket.io-client';
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
 
@@ -80,8 +81,6 @@ export default function Weighment() {
     fetchMasterData();
   }, []);
 
-  // Socket.io Connection (Disabled until hardware is plugged in)
-  /*
   useEffect(() => {
     const socket = io('http://localhost:5000');
     
@@ -97,7 +96,6 @@ export default function Weighment() {
       socket.disconnect();
     };
   }, []);
-  */
 
   // Mock Mode Simulation
   useEffect(() => {

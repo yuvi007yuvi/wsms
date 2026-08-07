@@ -5,6 +5,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cron from 'node-cron';
 import prisma from './utils/prisma';
+import { setupWeighbridge } from './services/weighbridge.service';
 
 dotenv.config();
 
@@ -51,8 +52,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Hardware weighbridge integration will be implemented here
-// to read from the COM port and emit 'weight-update' events.
+// Hardware weighbridge integration (via shared service)
+setupWeighbridge(io);
 
 const PORT = process.env.PORT || 5000;
 

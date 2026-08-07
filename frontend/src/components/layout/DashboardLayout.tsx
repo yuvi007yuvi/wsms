@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
@@ -20,6 +20,7 @@ const navItems = [
   { name: 'Settings', path: '/settings', icon: Settings },
   { name: 'Superadmin', path: '/superadmin', icon: Shield },
   { name: 'Billing', path: '/billing', icon: FileText },
+  { name: 'Diagnostics', path: '/diagnostics', icon: Stethoscope },
 ];
 
 export default function DashboardLayout() {
@@ -82,7 +83,7 @@ export default function DashboardLayout() {
   }, [userRole]);
   
   const filteredNavItems = navItems.filter(item => {
-    if (item.name === 'Superadmin' || item.name === 'Billing') return userRole === 'superadmin';
+    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return userRole === 'superadmin' || userRole === 'admin';
     if (userRole === 'superadmin' || userRole === 'admin') return true;
     if (allowedModules === null) return false; // Still loading permissions
     return allowedModules.includes(item.name);

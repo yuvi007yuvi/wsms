@@ -164,3 +164,38 @@ export const installTools = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ error: 'Failed to install tools' });
   }
 };
+
+export const diagnoseWeighbridge = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { runDiagnostic, getWeighbridgeState } = require('../services/weighbridge.service');
+    
+    const state = getWeighbridgeState();
+    const result = await runDiagnostic();
+
+    // Also include port info from health check
+    let ports: any[] = [];
+    try {
+      const portList = await SerialPort.list();
+      ports = portList.map((p: any) => ({ path: p.path, manufacturer: p.manufacturer }));
+    } catch (e) {}
+
+    res.json({
+      ...result,
+      ports,
+      connectionState: {
+        isConnected: state.isConnected,
+        lastWeight: state.lastWeight,
+        lastStatus: state.lastStatus,
+        portPath: state.portPath,
+      }
+    });
+  } catch (error: any) {
+    console.error('Diagnose weighbridge error:', error);
+    res.status(500).json({
+      dataReceived: false,
+      message: `Diagnostic failed: ${error.message}`,
+      samples: [],
+      parsedWeights: [],
+    });
+  }
+};

@@ -157,6 +157,26 @@ const resources = {
       "Weighbridge Connected": "कांटा जुड़ा हुआ है",
       "Weighbridge Disconnected": "कांटा नहीं जुड़ा है",
       
+      // Diagnostics
+      "Diagnostics": "डायग्नोस्टिक्स",
+      "Weighbridge Diagnostics": "वेइब्रिज डायग्नोस्टिक्स",
+      "Test hardware and software connectivity to identify issues": "समस्याओं की पहचान के लिए हार्डवेयर और सॉफ्टवेयर कनेक्टिविटी का परीक्षण करें",
+      "Run Diagnostic": "डायग्नोस्टिक चलाएं",
+      "Running...": "चल रहा है...",
+      "Backend Server": "बैकएंड सर्वर",
+      "Local Database": "लोकल डेटाबेस",
+      "Cloud Database": "क्लाउड डेटाबेस",
+      "COM Port Detection": "COM पोर्ट डिटेक्शन",
+      "Hardware Data Stream": "हार्डवेयर डेटा स्ट्रीम",
+      "WebSocket Relay": "वेबसॉकेट रिले",
+      "Diagnostic Steps": "डायग्नोस्टिक चरण",
+      "All Systems Operational": "सभी सिस्टम चालू हैं",
+      "Hardware Issue Detected": "हार्डवेयर समस्या पाई गई",
+      "Software Issue Detected": "सॉफ्टवेयर समस्या पाई गई",
+      "Raw Data from Weighbridge": "वेइब्रिज से कच्चा डेटा",
+      "Troubleshooting Guide": "समस्या निवारण गाइड",
+      "Software Fix Required": "सॉफ्टवेयर सुधार आवश्यक",
+      
       // Dashboard
       "Overview": "अवलोकन",
       "Live operational metrics and weighment statistics.": "लाइव परिचालन मेट्रिक्स और वजन के आंकड़े।",
