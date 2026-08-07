@@ -16,6 +16,7 @@ export default function Superadmin() {
   const [projects, setProjects] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
   const [expiry, setExpiry] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -23,6 +24,8 @@ export default function Superadmin() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
+  
+  const [stats, setStats] = useState({ projects: 0, vehicles: 0, slips: 0 });
   
   const { toast } = useToast();
 
@@ -44,9 +47,19 @@ export default function Superadmin() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/superadmin/stats');
+      setStats(res.data);
+    } catch (error) {
+      console.error('Failed to fetch stats', error);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
     fetchUsers();
+    fetchStats();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -55,18 +68,21 @@ export default function Superadmin() {
       if (editingId) {
         await api.put(`/superadmin/projects/${editingId}`, { 
           name, 
+          address,
           subscriptionExpiry: expiry || null 
         });
         toast({ title: 'Project updated successfully' });
       } else {
         await api.post('/superadmin/projects', { 
           name, 
+          address,
           subscriptionExpiry: expiry || null 
         });
         toast({ title: 'Project created successfully' });
       }
       setOpen(false);
       setName('');
+      setAddress('');
       setExpiry('');
       setEditingId(null);
       fetchProjects();
@@ -78,6 +94,7 @@ export default function Superadmin() {
   const openAdd = () => {
     setEditingId(null);
     setName('');
+    setAddress('');
     setExpiry('');
     setOpen(true);
   };
@@ -85,6 +102,7 @@ export default function Superadmin() {
   const openEdit = (project: any) => {
     setEditingId(project.id);
     setName(project.name);
+    setAddress(project.address || '');
     if (project.subscriptionExpiry) {
       // Convert to local datetime-local string format
       const date = new Date(project.subscriptionExpiry);
@@ -177,6 +195,10 @@ export default function Superadmin() {
                 <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Acme Corp" />
               </div>
               <div className="space-y-2">
+                <Label>Address</Label>
+                <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Project Address" />
+              </div>
+              <div className="space-y-2">
                 <Label>Subscription Expiry</Label>
                 <Input type="datetime-local" value={expiry} onChange={e => setExpiry(e.target.value)} />
               </div>
@@ -184,6 +206,33 @@ export default function Superadmin() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.projects}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.vehicles}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Slips</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.slips}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

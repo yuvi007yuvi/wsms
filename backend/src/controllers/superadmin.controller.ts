@@ -8,6 +8,19 @@ try {
 const pg = PgClient ? new PgClient() : null;
 
 export const superadminController = {
+  getStats: async (req: Request, res: Response) => {
+    try {
+      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      const projectsCount = await pg.project.count();
+      const vehiclesCount = await pg.vehicle.count();
+      const slipsCount = await pg.weighmentSlip.count();
+      res.json({ projects: projectsCount, vehicles: vehiclesCount, slips: slipsCount });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  },
+
   getAllProjects: async (req: Request, res: Response) => {
     try {
       if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
@@ -34,10 +47,11 @@ export const superadminController = {
     try {
       if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       
-      const { name, subscriptionExpiry, isActive } = req.body;
+      const { name, subscriptionExpiry, isActive, address } = req.body;
       const project = await pg.project.create({
         data: {
           name,
+          address,
           subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null,
           isActive: isActive !== undefined ? isActive : true
         }
@@ -53,11 +67,12 @@ export const superadminController = {
     try {
       if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       
-      const { name, subscriptionExpiry, isActive, disableReason } = req.body;
+      const { name, subscriptionExpiry, isActive, disableReason, address } = req.body;
       const project = await pg.project.update({
         where: { id: req.params.id },
         data: {
           name,
+          address,
           subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null,
           isActive,
           disableReason: isActive === false ? disableReason : null

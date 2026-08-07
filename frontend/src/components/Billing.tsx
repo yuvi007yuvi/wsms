@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Plus, Printer } from 'lucide-react';
+import { Trash2, Plus, Printer, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,7 +47,7 @@ export default function Billing() {
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState('INV-001');
+  const [invoiceNumber, setInvoiceNumber] = useState('WT360-GEN-001');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   
   const [items, setItems] = useState([{ id: 1, description: '', quantity: 1, price: 0 }]);
@@ -107,6 +107,16 @@ export default function Billing() {
     }
 
     setItems([{ id: Date.now(), description: desc, quantity: 1, price }]);
+  };
+
+  const generateInvoiceNumber = () => {
+    const prefix = 'WT360';
+    // Get up to 3 uppercase letters from client name, omitting spaces, or 'GEN' if empty
+    const clientPart = clientName ? clientName.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() : 'GEN';
+    const date = new Date();
+    const datePart = `${date.getFullYear().toString().slice(-2)}${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    const randomPart = Math.floor(1000 + Math.random() * 9000); // 4 random digits
+    setInvoiceNumber(`${prefix}-${clientPart || 'GEN'}-${datePart}-${randomPart}`);
   };
 
   const handleItemChange = (id: number, field: string, value: string | number) => {
@@ -246,7 +256,13 @@ export default function Billing() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Invoice Number</Label>
-              <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} />
+              <div className="flex gap-2">
+                <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="font-mono text-blue-700 font-bold" />
+                <Button variant="outline" size="icon" onClick={generateInvoiceNumber} title="Auto-generate Smart Invoice Number" className="shrink-0 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-gray-500">Auto-generates based on software & client name.</p>
             </div>
             <div className="space-y-2">
               <Label>Date</Label>

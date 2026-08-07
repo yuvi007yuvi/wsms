@@ -19,6 +19,7 @@ const authorizeRole = (roles: string[]) => {
 router.use(authenticateToken);
 router.use(authorizeRole(['superadmin']));
 
+router.get('/stats', superadminController.getStats);
 router.get('/projects', superadminController.getAllProjects);
 router.post('/projects', superadminController.createProject);
 router.put('/projects/:id', superadminController.updateProject);
