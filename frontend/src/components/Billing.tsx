@@ -35,6 +35,23 @@ const numberToWords = (num: number): string => {
 };
 
 const numberToHindiWords = (num: number): string => {
+  const hindiNumbers = ["", "एक", "दो", "तीन", "चार", "पांच", "छह", "सात", "आठ", "नौ", "दस", "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस", "बीस", "इक्कीस", "बाईस", "तेईस", "चौबीस", "पच्चीस", "छब्बीस", "सत्ताईस", "अट्ठाईस", "उनतीस", "तीस", "इकतीस", "बत्तीस", "तैंतीस", "चौंतीस", "पैंतीस", "छत्तीस", "सैंतीस", "अड़तीस", "उनतालीस", "चालीस", "इकतालीस", "बयालीस", "तैंतालीस", "चवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तालीस", "उनचास", "पचास", "इक्यावन", "बावन", "तिरेपन", "चौवन", "पचपन", "छप्पन", "सत्तावन", "अट्ठावन", "उनसठ", "साठ", "इकसठ", "बासठ", "तिरसठ", "चौंसठ", "पैंसठ", "छियासठ", "सड़सठ", "अड़सठ", "उनहत्तर", "सत्तर", "इकहत्तर", "बहत्तर", "तिहत्तर", "चौहत्तर", "पचहत्तर", "छिहत्तर", "सतहत्तर", "अठहत्तर", "उनासी", "अस्सी", "इक्यासी", "बयासी", "तिरासी", "चौरासी", "पचासी", "छियासी", "सतासी", "अट्ठासी", "नवासी", "नब्बे", "इक्यानवे", "बानवे", "तिरानवे", "चौरानवे", "पचानवे", "छियानवे", "सत्तानवे", "अट्ठानवे", "निन्यानवे"];
+  
+  const numStr = Math.floor(num).toString();
+  if (numStr.length > 9) return 'Amount too large';
+  
+  const n = ('000000000' + numStr).slice(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return '';
+  let str = '';
+  str += (Number(n[1]) != 0) ? hindiNumbers[Number(n[1])] + ' करोड़ ' : '';
+  str += (Number(n[2]) != 0) ? hindiNumbers[Number(n[2])] + ' लाख ' : '';
+  str += (Number(n[3]) != 0) ? hindiNumbers[Number(n[3])] + ' हज़ार ' : '';
+  str += (Number(n[4]) != 0) ? hindiNumbers[Number(n[4])] + ' सौ ' : '';
+  str += (Number(n[5]) != 0) ? hindiNumbers[Number(n[5])] : '';
+  
+  return str.trim() ? str.trim() + ' रुपये मात्र' : 'शून्य रुपये मात्र';
+};
+
 export default function Billing() {
   const navigate = useNavigate();
   
@@ -83,6 +100,7 @@ export default function Billing() {
     const p = projects.find(proj => proj.id === val);
     if (p) {
       setClientName(p.name);
+      setClientAddress(p.address || '');
     }
   };
 
@@ -387,8 +405,8 @@ export default function Billing() {
       <div className="bg-white text-black print-only p-4 font-sans">
         <div className="border border-black flex flex-col" style={{ minHeight: '1000px' }}>
           {/* Header */}
-          <div className="text-center font-bold text-lg border-b border-black py-1 tracking-wide uppercase">
-            Tax Invoice
+          <div className="text-center font-bold text-lg border-b border-black py-1.5 tracking-wider uppercase bg-sky-600 text-white">
+            INVOICE
           </div>
           
           {/* Company & Invoice Details */}
@@ -439,13 +457,13 @@ export default function Billing() {
 
             <table className="w-full text-sm border-collapse relative z-10">
               <thead>
-                <tr className="border-b border-black bg-gray-50/50">
-                  <th className="p-1 w-12 font-bold text-center">Sl<br/>No.</th>
-                  <th className="p-1 font-bold text-center">Description of Goods</th>
-                  <th className="p-1 w-24 font-bold text-center">Quantity</th>
-                  <th className="p-1 w-28 font-bold text-center">Rate</th>
-                  <th className="p-1 w-16 font-bold text-center">per</th>
-                  <th className="p-1 w-32 font-bold text-center">Amount</th>
+                <tr className="border-b border-black bg-sky-100 text-sky-950">
+                  <th className="p-1.5 w-12 font-bold text-center">Sl<br/>No.</th>
+                  <th className="p-1.5 font-bold text-center">Description of Goods</th>
+                  <th className="p-1.5 w-24 font-bold text-center">Quantity</th>
+                  <th className="p-1.5 w-28 font-bold text-center">Rate</th>
+                  <th className="p-1.5 w-16 font-bold text-center">per</th>
+                  <th className="p-1.5 w-32 font-bold text-center">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,18 +489,22 @@ export default function Billing() {
               </tbody>
               <tfoot>
                 {taxRate > 0 && (
-                  <tr className="border-t border-black bg-gray-50/50">
-                    <td className="p-1"></td>
-                    <td className="p-1 text-right font-bold italic">Tax ({taxRate}%)</td>
-                    <td className="p-1"></td>
-                    <td className="p-1"></td>
-                    <td className="p-1"></td>
-                    <td className="p-1 text-right font-bold">{formatIndianNumber(tax)}</td>
+                  <tr className="border-t border-black bg-sky-50 text-sky-950">
+                    <td className="p-1.5"></td>
+                    <td className="p-1.5 text-right font-bold italic">Tax ({taxRate}%)</td>
+                    <td className="p-1.5"></td>
+                    <td className="p-1.5"></td>
+                    <td className="p-1.5"></td>
+                    <td className="p-1.5 text-right font-bold">{formatIndianNumber(tax)}</td>
                   </tr>
                 )}
-                <tr className="border-t border-black">
-                  <td className="p-1 text-right font-bold" colSpan={5}>Total</td>
-                  <td className="p-1 text-right font-bold text-base">₹ {formatIndianNumber(total)}</td>
+                <tr className="border-t border-black bg-sky-100 text-sky-950">
+                  <td className="p-1.5"></td>
+                  <td className="p-1.5 text-right font-bold uppercase tracking-wide text-xs pt-2">Total</td>
+                  <td className="p-1.5 text-center font-bold">{items.reduce((acc, item) => acc + item.quantity, 0)}</td>
+                  <td className="p-1.5"></td>
+                  <td className="p-1.5"></td>
+                  <td className="p-1.5 text-right font-bold text-lg">{formatIndianNumber(total)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -490,9 +512,10 @@ export default function Billing() {
           
           {/* Amount in words & Bank Details */}
           <div className="border-t border-black p-2 flex">
-            <div className="w-1/2">
+            <div className="w-1/2 pr-2">
               <span className="text-xs text-gray-700">Amount Chargeable (in words)</span>
               <div className="font-bold mt-1">INR {numberToWords(total)}</div>
+              <div className="font-bold mt-1 text-sm text-gray-800">{numberToHindiWords(total)}</div>
             </div>
             <div className="w-1/2 text-sm border-l border-black -my-2 py-2 px-2 -mr-2">
               <span className="text-xs text-gray-700 font-bold underline mb-1 block">Company's Bank & UPI Details</span>
@@ -515,12 +538,16 @@ export default function Billing() {
               <div className="font-bold text-sm z-10 bg-white/80 px-1">for {settings.companyName !== 'Default Company Ltd' && settings.companyName ? settings.companyName : 'WeighT360Pro Solutions'}</div>
               
               {/* CSS Seal/Stamp */}
-              <div className="absolute right-12 top-4 opacity-50 transform -rotate-[15deg] pointer-events-none">
-                <div className="w-24 h-24 rounded-full border-4 border-blue-800 flex items-center justify-center relative">
-                  <div className="w-20 h-20 rounded-full border border-blue-800 flex items-center justify-center flex-col text-blue-800 font-bold uppercase text-center leading-none">
-                    <span className="text-[10px] tracking-widest block -mb-1 mt-1">Official</span>
-                    <span className="text-sm border-t-2 border-b-2 border-blue-800 w-[110%] text-center py-1 my-[6px]">SEAL</span>
-                    <span className="text-[8px] tracking-wider block -mt-1">{new Date().getFullYear()}</span>
+              <div className="absolute right-12 top-2 opacity-80 transform -rotate-[15deg] pointer-events-none mix-blend-multiply">
+                <div className="w-28 h-28 rounded-full border-[3px] border-sky-600 p-1 flex items-center justify-center relative">
+                  <div className="w-full h-full rounded-full border-[1.5px] border-sky-600 flex items-center justify-center flex-col text-sky-700 font-bold uppercase text-center overflow-hidden">
+                    <span className="text-[9px] tracking-[0.2em] mb-1">Official Seal</span>
+                    <div className="border-t-[1.5px] border-b-[1.5px] border-sky-600 w-[120%] py-1.5 flex items-center justify-center">
+                      <span className="text-[10px] leading-[1.1] line-clamp-2 px-4 whitespace-normal" style={{ wordBreak: 'break-word' }}>
+                        {settings.companyName && settings.companyName !== 'Default Company Ltd' ? settings.companyName : 'WeighT360Pro'}
+                      </span>
+                    </div>
+                    <span className="text-[8px] tracking-widest mt-1">{new Date().getFullYear()}</span>
                   </div>
                 </div>
               </div>
