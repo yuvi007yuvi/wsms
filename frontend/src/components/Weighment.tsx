@@ -307,26 +307,28 @@ export default function Weighment() {
           </div>
           
           {showManualWeight && (
-            <div className="space-y-1 col-span-2">
-              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
-              <Input 
-                type="number"
-                placeholder={t("Enter manual gross weight...")} 
-                value={liveWeight || ''} 
-                onChange={(e) => _setLiveWeight(parseInt(e.target.value) || 0)} 
-              />
-            </div>
-          )}
+            <>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
+                <Input 
+                  type="number"
+                  placeholder={t("Enter manual gross weight...")} 
+                  value={liveWeight || ''} 
+                  onChange={(e) => _setLiveWeight(parseInt(e.target.value) || 0)} 
+                />
+              </div>
 
-          <div className="space-y-1 col-span-2">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Tare Weight (KG)')}</Label>
-            <Input 
-              type="number"
-              placeholder={t("Enter manual tare weight (overrides vehicle default)...")} 
-              value={manualTareWeight} 
-              onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
-            />
-          </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Tare Weight (KG)')}</Label>
+                <Input 
+                  type="number"
+                  placeholder={t("Enter manual tare weight (overrides vehicle default)...")} 
+                  value={manualTareWeight} 
+                  onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-1 col-span-2">
             <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Remarks')}</Label>
