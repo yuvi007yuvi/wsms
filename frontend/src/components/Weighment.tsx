@@ -198,7 +198,7 @@ export default function Weighment() {
       
       setTimeout(() => {
         window.print();
-      }, 500);
+      }, 50);
 
       // Reset form
       setVehicleId('');
