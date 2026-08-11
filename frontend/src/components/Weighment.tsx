@@ -68,16 +68,19 @@ export default function Weighment() {
     const fetchMasterData = async () => {
       try {
         const [vehRes, matRes, srcRes, destRes, settingsRes] = await Promise.all([
-          api.get('/master/vehicles'),
-          api.get('/master/materials'),
-          api.get('/master/sources'),
-          api.get('/master/destinations'),
+          api.get('/master/vehicles', { params: { limit: 1000 } }),
+          api.get('/master/materials', { params: { limit: 1000 } }),
+          api.get('/master/sources', { params: { limit: 1000 } }),
+          api.get('/master/destinations', { params: { limit: 1000 } }),
           api.get('/settings'),
         ]);
-        const dests = destRes.data;
-        setVehicles(vehRes.data);
-        setMaterials(matRes.data);
-        setSources(srcRes.data);
+        
+        const extractData = (res: any) => res.data?.data ? res.data.data : res.data;
+        
+        const dests = extractData(destRes);
+        setVehicles(extractData(vehRes));
+        setMaterials(extractData(matRes));
+        setSources(extractData(srcRes));
         setDestinations(dests);
         
         if (settingsRes.data && settingsRes.data.mockMode) {
