@@ -18,7 +18,7 @@ export default function Destinations() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
   const { toast } = useToast();
 
