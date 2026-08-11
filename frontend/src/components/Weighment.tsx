@@ -89,7 +89,10 @@ export default function Weighment() {
     socket.on('disconnect', () => _setWeightStatus('Disconnected'));
     
     socket.on('weight-update', (data: { weight: number, status: string }) => {
-      _setLiveWeight(data.weight);
+      const isManual = localStorage.getItem('showManualWeight') === 'true';
+      if (!isManual) {
+        _setLiveWeight(data.weight);
+      }
       _setWeightStatus(data.status as any);
     });
 
@@ -271,7 +274,7 @@ export default function Weighment() {
             </Select>
           </div>
           
-          {showManualWeight && weightStatus === 'Disconnected' && (
+          {showManualWeight && (
             <div className="space-y-1 col-span-2">
               <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
               <Input 
@@ -304,7 +307,6 @@ export default function Weighment() {
               <div className="flex items-center gap-3">
                 <span className="text-slate-600 font-bold uppercase tracking-widest text-xs">{t('Live Weight Indicator')}</span>
 
-                {weightStatus === 'Disconnected' && (
                   <div className="flex items-center space-x-2 ml-4" title={t('Enable Manual Entry')}>
                     <input 
                       type="checkbox" 
@@ -314,7 +316,6 @@ export default function Weighment() {
                       onChange={(e) => setShowManualWeight(e.target.checked)}
                     />
                   </div>
-                )}
               </div>
               <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
                 <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-green-900/50'}`}></div>{t('Conn')}</span>

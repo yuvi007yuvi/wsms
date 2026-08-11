@@ -83,7 +83,7 @@ export default function DashboardLayout() {
   }, [userRole]);
   
   const filteredNavItems = navItems.filter(item => {
-    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return userRole === 'superadmin' || userRole === 'admin';
+    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return userRole === 'superadmin';
     if (userRole === 'superadmin' || userRole === 'admin') return true;
     if (allowedModules === null) return false; // Still loading permissions
     return allowedModules.includes(item.name);
