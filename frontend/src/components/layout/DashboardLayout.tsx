@@ -196,6 +196,7 @@ export default function DashboardLayout() {
                <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
                  YUVRAJ SINGH TOMAR
                </span>
+               <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.0</span>
             </div>
           )}
         </div>
