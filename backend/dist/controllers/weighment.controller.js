@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getWeighmentSlips = exports.createWeighmentSlip = void 0;
+exports.deleteWeighmentSlip = exports.getWeighmentSlips = exports.createWeighmentSlip = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 // Helper to generate unique slip number
 const generateSlipNumber = async () => {
@@ -17,7 +17,8 @@ const generateSlipNumber = async () => {
         }
     });
     const seq = String(count + 1).padStart(6, '0');
-    return `WS-${dateStr}-${seq}`;
+    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `WS-${dateStr}-${seq}-${randomStr}`;
 };
 const createWeighmentSlip = async (req, res) => {
     try {
@@ -31,7 +32,7 @@ const createWeighmentSlip = async (req, res) => {
             res.status(400).json({ error: 'Vehicle not found' });
             return;
         }
-        const tareWeight = vehicle.tareWeight || 0;
+        const tareWeight = vehicle.tareWeight || vehicle.vehicleType?.tareWeight || 0;
         const netWeight = grossWeight - tareWeight;
         if (netWeight < 0) {
             res.status(400).json({ error: 'Gross weight cannot be less than tare weight' });
@@ -51,7 +52,9 @@ const createWeighmentSlip = async (req, res) => {
                 netWeight,
                 // @ts-ignore
                 operatorId: req.user.id, // from auth middleware
-                remarks
+                remarks,
+                // @ts-ignore
+                projectId: req.user.projectId || null
             },
             include: {
                 vehicle: true,
@@ -88,3 +91,21 @@ const getWeighmentSlips = async (req, res) => {
     }
 };
 exports.getWeighmentSlips = getWeighmentSlips;
+const deleteWeighmentSlip = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // @ts-ignore
+        if (req.user?.role !== 'admin') {
+            res.status(403).json({ error: 'Only admins can delete slips' });
+            return;
+        }
+        await prisma_1.default.weighmentSlip.delete({
+            where: { id: id }
+        });
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to delete slip' });
+    }
+};
+exports.deleteWeighmentSlip = deleteWeighmentSlip;

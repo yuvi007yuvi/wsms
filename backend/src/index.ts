@@ -29,7 +29,6 @@ import userRoutes from './routes/user.routes';
 import settingRoutes from './routes/setting.routes';
 import systemRoutes from './routes/system.routes';
 import superadminRoutes from './routes/superadmin.routes';
-import { startSyncService } from './services/sync.service';
 
 // Routes will be added here
 app.use('/api/auth', authRoutes);
@@ -60,16 +59,8 @@ const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    startSyncService();
   });
 }
-
-// Try to load cloud pg client
-let PgClient: any = null;
-try {
-  PgClient = require('@prisma/client-postgres').PrismaClient;
-} catch (e) {}
-const pg = PgClient ? new PgClient() : null;
 
 // Scheduled cron job to check subscription expirations every hour
 cron.schedule('0 * * * *', async () => {
@@ -89,23 +80,12 @@ cron.schedule('0 * * * *', async () => {
     if (expiredProjects.length > 0) {
       console.log(`Found ${expiredProjects.length} expired projects. Disabling them...`);
       for (const project of expiredProjects) {
-        // Disable locally
+        // Disable locally and in cloud (since it's online now)
         await prisma.project.update({
           where: { id: project.id },
           data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
         });
         
-        // Disable in cloud if available
-        if (pg) {
-          try {
-            await pg.project.update({
-              where: { id: project.id },
-              data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
-            });
-          } catch(e) {
-            console.error('Failed to disable project in cloud DB', e);
-          }
-        }
         console.log(`Disabled project: ${project.name}`);
       }
     }

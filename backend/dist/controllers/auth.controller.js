@@ -26,17 +26,40 @@ const login = async (req, res) => {
             });
             console.log('Created default admin user (admin / admin123)');
         }
-        const user = await prisma_1.default.user.findUnique({ where: { username } });
+        const user = await prisma_1.default.user.findUnique({
+            where: { username },
+            include: { project: true }
+        });
         if (!user || !user.isActive) {
             res.status(401).json({ error: 'Invalid credentials or inactive account' });
             return;
+        }
+        if (user.project) {
+            const now = new Date();
+            if (user.project.subscriptionExpiry && now > new Date(user.project.subscriptionExpiry)) {
+                if (user.project.isActive) {
+                    // Auto-disable if expired
+                    await prisma_1.default.project.update({
+                        where: { id: user.project.id },
+                        data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
+                    });
+                }
+                res.status(403).json({ success: false, message: 'Subscription Expired' });
+                return;
+            }
+            if (!user.project.isActive) {
+                // Just general disabled (e.g. by superadmin, not naturally expired just now)
+                const reason = user.project.disableReason || 'Subscription Expired';
+                res.status(403).json({ success: false, message: reason });
+                return;
+            }
         }
         const isValidPassword = await bcrypt_1.default.compare(password, user.password);
         if (!isValidPassword) {
             res.status(401).json({ error: 'Invalid credentials' });
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
+        const token = jsonwebtoken_1.default.sign({ id: user.id, username: user.username, role: user.role, projectId: user.projectId }, JWT_SECRET, { expiresIn: '12h' });
         // Audit log
         await prisma_1.default.auditLog.create({
             data: {
@@ -44,7 +67,7 @@ const login = async (req, res) => {
                 userId: user.id,
             }
         });
-        res.json({ token, user: { id: user.id, username: user.username, role: user.role, fullName: user.fullName, designation: user.designation } });
+        res.json({ token, user: { id: user.id, username: user.username, role: user.role, fullName: user.fullName, designation: user.designation, projectName: user.project?.name, subscriptionExpiry: user.project?.subscriptionExpiry } });
     }
     catch (error) {
         console.error('Login error:', error);

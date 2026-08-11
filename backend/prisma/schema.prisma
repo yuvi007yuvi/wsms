@@ -1,6 +1,7 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -148,15 +149,6 @@ model RolePermission {
   updatedAt      DateTime @updatedAt
 }
 
-model SyncQueue {
-  id        String   @id @default(uuid())
-  action    String // 'CREATE', 'UPDATE', 'DELETE'
-  tableName String // 'Vehicle', 'WeighmentSlip', etc.
-  recordId  String // The ID of the affected record
-  payload   String? // JSON representation of the data
-  createdAt DateTime @default(now())
-}
-
 model Project {
   id                 String          @id @default(uuid())
   name               String          @unique
@@ -169,4 +161,38 @@ model Project {
   users              User[]
   vehicles           Vehicle[]
   weighmentSlips     WeighmentSlip[]
+  invoices           Invoice[]
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  date          DateTime      @default(now())
+  
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
+  clientName    String
+  clientAddress String?
+  clientPhone   String?
+  
+  subtotal      Float
+  taxRate       Float
+  total         Float
+
+  items         InvoiceItem[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  description String
+  quantity    Int
+  price       Float
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSettings = exports.getSettings = void 0;
+exports.upsertRolePermission = exports.getRolePermissions = exports.updateSettings = exports.getSettings = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getSettings = async (req, res) => {
     try {
@@ -27,7 +27,7 @@ exports.getSettings = getSettings;
 const updateSettings = async (req, res) => {
     try {
         const { id } = req.params;
-        const { companyName, address, logoUrl, printerConfig, slipFormat, theme } = req.body;
+        const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode } = req.body;
         const setting = await prisma_1.default.setting.update({
             where: { id: id },
             data: {
@@ -36,7 +36,8 @@ const updateSettings = async (req, res) => {
                 logoUrl,
                 printerConfig,
                 slipFormat,
-                theme
+                theme,
+                mockMode: mockMode === true
             }
         });
         res.json(setting);
@@ -46,3 +47,29 @@ const updateSettings = async (req, res) => {
     }
 };
 exports.updateSettings = updateSettings;
+const getRolePermissions = async (req, res) => {
+    try {
+        const permissions = await prisma_1.default.rolePermission.findMany();
+        res.json(permissions);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to fetch role permissions' });
+    }
+};
+exports.getRolePermissions = getRolePermissions;
+const upsertRolePermission = async (req, res) => {
+    try {
+        const { role, allowedModules } = req.body;
+        // allowedModules should be a stringified JSON array
+        const permission = await prisma_1.default.rolePermission.upsert({
+            where: { role },
+            update: { allowedModules },
+            create: { role, allowedModules }
+        });
+        res.json(permission);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to update role permissions' });
+    }
+};
+exports.upsertRolePermission = upsertRolePermission;

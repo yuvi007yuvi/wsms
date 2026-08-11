@@ -1,19 +1,15 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
-let PgClient: any = null;
-try {
-  PgClient = require('@prisma/client-postgres').PrismaClient;
-} catch (e) {}
-const pg = PgClient ? new PgClient() : null;
+
 
 export const superadminController = {
   getStats: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
-      const projectsCount = await pg.project.count();
-      const vehiclesCount = await pg.vehicle.count();
-      const slipsCount = await pg.weighmentSlip.count();
+      
+      const projectsCount = await prisma.project.count();
+      const vehiclesCount = await prisma.vehicle.count();
+      const slipsCount = await prisma.weighmentSlip.count();
       res.json({ projects: projectsCount, vehicles: vehiclesCount, slips: slipsCount });
     } catch (error) {
       console.error(error);
@@ -23,9 +19,9 @@ export const superadminController = {
 
   getAllProjects: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       
-      const projects = await pg.project.findMany({
+      
+      const projects = await prisma.project.findMany({
         include: {
           _count: {
             select: { vehicles: true, weighmentSlips: true }
@@ -45,10 +41,10 @@ export const superadminController = {
 
   createProject: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      
       
       const { name, subscriptionExpiry, isActive, address } = req.body;
-      const project = await pg.project.create({
+      const project = await prisma.project.create({
         data: {
           name,
           address,
@@ -65,17 +61,17 @@ export const superadminController = {
 
   updateProject: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      
       
       const { name, subscriptionExpiry, isActive, disableReason, address } = req.body;
-      const project = await pg.project.update({
-        where: { id: req.params.id },
+      const project = await prisma.project.update({
+        where: { id: req.params.id as string },
         data: {
           name,
-          address,
-          subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry) : null,
+          address: address as string | undefined,
+          subscriptionExpiry: subscriptionExpiry ? new Date(subscriptionExpiry as string) : null,
           isActive,
-          disableReason: isActive === false ? disableReason : null
+          disableReason: isActive === false ? (disableReason as string) : null
         }
       });
       res.json(project);
@@ -87,11 +83,10 @@ export const superadminController = {
 
   createProjectAdmin: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       const { projectId } = req.params;
       const { username, password, fullName, designation } = req.body;
 
-      const existing = await pg.user.findUnique({ where: { username } });
+      const existing = await prisma.user.findUnique({ where: { username } });
       if (existing) {
         return res.status(400).json({ error: 'Username already exists globally' });
       }
@@ -99,14 +94,14 @@ export const superadminController = {
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await pg.user.create({
+      const user = await prisma.user.create({
         data: {
           username,
           password: hashedPassword,
           fullName,
-          designation,
+          designation: designation as string | undefined,
           role: 'admin',
-          projectId
+          projectId: projectId as string
         }
       });
       
@@ -119,8 +114,8 @@ export const superadminController = {
 
   getUsers: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
-      const users = await pg.user.findMany({
+      
+      const users = await prisma.user.findMany({
         where: { role: { not: 'superadmin' } },
         select: { id: true, username: true, fullName: true, role: true, projectId: true },
         orderBy: { username: 'asc' }
@@ -134,13 +129,12 @@ export const superadminController = {
 
   assignUser: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       const { projectId } = req.params;
       const { userId } = req.body;
       
-      const user = await pg.user.update({
-        where: { id: userId },
-        data: { projectId }
+      const user = await prisma.user.update({
+        where: { id: userId as string },
+        data: { projectId: projectId as string }
       });
       res.json({ success: true, user });
     } catch (error) {
@@ -151,8 +145,8 @@ export const superadminController = {
 
   getInvoices: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
-      const invoices = await pg.invoice.findMany({
+      
+      const invoices = await prisma.invoice.findMany({
         include: { items: true, project: { select: { name: true } } },
         orderBy: { createdAt: 'desc' }
       });
@@ -165,10 +159,10 @@ export const superadminController = {
 
   createInvoice: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
+      
       const { invoiceNumber, date, projectId, clientName, clientAddress, clientPhone, subtotal, taxRate, total, items } = req.body;
 
-      const invoice = await pg.invoice.create({
+      const invoice = await prisma.invoice.create({
         data: {
           invoiceNumber,
           date: new Date(date),
@@ -198,16 +192,15 @@ export const superadminController = {
 
   deleteInvoice: async (req: Request, res: Response) => {
     try {
-      if (!pg) return res.status(500).json({ error: 'Cloud database not configured' });
       const { id } = req.params;
       
       // Need to delete items first since cascade delete might not be set up
-      await pg.invoiceItem.deleteMany({
-        where: { invoiceId: id }
+      await prisma.invoiceItem.deleteMany({
+        where: { invoiceId: id as string }
       });
       
-      await pg.invoice.delete({
-        where: { id }
+      await prisma.invoice.delete({
+        where: { id: id as string }
       });
       
       res.json({ success: true });

@@ -7,11 +7,9 @@ import util from 'util';
 const execPromise = util.promisify(exec);
 
 
-import { getSyncStatus } from '../services/sync.service';
-
 export const getSyncStatusInfo = async (req: any, res: Response): Promise<void> => {
   try {
-    const status = await getSyncStatus();
+    const status = { isOnline: true, lastSyncTime: new Date(), pendingCount: 0 };
     
     // Also include project subscription status so frontend updates its timer dynamically
     let subscriptionExpiry = null;
@@ -35,13 +33,7 @@ export const getSyncStatusInfo = async (req: any, res: Response): Promise<void> 
 
 export const forceSync = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Import dynamically to avoid circular dependencies if any
-    const { processSyncQueue, pullMasterData } = require('../services/sync.service');
-    // Do not await, let it run in background so frontend can poll
-    (async () => {
-      await pullMasterData();
-      await processSyncQueue();
-    })().catch(console.error);
+    // No-op for online-only mode
     res.json({ message: 'Sync triggered successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to trigger sync' });
@@ -60,12 +52,7 @@ export const getSystemHealth = async (req: Request, res: Response): Promise<void
       dbStatus = 'error';
     }
     
-    try {
-      const { isOnline } = require('../services/sync.service');
-      cloudDbStatus = isOnline ? 'connected' : 'error';
-    } catch (e) {
-      cloudDbStatus = 'error';
-    }
+    cloudDbStatus = dbStatus;
 
     // 2. Check Hardware (Serial Ports)
     let hardwareStatus = 'disconnected';

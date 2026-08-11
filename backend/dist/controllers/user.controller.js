@@ -3,12 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.createUser = exports.getUsers = void 0;
+exports.deleteUser = exports.updateUser = exports.createUser = exports.getUsers = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getUsers = async (req, res) => {
     try {
         const users = await prisma_1.default.user.findMany({
+            where: {
+                role: { not: 'superadmin' }
+            },
             select: {
                 id: true,
                 username: true,
@@ -30,6 +33,10 @@ exports.getUsers = getUsers;
 const createUser = async (req, res) => {
     try {
         const { username, password, role, fullName, designation } = req.body;
+        if (role === 'superadmin') {
+            res.status(403).json({ error: 'Cannot create superadmin from this endpoint' });
+            return;
+        }
         const existing = await prisma_1.default.user.findUnique({ where: { username } });
         if (existing) {
             res.status(400).json({ error: 'Username already exists' });
@@ -43,10 +50,11 @@ const createUser = async (req, res) => {
                 fullName,
                 designation,
                 role: role || 'operator'
-            },
-            select: { id: true, username: true, role: true, isActive: true, fullName: true, designation: true }
+            }
         });
-        res.status(201).json(user);
+        // Remove password before returning
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
     }
     catch (error) {
         console.error(error);
@@ -54,6 +62,47 @@ const createUser = async (req, res) => {
     }
 };
 exports.createUser = createUser;
+const updateUser = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { username, password, role, fullName, designation, projectId } = req.body;
+        const authUser = req.user;
+        const existing = await prisma_1.default.user.findUnique({ where: { id } });
+        if (!existing) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        if (existing.role === 'superadmin' && authUser?.role !== 'superadmin') {
+            res.status(403).json({ error: 'Cannot modify superadmin account' });
+            return;
+        }
+        let hashedPassword = existing.password;
+        if (password && password.trim() !== '') {
+            hashedPassword = await bcrypt_1.default.hash(password, 10);
+        }
+        const dataToUpdate = {
+            username,
+            password: hashedPassword,
+            fullName,
+            designation,
+            role
+        };
+        if (authUser?.role === 'superadmin' && projectId !== undefined) {
+            dataToUpdate.projectId = projectId || null;
+        }
+        const user = await prisma_1.default.user.update({
+            where: { id },
+            data: dataToUpdate
+        });
+        const { password: _, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(400).json({ error: 'Failed to update user' });
+    }
+};
+exports.updateUser = updateUser;
 const deleteUser = async (req, res) => {
     try {
         // Prevent deleting the main admin
@@ -61,6 +110,10 @@ const deleteUser = async (req, res) => {
         const user = await prisma_1.default.user.findUnique({ where: { id } });
         if (user?.username === 'admin') {
             res.status(400).json({ error: 'Cannot delete the primary admin account' });
+            return;
+        }
+        if (user?.role === 'superadmin') {
+            res.status(403).json({ error: 'Cannot delete superadmin accounts' });
             return;
         }
         await prisma_1.default.user.delete({

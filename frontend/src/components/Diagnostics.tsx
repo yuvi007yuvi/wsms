@@ -38,8 +38,7 @@ export default function Diagnostics() {
 
     const initialSteps: DiagnosticStep[] = [
       { id: 'backend', label: t('Backend Server'), status: 'pending' },
-      { id: 'database', label: t('Local Database'), status: 'pending' },
-      { id: 'cloud', label: t('Cloud Database'), status: 'pending' },
+      { id: 'database', label: t('Database'), status: 'pending' },
       { id: 'ports', label: t('COM Port Detection'), status: 'pending' },
       { id: 'hardware', label: t('Hardware Data Stream'), status: 'pending' },
       { id: 'socket', label: t('WebSocket Relay'), status: 'pending' },
@@ -66,14 +65,6 @@ export default function Diagnostics() {
           updateStep('database', { status: 'fail', message: healthRes.data.components.database.message || 'Disconnected' });
         }
 
-        // Step 3: Cloud Database
-        updateStep('cloud', { status: 'running' });
-        const cloudStatus = healthRes.data.components?.cloudDatabase?.status;
-        if (cloudStatus === 'connected') {
-          updateStep('cloud', { status: 'pass', message: healthRes.data.components.cloudDatabase.message });
-        } else {
-          updateStep('cloud', { status: 'warn', message: healthRes.data.components.cloudDatabase.message || 'Unreachable (offline mode)' });
-        }
 
         // Step 4: COM Port Detection
         updateStep('ports', { status: 'running' });
@@ -95,7 +86,6 @@ export default function Diagnostics() {
     } catch (err: any) {
       updateStep('backend', { status: 'fail', message: `Cannot reach backend: ${err.message}` });
       updateStep('database', { status: 'fail', message: 'Skipped' });
-      updateStep('cloud', { status: 'fail', message: 'Skipped' });
       updateStep('ports', { status: 'fail', message: 'Skipped' });
       updateStep('hardware', { status: 'fail', message: 'Skipped' });
       updateStep('socket', { status: 'fail', message: 'Skipped' });
