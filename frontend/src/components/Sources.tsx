@@ -15,6 +15,9 @@ export default function Sources() {
   const [sources, setSources] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -24,8 +27,16 @@ export default function Sources() {
   const fetchSources = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/master/sources');
-      setSources(res.data);
+      const res = await api.get('/master/sources', {
+        params: { page: currentPage, limit: pageSize }
+      });
+      if (res.data && res.data.data) {
+        setSources(res.data.data);
+        setTotalRecords(res.data.total);
+      } else {
+        setSources(res.data);
+        setTotalRecords(res.data.length);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -35,7 +46,7 @@ export default function Sources() {
 
   useEffect(() => {
     fetchSources();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +183,21 @@ export default function Sources() {
             </TableBody>
           </Table>
         </CardContent>
+        <div className="flex items-center justify-between p-2 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 rounded-b-lg">
+          <span>Showing {totalRecords > 0 ? ((currentPage - 1) * pageSize) + 1 : 0}-{Math.min(currentPage * pageSize, totalRecords)} of {totalRecords} records</span>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage <= 1}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" 
+              onClick={() => setCurrentPage(p => p + 1)} 
+              disabled={currentPage * pageSize >= totalRecords}>
+              Next
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );

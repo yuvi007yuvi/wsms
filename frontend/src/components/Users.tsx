@@ -15,6 +15,9 @@ export default function Users() {
   const [users, setUsers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   const { toast } = useToast();
 
   const [username, setUsername] = useState('');
@@ -31,8 +34,16 @@ export default function Users() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/users');
-      setUsers(res.data);
+      const res = await api.get('/users', {
+        params: { page: currentPage, limit: pageSize }
+      });
+      if (res.data && res.data.data) {
+        setUsers(res.data.data);
+        setTotalRecords(res.data.total);
+      } else {
+        setUsers(res.data);
+        setTotalRecords(res.data.length);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -51,6 +62,9 @@ export default function Users() {
 
   useEffect(() => {
     fetchUsers();
+  }, [currentPage, pageSize]);
+  
+  useEffect(() => {
     if (userRole === 'superadmin') {
       fetchProjects();
     }
@@ -263,10 +277,18 @@ export default function Users() {
         </div>
 
         <div className="flex items-center justify-between p-2 border-t border-slate-300 bg-slate-50 text-xs text-slate-500">
-          <span>Showing {users.length} records</span>
+          <span>Showing {totalRecords > 0 ? ((currentPage - 1) * pageSize) + 1 : 0}-{Math.min(currentPage * pageSize, totalRecords)} of {totalRecords} records</span>
           <div className="flex gap-1">
-            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" disabled>Previous</Button>
-            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" disabled>Next</Button>
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage <= 1}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-slate-300" 
+              onClick={() => setCurrentPage(p => p + 1)} 
+              disabled={currentPage * pageSize >= totalRecords}>
+              Next
+            </Button>
           </div>
         </div>
       </div>

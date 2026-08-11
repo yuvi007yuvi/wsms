@@ -20,9 +20,10 @@ export default function Reports() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  // Pagination
+  // Pagination & Server Data
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   const { toast } = useToast();
   const userRole = localStorage.getItem('role') || 'operator';
   const [loading, setLoading] = useState(true);
@@ -30,8 +31,23 @@ export default function Reports() {
   const fetchSlips = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/weighment');
-      setSlips(res.data);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      });
+      if (searchQuery) params.append('search', searchQuery);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+
+      const res = await api.get(`/weighment?${params.toString()}`);
+      if (res.data && res.data.data) {
+        setSlips(res.data.data);
+        setTotalRecords(res.data.total || 0);
+      } else if (Array.isArray(res.data)) {
+        // Fallback for older API without pagination
+        setSlips(res.data);
+        setTotalRecords(res.data.length);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -41,47 +57,14 @@ export default function Reports() {
 
   useEffect(() => {
     fetchSlips();
-  }, []);
+  }, [currentPage, pageSize, searchQuery, dateFrom, dateTo]);
 
-  // Filtered Data (search + date range)
-  const filteredSlips = useMemo(() => {
-    let results = slips;
-
-    // Date Range Filter
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      from.setHours(0, 0, 0, 0);
-      results = results.filter(s => new Date(s.date) >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      results = results.filter(s => new Date(s.date) <= to);
-    }
-
-    // Text Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      results = results.filter(s =>
-        s.slipNumber.toLowerCase().includes(q) ||
-        (s.vehicle?.vehicleNumber || '').toLowerCase().includes(q) ||
-        (s.material?.name || '').toLowerCase().includes(q) ||
-        (s.operator?.username || '').toLowerCase().includes(q) ||
-        (s.remarks || '').toLowerCase().includes(q)
-      );
-    }
-
-    return results;
-  }, [slips, searchQuery, dateFrom, dateTo]);
+  // Filtered Data is now provided directly by the backend (slips)
+  const paginatedSlips = slips;
 
   // Pagination Logic
-  const totalPages = Math.max(1, Math.ceil(filteredSlips.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedSlips = useMemo(() => {
-    const start = (safeCurrentPage - 1) * pageSize;
-    return filteredSlips.slice(start, start + pageSize);
-  }, [filteredSlips, safeCurrentPage, pageSize]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -90,10 +73,11 @@ export default function Reports() {
 
   // Summary Stats
   const summaryStats = useMemo(() => {
-    const totalNet = filteredSlips.reduce((sum, s) => sum + (s.netWeight || 0), 0);
-    const totalGross = filteredSlips.reduce((sum, s) => sum + (s.grossWeight || 0), 0);
-    return { totalNet, totalGross, count: filteredSlips.length };
-  }, [filteredSlips]);
+    const totalNet = paginatedSlips.reduce((sum, s) => sum + (s.netWeight || 0), 0);
+    const totalGross = paginatedSlips.reduce((sum, s) => sum + (s.grossWeight || 0), 0);
+    // Since we only have current page data, these stats are only for the current page
+    return { totalNet, totalGross, count: totalRecords };
+  }, [paginatedSlips, totalRecords]);
 
   const [syncState, setSyncState] = useState<{ isSyncing: boolean, initialCount: number, currentCount: number }>({ isSyncing: false, initialCount: 0, currentCount: 0 });
 
@@ -150,12 +134,21 @@ export default function Reports() {
     }
   };
 
-  const handleExportCSV = () => {
-    if (filteredSlips.length === 0) return;
-    const headers = ['Slip Number', 'Date', 'Vehicle', 'Material', 'Source', 'Destination', 'Operator', 'Gross Wt', 'Tare Wt', 'Net Wt', 'Remarks'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredSlips.map(s => [
+  const handleExportCSV = async () => {
+    if (totalRecords === 0) return;
+    try {
+      // Fetch all records for export (temporarily ignoring pagination, but respecting filters)
+      const params = new URLSearchParams({ page: '1', limit: '1000000' });
+      if (searchQuery) params.append('search', searchQuery);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      const res = await api.get(`/weighment?${params.toString()}`);
+      const exportSlips = res.data?.data || res.data || [];
+
+      const headers = ['Slip Number', 'Date', 'Vehicle', 'Material', 'Source', 'Destination', 'Operator', 'Gross Wt', 'Tare Wt', 'Net Wt', 'Remarks'];
+      const csvContent = [
+        headers.join(','),
+        ...exportSlips.map((s: any) => [
         s.slipNumber,
         new Date(s.date).toLocaleString().replace(',', ''),
         s.vehicle?.vehicleNumber || '',
@@ -179,6 +172,10 @@ export default function Reports() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Export Failed', variant: 'destructive' });
+    }
   };
 
   const handlePrint = (slip: any) => {
@@ -420,7 +417,7 @@ export default function Reports() {
           {/* Pagination Footer */}
           <div className="flex items-center justify-between p-2 border-t border-slate-300 bg-slate-50 text-xs text-slate-500">
             <div className="flex items-center gap-2">
-              <span>{t('Showing')} {filteredSlips.length > 0 ? ((safeCurrentPage - 1) * pageSize) + 1 : 0}-{Math.min(safeCurrentPage * pageSize, filteredSlips.length)} {t('of')} {filteredSlips.length} {t('records')}</span>
+              <span>{t('Showing')} {totalRecords > 0 ? ((safeCurrentPage - 1) * pageSize) + 1 : 0}-{Math.min(safeCurrentPage * pageSize, totalRecords)} {t('of')} {totalRecords} {t('records')}</span>
               <div className="h-4 border-l border-slate-200 mx-1" />
               <span className="text-slate-400">{t('Rows per page')}:</span>
               <Select value={String(pageSize)} onValueChange={(val) => setPageSize(Number(val))}>

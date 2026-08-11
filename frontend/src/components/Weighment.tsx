@@ -31,6 +31,7 @@ export default function Weighment() {
   const [destinationId, setDestinationId] = useState('');
   const [remarks, setRemarks] = useState('');
   const [driverName, setDriverName] = useState('');
+  const [manualTareWeight, setManualTareWeight] = useState<number | ''>('');
 
   // Mock State
   const [isMockMode, setIsMockMode] = useState(false);
@@ -44,6 +45,7 @@ export default function Weighment() {
 
   // Print State
   const [lastGeneratedSlip, setLastGeneratedSlip] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Derived State
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
@@ -57,7 +59,8 @@ export default function Weighment() {
     }
   }, [selectedVehicle]);
 
-  const tareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
+  const derivedTareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
+  const tareWeight = manualTareWeight !== '' ? Number(manualTareWeight) : derivedTareWeight;
   const netWeight = Math.max(0, liveWeight - tareWeight);
 
   // Fetch Master Data
@@ -173,6 +176,7 @@ export default function Weighment() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await api.post('/weighment', {
         vehicleId,
@@ -181,7 +185,8 @@ export default function Weighment() {
         destinationId,
         grossWeight: liveWeight,
         remarks,
-        driverName
+        driverName,
+        manualTareWeight: manualTareWeight !== '' ? manualTareWeight : undefined
       });
       
       setLastGeneratedSlip(res.data);
@@ -205,6 +210,7 @@ export default function Weighment() {
       
       setRemarks('');
       setDriverName('');
+      setManualTareWeight('');
       
     } catch (error) {
       toast({
@@ -212,6 +218,8 @@ export default function Weighment() {
         description: 'Failed to save to database.',
         variant: 'destructive'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -308,6 +316,16 @@ export default function Weighment() {
           )}
 
           <div className="space-y-1 col-span-2">
+            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Tare Weight (KG)')}</Label>
+            <Input 
+              type="number"
+              placeholder={t("Enter manual tare weight (overrides vehicle default)...")} 
+              value={manualTareWeight} 
+              onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
+            />
+          </div>
+
+          <div className="space-y-1 col-span-2">
             <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Remarks')}</Label>
             <Input 
               placeholder={t("Optional remarks...")} 
@@ -380,8 +398,13 @@ export default function Weighment() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-4 border-t pt-4">
-          <Button size="lg" className="col-span-2 h-12 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" onClick={generateSlip}>
-            <Save className="mr-2 h-4 w-4" /> {t('Generate Slip')}
+          <Button 
+            size="lg" 
+            className="col-span-2 h-12 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
+            onClick={generateSlip}
+            disabled={isSubmitting}
+          >
+            <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
           </Button>
           <Button size="lg" variant="outline" className="h-12 rounded-sm text-sm uppercase tracking-widest font-bold border-slate-300" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> {t('Print Last')}
@@ -392,6 +415,7 @@ export default function Weighment() {
           const defaultDest = destinations.find((d: any) => d.isDefault);
           setDestinationId(defaultDest ? defaultDest.id : '');
           setRemarks('');
+          setManualTareWeight('');
         }}>
           <RefreshCw className="mr-2 h-4 w-4" /> {t('Reset Form')}
         </Button>

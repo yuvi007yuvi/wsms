@@ -6,11 +6,21 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
   return {
     getAll: async (req: Request, res: Response) => {
       try {
-        // @ts-ignore
-        const data = await prisma[modelName].findMany({
-          orderBy: { createdAt: 'desc' }
-        });
-        res.json(data);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+          // @ts-ignore
+          prisma[modelName].findMany({
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' }
+          }),
+          // @ts-ignore
+          prisma[modelName].count()
+        ]);
+        res.json({ data, total });
       } catch (error) {
         res.status(500).json({ error: `Failed to fetch ${modelName}s` });
       }
@@ -106,11 +116,20 @@ export const vehicleController = {
   ...createCrudHandlers('vehicle'),
   getAll: async (req: Request, res: Response) => {
     try {
-      const data = await prisma.vehicle.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { vehicleType: true }
-      });
-      res.json(data);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = (page - 1) * limit;
+
+      const [data, total] = await Promise.all([
+        prisma.vehicle.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: { vehicleType: true }
+        }),
+        prisma.vehicle.count()
+      ]);
+      res.json({ data, total });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch vehicles' });
     }

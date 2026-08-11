@@ -28,7 +28,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  
+
   const userRole = localStorage.getItem('role') || 'operator';
   const userName = localStorage.getItem('username') || '';
   const fullName = localStorage.getItem('fullName');
@@ -36,9 +36,9 @@ export default function DashboardLayout() {
   const displayName = fullName || userName || 'User';
   const projectName = localStorage.getItem('projectName');
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(localStorage.getItem('subscriptionExpiry'));
-  
+
   const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
-  
+
   const [syncStatus, setSyncStatus] = useState({ isOnline: true, lastSyncTime: new Date().toISOString(), pendingCount: 0 });
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function DashboardLayout() {
         setSyncStatus(prev => ({ ...prev, isOnline: false }));
       }
     };
-    
+
     fetchSyncStatus();
     const interval = setInterval(fetchSyncStatus, 10000); // Check every 10s
     return () => clearInterval(interval);
@@ -62,7 +62,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     if (userRole === 'admin') return; // Admin sees everything
-    
+
     const fetchPermissions = async () => {
       try {
         const res = await api.get('/settings/role-permissions');
@@ -81,13 +81,25 @@ export default function DashboardLayout() {
     };
     fetchPermissions();
   }, [userRole]);
-  
+
   const filteredNavItems = navItems.filter(item => {
-    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return userRole === 'superadmin';
-    if (userRole === 'superadmin' || userRole === 'admin') return true;
-    if (allowedModules === null) return false; // Still loading permissions
+    if (userRole === 'superadmin') {
+      return ['Superadmin', 'Billing', 'Diagnostics'].includes(item.name);
+    }
+    
+    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return false;
+    
+    if (userRole === 'admin') return true;
+    
+    if (allowedModules === null) return false;
     return allowedModules.includes(item.name);
   });
+
+  useEffect(() => {
+    if (userRole === 'superadmin' && location.pathname === '/dashboard') {
+      navigate('/superadmin', { replace: true });
+    }
+  }, [userRole, location.pathname, navigate]);
 
   const currentNavItem = navItems.find(item => location.pathname.startsWith(item.path)) || { name: 'Overview' };
 
@@ -108,7 +120,7 @@ export default function DashboardLayout() {
         "flex-col bg-gradient-to-b from-green-50 to-green-100/80 text-slate-900 border-r border-green-200 hidden md:flex no-print shadow-xl z-20 transition-all duration-300 relative",
         isCollapsed ? "w-20" : "w-64"
       )}>
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-16 bg-white border border-green-200 rounded-full p-1 shadow-sm text-green-700 hover:text-green-900 z-50 hover:bg-green-50 transition-colors"
         >
@@ -120,7 +132,7 @@ export default function DashboardLayout() {
             <img src="/images.jpg" alt="WeighT360Pro" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{t('WeighT360Pro')}</span>}
           </Link>
-          
+
           {/* Project Badge moved here */}
           {!isCollapsed && projectName && (
             <div className="mt-3 flex flex-col items-center bg-blue-50/80 rounded border border-blue-100 shadow-sm overflow-hidden w-full">
@@ -129,15 +141,15 @@ export default function DashboardLayout() {
               </span>
               {subscriptionExpiry && (
                 <span className="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-1 border-t border-blue-200 w-full text-center">
-                  {new Date(subscriptionExpiry) > new Date() 
-                    ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left` 
+                  {new Date(subscriptionExpiry) > new Date()
+                    ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left`
                     : 'Expired'}
                 </span>
               )}
             </div>
           )}
         </div>
-        
+
         <div className="flex-1 overflow-auto py-2 overflow-x-hidden">
           <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
             {filteredNavItems.map((item) => {
@@ -165,8 +177,8 @@ export default function DashboardLayout() {
 
         {/* Sidebar Footer Controls */}
         <div className="p-2 mt-auto flex flex-col gap-2 border-t border-green-200/80 bg-white/40">
-          <button 
-            onClick={toggleLanguage} 
+          <button
+            onClick={toggleLanguage}
             className={cn(
               "flex items-center justify-center text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 py-1.5 rounded-sm transition-colors w-full",
               isCollapsed ? "px-0" : "px-2"
@@ -176,9 +188,9 @@ export default function DashboardLayout() {
             {!isCollapsed && <span className="mr-1.5">Language:</span>}
             {i18n.language === 'en' ? 'हिन्दी' : 'English'}
           </button>
-          
-          <button 
-            onClick={handleLogout} 
+
+          <button
+            onClick={handleLogout}
             className={cn(
               "flex items-center justify-center text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 py-1.5 rounded-sm transition-colors w-full",
               isCollapsed ? "px-0" : "px-2"
@@ -188,15 +200,15 @@ export default function DashboardLayout() {
             <LogOut className={cn("w-4 h-4", !isCollapsed && "mr-1.5")} />
             {!isCollapsed && t('Logout')}
           </button>
-          
+
           {/* Developer Credit */}
           {!isCollapsed && (
             <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
-               <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
-               <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
-                 YUVRAJ SINGH TOMAR
-               </span>
-               <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.0</span>
+              <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
+              <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
+                YUVRAJ SINGH TOMAR
+              </span>
+              <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.0</span>
             </div>
           )}
         </div>
@@ -204,25 +216,25 @@ export default function DashboardLayout() {
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible relative pb-6"> {/* pb-6 to make space for bottom bar */}
-        
+
         {/* Clean Header */}
         <header className="flex h-12 items-center gap-4 border-b bg-white px-4 shadow-sm z-10 lg:px-6 justify-between no-print shrink-0">
           {/* Left: Breadcrumbs Only */}
           <div className="flex items-center gap-2 text-sm">
-             <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
-             <span className="text-slate-300 hidden md:inline-block">/</span>
-             <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
+            <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
+            <span className="text-slate-300 hidden md:inline-block">/</span>
+            <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
           </div>
-          
+
           {/* Right: User Profile Only */}
           <div className="flex items-center gap-3">
-             <div className="hidden md:flex flex-col items-end text-xs">
-               <span className="font-bold text-slate-800">{displayName}</span>
-               <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || userRole}</span>
-             </div>
-             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
-               {displayName[0].toUpperCase()}
-             </div>
+            <div className="hidden md:flex flex-col items-end text-xs">
+              <span className="font-bold text-slate-800">{displayName}</span>
+              <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || userRole}</span>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
+              {displayName[0].toUpperCase()}
+            </div>
           </div>
         </header>
 
@@ -230,7 +242,7 @@ export default function DashboardLayout() {
         <main className="flex-1 overflow-auto p-4 md:p-6 print:p-0 print:overflow-visible">
           <Outlet />
         </main>
-        
+
         {/* Fixed Bottom Status Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-6 border-t bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.05)] flex items-center justify-between px-4 z-10 no-print text-[10px]">
           {/* Left Status: Cloud Sync */}

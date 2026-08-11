@@ -19,7 +19,7 @@ const generateSlipNumber = async () => {
 
 export const createWeighmentSlip = async (req: Request, res: Response) => {
   try {
-    const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks, driverName } = req.body;
+    const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
     
     // Fetch vehicle for Tare Weight
     const vehicle = await prisma.vehicle.findUnique({ 
@@ -31,7 +31,10 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       return;
     }
 
-    const tareWeight = vehicle.tareWeight || vehicle.vehicleType?.tareWeight || 0;
+    let tareWeight = vehicle.tareWeight || vehicle.vehicleType?.tareWeight || 0;
+    if (manualTareWeight !== undefined && manualTareWeight !== null && manualTareWeight !== '') {
+      tareWeight = Number(manualTareWeight);
+    }
     const netWeight = grossWeight - tareWeight;
 
     if (netWeight < 0) {
@@ -77,17 +80,53 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
 
 export const getWeighmentSlips = async (req: Request, res: Response) => {
   try {
-    const slips = await prisma.weighmentSlip.findMany({
-      include: {
-        vehicle: true,
-        material: true,
-        source: true,
-        destination: true,
-        operator: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(slips);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    
+    const { search, dateFrom, dateTo } = req.query;
+    
+    let where: any = {};
+    
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = new Date(dateFrom as string);
+      if (dateTo) {
+        const to = new Date(dateTo as string);
+        to.setHours(23, 59, 59, 999);
+        where.date.lte = to;
+      }
+    }
+    
+    if (search) {
+      const q = String(search).toLowerCase();
+      where.OR = [
+        { slipNumber: { contains: q, mode: 'insensitive' } },
+        { remarks: { contains: q, mode: 'insensitive' } },
+        { vehicle: { vehicleNumber: { contains: q, mode: 'insensitive' } } },
+        { material: { name: { contains: q, mode: 'insensitive' } } },
+        { operator: { username: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
+
+    const [slips, total] = await Promise.all([
+      prisma.weighmentSlip.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          vehicle: true,
+          material: true,
+          source: true,
+          destination: true,
+          operator: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.weighmentSlip.count({ where })
+    ]);
+
+    res.json({ data: slips, total });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch slips' });
   }
