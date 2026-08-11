@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,6 +14,7 @@ import api from '@/lib/api';
 export default function Sources() {
   const [sources, setSources] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -20,11 +22,14 @@ export default function Sources() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchSources = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/master/sources');
       setSources(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,27 +140,34 @@ export default function Sources() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sources.map((s, index) => (
-                <TableRow key={s.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{s.name}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{s.location || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(s)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(s.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="p-4">
+                    <TableSkeleton rows={4} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {sources.length === 0 && (
+              ) : sources.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     No wards/works found. Add one to get started.
                   </TableCell>
                 </TableRow>
+              ) : (
+                sources.map((s, index) => (
+                  <TableRow key={s.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{s.name}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{s.location || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(s)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(s.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

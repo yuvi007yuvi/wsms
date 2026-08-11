@@ -8,6 +8,7 @@ import { Printer, Search, Download, RefreshCw, FileText, Calendar, ChevronLeft, 
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
 import { useToast } from '@/hooks/use-toast';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
 export default function Reports() {
   const { t } = useTranslation();
@@ -24,13 +25,17 @@ export default function Reports() {
   const [pageSize, setPageSize] = useState(10);
   const { toast } = useToast();
   const userRole = localStorage.getItem('role') || 'operator';
+  const [loading, setLoading] = useState(true);
 
   const fetchSlips = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/weighment');
       setSlips(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -365,33 +370,13 @@ export default function Reports() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedSlips.map((s, index) => (
-                  <TableRow key={s.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
-                    <TableCell className="py-1.5 px-3 text-xs text-slate-600">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short'})}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{s.slipNumber}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs font-bold text-slate-700">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-slate-600">{s.material?.name || 'N/A'}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-slate-600 capitalize">{s.operator?.username || 'N/A'}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.grossWeight}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.tareWeight}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-right font-bold text-slate-900 bg-blue-50/30">{s.netWeight}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-xs text-slate-500 truncate max-w-[150px]" title={s.remarks || ''}>{s.remarks || '-'}</TableCell>
-                    <TableCell className="py-1.5 px-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
-                          <Printer className="h-3 w-3 mr-1" /> {t('Print')}
-                        </Button>
-                        {userRole === 'admin' && (
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-red-600 hover:bg-red-100 rounded-sm" onClick={() => handleDelete(s.id)}>
-                            <Trash2 className="h-3 w-3 mr-1" /> {t('Delete')}
-                          </Button>
-                        )}
-                      </div>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="p-4">
+                      <TableSkeleton rows={10} />
                     </TableCell>
                   </TableRow>
-                ))}
-                {paginatedSlips.length === 0 && (
+                ) : paginatedSlips.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-6 text-slate-500">
                       <div className="flex flex-col items-center justify-center">
@@ -400,6 +385,33 @@ export default function Reports() {
                       </div>
                     </TableCell>
                   </TableRow>
+                ) : (
+                  paginatedSlips.map((s, index) => (
+                    <TableRow key={s.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short'})}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{s.slipNumber}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs font-bold text-slate-700">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{s.material?.name || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600 capitalize">{s.operator?.username || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.grossWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.tareWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-right font-bold text-slate-900 bg-blue-50/30">{s.netWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-500 truncate max-w-[150px]" title={s.remarks || ''}>{s.remarks || '-'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
+                            <Printer className="h-3 w-3 mr-1" /> {t('Print')}
+                          </Button>
+                          {userRole === 'admin' && (
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-red-600 hover:bg-red-100 rounded-sm" onClick={() => handleDelete(s.id)}>
+                              <Trash2 className="h-3 w-3 mr-1" /> {t('Delete')}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>

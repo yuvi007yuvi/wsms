@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Search, Download, Filter, RefreshCw } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 import api from '@/lib/api';
 
 export default function Users() {
   const [users, setUsers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const [username, setUsername] = useState('');
@@ -27,11 +29,14 @@ export default function Users() {
   const userRole = localStorage.getItem('role') || 'operator';
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/users');
       setUsers(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -217,34 +222,41 @@ export default function Users() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u, index) => (
-                <TableRow key={u.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{u.username}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{u.fullName || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{u.designation || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role}</TableCell>
-                  <TableCell className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
-                      {u.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(u)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(u.id)} disabled={u.username === 'admin'}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-4">
+                    <TableSkeleton rows={5} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {users.length === 0 && (
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                     No users found.
                   </TableCell>
                 </TableRow>
+              ) : (
+                users.map((u, index) => (
+                  <TableRow key={u.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{u.username}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{u.fullName || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{u.designation || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role}</TableCell>
+                    <TableCell className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                        {u.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(u)}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(u.id)} disabled={u.username === 'admin'}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

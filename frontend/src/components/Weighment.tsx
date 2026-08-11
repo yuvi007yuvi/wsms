@@ -30,6 +30,7 @@ export default function Weighment() {
   const [sourceId, setSourceId] = useState('');
   const [destinationId, setDestinationId] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [driverName, setDriverName] = useState('');
 
   // Mock State
   const [isMockMode, setIsMockMode] = useState(false);
@@ -46,6 +47,16 @@ export default function Weighment() {
 
   // Derived State
   const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+
+  // Auto-fill driver name when vehicle changes
+  useEffect(() => {
+    if (selectedVehicle?.driverName) {
+      setDriverName(selectedVehicle.driverName);
+    } else {
+      setDriverName('');
+    }
+  }, [selectedVehicle]);
+
   const tareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
   const netWeight = Math.max(0, liveWeight - tareWeight);
 
@@ -169,7 +180,8 @@ export default function Weighment() {
         sourceId,
         destinationId,
         grossWeight: liveWeight,
-        remarks
+        remarks,
+        driverName
       });
       
       setLastGeneratedSlip(res.data);
@@ -192,6 +204,7 @@ export default function Weighment() {
       setDestinationId(defaultDest ? defaultDest.id : '');
       
       setRemarks('');
+      setDriverName('');
       
     } catch (error) {
       toast({
@@ -232,6 +245,14 @@ export default function Weighment() {
               onValueChange={setVehicleId} 
               options={vehicles.map(v => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
               placeholder={t('Search Vehicle...')} 
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Driver Name')}</Label>
+            <Input 
+              placeholder={t("Enter Driver Name...")} 
+              value={driverName} 
+              onChange={(e) => setDriverName(e.target.value)} 
             />
           </div>
           <div className="space-y-1">

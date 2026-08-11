@@ -37,7 +37,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
             <div className="space-y-0.5">
               <div className="flex"><span className="w-32 uppercase">Receipt No.</span><span>: {slip.slipNumber}</span></div>
               <div className="flex"><span className="w-32 uppercase">Date</span><span>: {new Date(slip.date).toLocaleDateString()}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Driver Name</span><span>: {slip.vehicle?.driverName || '-'}</span></div>
+              <div className="flex"><span className="w-32 uppercase">Driver Name</span><span>: {slip.driverName || slip.vehicle?.driverName || '-'}</span></div>
               <div className="flex"><span className="w-32 uppercase">Location</span><span>: {slip.source?.name || '-'}</span></div>
               <div className="flex"><span className="w-32 uppercase">Supervisor</span><span>: -</span></div>
             </div>

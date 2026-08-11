@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
+import { CardGridSkeleton } from '@/components/ui/LoadingSkeletons';
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -254,7 +255,13 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Filter Bar */}
+      {loading ? (
+        <div className="pt-4">
+          <CardGridSkeleton />
+        </div>
+      ) : (
+        <>
+          {/* Filter Bar */}
       <div className="bg-white border border-slate-300 rounded-sm shadow-sm p-3">
         <div className="flex items-center gap-2 mb-2">
           <Filter className="h-4 w-4 text-slate-400" />
@@ -658,6 +665,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

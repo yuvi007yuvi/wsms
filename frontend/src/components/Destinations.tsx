@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +16,7 @@ import api from '@/lib/api';
 export default function Destinations() {
   const [destinations, setDestinations] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -23,11 +25,14 @@ export default function Destinations() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchDestinations = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/master/destinations');
       setDestinations(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,32 +146,39 @@ export default function Destinations() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {destinations.map((d, index) => (
-                <TableRow key={d.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">
-                    <div className="flex items-center gap-2">
-                      {d.name}
-                      {d.isDefault && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"><Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" /> Default</Badge>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{d.location || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(d)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(d.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="p-4">
+                    <TableSkeleton rows={4} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {destinations.length === 0 && (
+              ) : destinations.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     No destinations found. Add one to get started.
                   </TableCell>
                 </TableRow>
+              ) : (
+                destinations.map((d, index) => (
+                  <TableRow key={d.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">
+                      <div className="flex items-center gap-2">
+                        {d.name}
+                        {d.isDefault && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"><Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" /> Default</Badge>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{d.location || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(d)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(d.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

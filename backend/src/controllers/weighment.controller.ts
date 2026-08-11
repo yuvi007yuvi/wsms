@@ -19,7 +19,7 @@ const generateSlipNumber = async () => {
 
 export const createWeighmentSlip = async (req: Request, res: Response) => {
   try {
-    const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks } = req.body;
+    const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks, driverName } = req.body;
     
     // Fetch vehicle for Tare Weight
     const vehicle = await prisma.vehicle.findUnique({ 
@@ -55,6 +55,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         // @ts-ignore
         operatorId: req.user.id, // from auth middleware
         remarks,
+        driverName,
         // @ts-ignore
         projectId: req.user.projectId || null
       },

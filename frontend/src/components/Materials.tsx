@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,17 +14,21 @@ import api from '@/lib/api';
 export default function Materials() {
   const [materials, setMaterials] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
   const fetchMaterials = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/master/materials');
       setMaterials(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,24 +112,31 @@ export default function Materials() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {materials.map((m, index) => (
-                <TableRow key={m.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{m.name}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{m.description || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(m.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="p-4">
+                    <TableSkeleton rows={4} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {materials.length === 0 && (
+              ) : materials.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     No materials found. Add one to get started.
                   </TableCell>
                 </TableRow>
+              ) : (
+                materials.map((m, index) => (
+                  <TableRow key={m.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{m.name}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{m.description || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(m.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

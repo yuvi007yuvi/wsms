@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import api from '@/lib/api';
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   // Form
@@ -27,11 +29,14 @@ export default function Vehicles() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchVehicles = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/master/vehicles');
       setVehicles(res.data);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -189,28 +194,35 @@ export default function Vehicles() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles.map((v, index) => (
-                <TableRow key={v.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{v.vehicleNumber}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-600">{v.vehicleType?.name || '-'}</TableCell>
-                  <TableCell className="py-3 px-4 text-sm text-slate-900 font-bold text-right">{v.tareWeight || 0}</TableCell>
-                  <TableCell className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(v)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(v.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="p-4">
+                    <TableSkeleton rows={5} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {vehicles.length === 0 && (
+              ) : vehicles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                     No vehicles found. Add one to get started.
                   </TableCell>
                 </TableRow>
+              ) : (
+                vehicles.map((v, index) => (
+                  <TableRow key={v.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{v.vehicleNumber}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{v.vehicleType?.name || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-900 font-bold text-right">{v.tareWeight || 0}</TableCell>
+                    <TableCell className="py-3 px-4 text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(v)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md" onClick={() => handleDelete(v.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
