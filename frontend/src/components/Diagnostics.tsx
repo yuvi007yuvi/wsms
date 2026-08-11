@@ -12,12 +12,7 @@ type DiagnosticStep = {
   detail?: string;
 };
 
-type PortInfo = {
-  path: string;
-  manufacturer?: string;
-  vendorId?: string;
-  productId?: string;
-};
+
 
 export default function Diagnostics() {
   const { t } = useTranslation();

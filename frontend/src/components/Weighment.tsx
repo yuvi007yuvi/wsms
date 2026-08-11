@@ -84,12 +84,12 @@ export default function Weighment() {
   useEffect(() => {
     const socket = io('http://localhost:5000');
     
-    socket.on('connect', () => setWeightStatus('Reading'));
-    socket.on('disconnect', () => setWeightStatus('Disconnected'));
+    socket.on('connect', () => _setWeightStatus('Reading'));
+    socket.on('disconnect', () => _setWeightStatus('Disconnected'));
     
     socket.on('weight-update', (data: { weight: number, status: string }) => {
-      setLiveWeight(data.weight);
-      setWeightStatus(data.status as any);
+      _setLiveWeight(data.weight);
+      _setWeightStatus(data.status as any);
     });
 
     return () => {
