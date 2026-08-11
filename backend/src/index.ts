@@ -56,11 +56,9 @@ setupWeighbridge(io);
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // Scheduled cron job to check subscription expirations every hour
 cron.schedule('0 * * * *', async () => {
