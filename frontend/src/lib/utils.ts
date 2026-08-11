@@ -28,7 +28,7 @@ export function getPreciseApiError(
   ) {
     return {
       title: 'Server Connection Failed',
-      description: 'Unable to reach the backend server. Please verify the backend service is running on http://localhost:5000.',
+      description: 'Unable to reach the backend server. Please verify your connection or contact support.',
     };
   }
 

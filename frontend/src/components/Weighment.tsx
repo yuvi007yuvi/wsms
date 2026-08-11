@@ -82,7 +82,8 @@ export default function Weighment() {
   }, []);
 
   useEffect(() => {
-    const socket = io('http://localhost:5000');
+    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+    const socket = io(backendUrl);
     
     socket.on('connect', () => _setWeightStatus('Reading'));
     socket.on('disconnect', () => _setWeightStatus('Disconnected'));
