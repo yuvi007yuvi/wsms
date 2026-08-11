@@ -21,7 +21,7 @@ services:
     staticPublishPath: "./frontend/dist"
     envVars:
       - key: VITE_API_URL
-        value: "https://wsms-backend.onrender.com/api"
+        value: "https://wsms-70ez.onrender.com/api"
 
 databases:
   - name: wsms-db
