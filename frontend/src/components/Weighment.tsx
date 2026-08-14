@@ -11,18 +11,40 @@ import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Weighment() {
   const { t } = useTranslation();
   const [liveWeight, _setLiveWeight] = useState<number>(0);
   const [weightStatus, _setWeightStatus] = useState<'Disconnected' | 'Connected' | 'Reading' | 'Stable'>('Disconnected');
   const { toast } = useToast();
-  
-  // Master Data Lists
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [materials, setMaterials] = useState<any[]>([]);
-  const [sources, setSources] = useState<any[]>([]);
-  const [destinations, setDestinations] = useState<any[]>([]);
+
+  // Fetch Master Data
+  const { data: masterData } = useQuery({
+    queryKey: ['masterData'],
+    queryFn: async () => {
+      const [vehRes, matRes, srcRes, destRes, settingsRes] = await Promise.all([
+        api.get('/master/vehicles', { params: { limit: 1000 } }),
+        api.get('/master/materials', { params: { limit: 1000 } }),
+        api.get('/master/sources', { params: { limit: 1000 } }),
+        api.get('/master/destinations', { params: { limit: 1000 } }),
+        api.get('/settings'),
+      ]);
+      const extractData = (res: any) => res.data?.data ? res.data.data : res.data;
+      return {
+        vehicles: extractData(vehRes),
+        materials: extractData(matRes),
+        sources: extractData(srcRes),
+        destinations: extractData(destRes),
+        settings: settingsRes.data
+      };
+    }
+  });
+
+  const vehicles = masterData?.vehicles || [];
+  const materials = masterData?.materials || [];
+  const sources = masterData?.sources || [];
+  const destinations = masterData?.destinations || [];
 
   // Form State
   const [vehicleId, setVehicleId] = useState('');
@@ -63,40 +85,13 @@ export default function Weighment() {
   const tareWeight = manualTareWeight !== '' ? Number(manualTareWeight) : derivedTareWeight;
   const netWeight = Math.max(0, liveWeight - tareWeight);
 
-  // Fetch Master Data
+
+
   useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [vehRes, matRes, srcRes, destRes, settingsRes] = await Promise.all([
-          api.get('/master/vehicles', { params: { limit: 1000 } }),
-          api.get('/master/materials', { params: { limit: 1000 } }),
-          api.get('/master/sources', { params: { limit: 1000 } }),
-          api.get('/master/destinations', { params: { limit: 1000 } }),
-          api.get('/settings'),
-        ]);
-        
-        const extractData = (res: any) => res.data?.data ? res.data.data : res.data;
-        
-        const dests = extractData(destRes);
-        setVehicles(extractData(vehRes));
-        setMaterials(extractData(matRes));
-        setSources(extractData(srcRes));
-        setDestinations(dests);
-        
-        if (settingsRes.data && settingsRes.data.mockMode) {
-          setIsMockMode(true);
-        }
-        
-        const defaultDest = dests.find((d: any) => d.isDefault);
-        if (defaultDest) {
-          setDestinationId(defaultDest.id);
-        }
-      } catch (error) {
-        console.error('Failed to load master data', error);
-      }
-    };
-    fetchMasterData();
-  }, []);
+    if (masterData?.settings?.mockMode) setIsMockMode(true);
+    const defaultDest = masterData?.destinations?.find((d: any) => d.isDefault);
+    if (defaultDest && !destinationId) setDestinationId(defaultDest.id);
+  }, [masterData]);
 
   useEffect(() => {
     const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';

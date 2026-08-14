@@ -13,6 +13,7 @@ import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 export default function Reports() {
   const { t } = useTranslation();
   const [slips, setSlips] = useState<any[]>([]);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSlipToPrint, setSelectedSlipToPrint] = useState<any>(null);
 
@@ -54,6 +55,13 @@ export default function Reports() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchSlips();
@@ -201,6 +209,7 @@ export default function Reports() {
   };
 
   const handleClearFilters = () => {
+    setSearchInput('');
     setSearchQuery('');
     setDateFrom('');
     setDateTo('');
@@ -274,8 +283,8 @@ export default function Reports() {
                 <Search className="absolute left-2.5 top-2 h-4 w-4 text-slate-500" />
                 <Input 
                   placeholder={t('Search slips...')} 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="h-8 w-64 pl-8 text-xs bg-white rounded-sm border-slate-300 focus-visible:ring-green-500" 
                 />
               </div>

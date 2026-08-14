@@ -80,8 +80,8 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
 
 export const getWeighmentSlips = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, Math.min(1000, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
     
     const { search, dateFrom, dateTo } = req.query;
@@ -114,12 +114,23 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
         where,
         skip,
         take: limit,
-        include: {
-          vehicle: true,
-          material: true,
-          source: true,
-          destination: true,
-          operator: true
+        select: {
+          id: true,
+          slipNumber: true,
+          date: true,
+          grossWeight: true,
+          tareWeight: true,
+          netWeight: true,
+          remarks: true,
+          driverName: true,
+          createdAt: true,
+          vehicle: {
+            select: { vehicleNumber: true, driverName: true }
+          },
+          material: { select: { name: true } },
+          source: { select: { name: true } },
+          destination: { select: { name: true } },
+          operator: { select: { username: true } }
         },
         orderBy: { createdAt: 'desc' }
       }),

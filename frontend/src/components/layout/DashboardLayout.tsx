@@ -56,7 +56,8 @@ export default function DashboardLayout() {
     };
 
     fetchSyncStatus();
-    const interval = setInterval(fetchSyncStatus, 10000); // Check every 10s
+    // Reduce aggressive polling from 10s to 5 minutes to prevent overloading Supabase Free Tier
+    const interval = setInterval(fetchSyncStatus, 300000); 
     return () => clearInterval(interval);
   }, []);
 
