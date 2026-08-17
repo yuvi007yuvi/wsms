@@ -23,12 +23,13 @@ export default function Weighment() {
   const { data: masterData } = useQuery({
     queryKey: ['masterData'],
     queryFn: async () => {
-      const [vehRes, matRes, srcRes, destRes, settingsRes] = await Promise.all([
+      const [vehRes, matRes, srcRes, destRes, settingsRes, vehicleTypeRes] = await Promise.all([
         api.get('/master/vehicles', { params: { limit: 1000 } }),
         api.get('/master/materials', { params: { limit: 1000 } }),
         api.get('/master/sources', { params: { limit: 1000 } }),
         api.get('/master/destinations', { params: { limit: 1000 } }),
         api.get('/settings'),
+        api.get('/master/vehicle-types', { params: { limit: 1000 } }),
       ]);
       const extractData = (res: any) => res.data?.data ? res.data.data : res.data;
       return {
@@ -36,6 +37,7 @@ export default function Weighment() {
         materials: extractData(matRes),
         sources: extractData(srcRes),
         destinations: extractData(destRes),
+        vehicleTypes: extractData(vehicleTypeRes),
         settings: settingsRes.data
       };
     }
@@ -45,9 +47,11 @@ export default function Weighment() {
   const materials = masterData?.materials || [];
   const sources = masterData?.sources || [];
   const destinations = masterData?.destinations || [];
+  const vehicleTypes = masterData?.vehicleTypes || [];
 
   // Form State
   const [vehicleId, setVehicleId] = useState('');
+  const [vehicleTypeId, setVehicleTypeId] = useState('all');
   const [materialId, setMaterialId] = useState('');
   const [sourceId, setSourceId] = useState('');
   const [destinationId, setDestinationId] = useState('');
@@ -79,11 +83,17 @@ export default function Weighment() {
     } else {
       setDriverName('');
     }
-  }, [selectedVehicle]);
+    
+    if (selectedVehicle?.vehicleTypeId && vehicleTypeId === 'all') {
+      setVehicleTypeId(selectedVehicle.vehicleTypeId);
+    }
+  }, [selectedVehicle, vehicleTypeId]);
 
   const derivedTareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
   const tareWeight = manualTareWeight !== '' ? Number(manualTareWeight) : derivedTareWeight;
   const netWeight = Math.max(0, liveWeight - tareWeight);
+  
+  const filteredVehicles = vehicleTypeId === 'all' ? vehicles : vehicles.filter((v: any) => v.vehicleTypeId === vehicleTypeId);
 
 
 
@@ -199,6 +209,7 @@ export default function Weighment() {
       }, 50);
 
       // Reset form
+      setVehicleTypeId('all');
       setVehicleId('');
       setMaterialId('');
       setSourceId('');
@@ -245,11 +256,23 @@ export default function Weighment() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
+            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
+            <SearchableSelect
+              value={vehicleTypeId}
+              onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
+              options={[
+                { label: t('All Types'), value: 'all' },
+                ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
+              ]}
+              placeholder={t('Search Vehicle Type...')}
+            />
+          </div>
+          <div className="space-y-1">
             <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
             <SearchableSelect 
               value={vehicleId} 
               onValueChange={setVehicleId} 
-              options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
+              options={filteredVehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
               placeholder={t('Search Vehicle...')} 
             />
           </div>
@@ -411,7 +434,7 @@ export default function Weighment() {
           </Button>
         </div>
         <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => {
-          setVehicleId(''); setMaterialId(''); setSourceId(''); 
+          setVehicleTypeId('all'); setVehicleId(''); setMaterialId(''); setSourceId(''); 
           const defaultDest = destinations.find((d: any) => d.isDefault);
           setDestinationId(defaultDest ? defaultDest.id : '');
           setRemarks('');
