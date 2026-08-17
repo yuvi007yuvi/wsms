@@ -19,6 +19,7 @@ export default function Vehicles() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   // Form
@@ -35,7 +36,7 @@ export default function Vehicles() {
     setLoading(true);
     try {
       const res = await api.get('/master/vehicles', {
-        params: { page: currentPage, limit: pageSize }
+        params: { page: currentPage, limit: pageSize, search: searchQuery }
       });
       if (res.data && res.data.data) {
         setVehicles(res.data.data);
@@ -61,8 +62,11 @@ export default function Vehicles() {
   };
 
   useEffect(() => {
-    fetchVehicles();
-  }, [currentPage, pageSize]);
+    const timer = setTimeout(() => {
+      fetchVehicles();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentPage, pageSize, searchQuery]);
 
   useEffect(() => {
     fetchVehicleTypes();
@@ -183,7 +187,15 @@ export default function Vehicles() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2 h-4 w-4 text-slate-500" />
-              <Input placeholder="Search vehicles..." className="h-8 w-64 pl-8 text-xs bg-white rounded-sm border-slate-300 focus-visible:ring-blue-500" />
+              <Input 
+                placeholder="Search vehicles..." 
+                className="h-8 w-64 pl-8 text-xs bg-white rounded-sm border-slate-300 focus-visible:ring-blue-500"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
             </div>
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300">
               <Filter className="h-3.5 w-3.5 mr-1" /> Filter

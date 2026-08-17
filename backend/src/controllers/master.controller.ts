@@ -114,10 +114,18 @@ export const vehicleController = {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string;
       const skip = (page - 1) * limit;
+
+      const whereClause = search ? {
+        OR: [
+          { vehicleNumber: { contains: search, mode: 'insensitive' as any } }
+        ]
+      } : {};
 
       const [data, total] = await Promise.all([
         prisma.vehicle.findMany({
+          where: whereClause,
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
@@ -133,7 +141,7 @@ export const vehicleController = {
             vehicleType: { select: { id: true, name: true, tareWeight: true } }
           }
         }),
-        prisma.vehicle.count()
+        prisma.vehicle.count({ where: whereClause })
       ]);
       res.json({ data, total });
     } catch (error) {
