@@ -70,7 +70,7 @@ export default function Weighment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Derived State
-  const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+  const selectedVehicle = vehicles.find((v: any) => v.id === vehicleId);
 
   // Auto-fill driver name when vehicle changes
   useEffect(() => {
@@ -249,7 +249,7 @@ export default function Weighment() {
             <SearchableSelect 
               value={vehicleId} 
               onValueChange={setVehicleId} 
-              options={vehicles.map(v => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
+              options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
               placeholder={t('Search Vehicle...')} 
             />
           </div>
@@ -266,7 +266,7 @@ export default function Weighment() {
             <Select onValueChange={setMaterialId} value={materialId}>
               <SelectTrigger><SelectValue placeholder={t('Select Material')} /></SelectTrigger>
               <SelectContent>
-                {materials.map(m => (
+                {materials.map((m: any) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name}
                   </SelectItem>
@@ -279,7 +279,7 @@ export default function Weighment() {
             <Select onValueChange={setSourceId} value={sourceId}>
               <SelectTrigger><SelectValue placeholder={t('Select Source')} /></SelectTrigger>
               <SelectContent>
-                {sources.map(s => (
+                {sources.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>
@@ -292,7 +292,7 @@ export default function Weighment() {
             <Select onValueChange={setDestinationId} value={destinationId}>
               <SelectTrigger><SelectValue placeholder={t('Select Destination')} /></SelectTrigger>
               <SelectContent>
-                {destinations.map(d => (
+                {destinations.map((d: any) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.name}
                   </SelectItem>
