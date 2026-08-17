@@ -54,7 +54,7 @@ export default function Vehicles() {
   const fetchVehicleTypes = async () => {
     try {
       const res = await api.get('/master/vehicle-types');
-      setVehicleTypes(res.data);
+      setVehicleTypes(Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []));
     } catch (error) {
       console.error(error);
     }

@@ -19,7 +19,7 @@ const generateSlipNumber = async () => {
 
 export const createWeighmentSlip = async (req: Request, res: Response) => {
   try {
-    const { vehicleId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
+    const { vehicleId, vehicleTypeId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
     
     // Fetch vehicle for Tare Weight
     const vehicle = await prisma.vehicle.findUnique({ 
@@ -49,6 +49,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       data: {
         slipNumber,
         vehicleId,
+        vehicleTypeId: vehicleTypeId && vehicleTypeId !== 'all' ? vehicleTypeId : null,
         materialId,
         sourceId,
         destinationId,
@@ -124,6 +125,8 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
           remarks: true,
           driverName: true,
           createdAt: true,
+          vehicleTypeId: true,
+          vehicleType: { select: { name: true } },
           vehicle: {
             select: { vehicleNumber: true, driverName: true }
           },

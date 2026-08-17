@@ -83,17 +83,11 @@ export default function Weighment() {
     } else {
       setDriverName('');
     }
-    
-    if (selectedVehicle?.vehicleTypeId && vehicleTypeId === 'all') {
-      setVehicleTypeId(selectedVehicle.vehicleTypeId);
-    }
-  }, [selectedVehicle, vehicleTypeId]);
+  }, [selectedVehicle]);
 
   const derivedTareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
   const tareWeight = manualTareWeight !== '' ? Number(manualTareWeight) : derivedTareWeight;
   const netWeight = Math.max(0, liveWeight - tareWeight);
-  
-  const filteredVehicles = vehicleTypeId === 'all' ? vehicles : vehicles.filter((v: any) => v.vehicleTypeId === vehicleTypeId);
 
 
 
@@ -188,6 +182,7 @@ export default function Weighment() {
     try {
       const res = await api.post('/weighment', {
         vehicleId,
+        vehicleTypeId,
         materialId,
         sourceId,
         destinationId,
@@ -272,7 +267,7 @@ export default function Weighment() {
             <SearchableSelect 
               value={vehicleId} 
               onValueChange={setVehicleId} 
-              options={filteredVehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
+              options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
               placeholder={t('Search Vehicle...')} 
             />
           </div>
