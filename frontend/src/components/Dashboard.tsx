@@ -34,12 +34,19 @@ export default function Dashboard() {
         api.get('/master/vehicles'),
         api.get('/master/sources'),
       ]);
-      setSlips(slipsRes.data);
-      setMaterialsList(materialsRes.data);
-      setMaterialsCount(materialsRes.data.length);
-      setVehiclesList(vehiclesRes.data);
-      setVehiclesCount(vehiclesRes.data.length);
-      setSourcesList(sourcesRes.data);
+      const extractData = (res: any) => Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+      
+      const slipsData = extractData(slipsRes);
+      const materialsData = extractData(materialsRes);
+      const vehiclesData = extractData(vehiclesRes);
+      const sourcesData = extractData(sourcesRes);
+
+      setSlips(slipsData);
+      setMaterialsList(materialsData);
+      setMaterialsCount(materialsData.length);
+      setVehiclesList(vehiclesData);
+      setVehiclesCount(vehiclesData.length);
+      setSourcesList(sourcesData);
     } catch (error) {
       console.error(error);
     } finally {
