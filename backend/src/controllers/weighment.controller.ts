@@ -65,6 +65,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       },
       include: {
         vehicle: true,
+        vehicleType: true,
         material: true,
         source: true,
         destination: true,

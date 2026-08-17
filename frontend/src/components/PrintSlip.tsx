@@ -45,7 +45,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
               <div className="flex"><span className="w-32 uppercase">Waste Type</span><span>: {slip.material?.name || '-'}</span></div>
               <div className="flex"><span className="w-32 uppercase">Vehicle</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
               <div className="flex"><span className="w-32 uppercase">Party Name</span><span>: NATURE GREEN</span></div>
-              <div className="flex"><span className="w-32 uppercase">Vehicle Type</span><span>: {slip.vehicle?.type || '-'}</span></div>
+              <div className="flex"><span className="w-32 uppercase">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || '-'}</span></div>
               <div className="flex"><span className="w-32 uppercase">Zone Incharge</span><span>: -</span></div>
             </div>
           </div>
