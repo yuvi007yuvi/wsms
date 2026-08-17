@@ -8,22 +8,34 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getUsers = async (req, res) => {
     try {
-        const users = await prisma_1.default.user.findMany({
-            where: {
-                role: { not: 'superadmin' }
-            },
-            select: {
-                id: true,
-                username: true,
-                fullName: true,
-                designation: true,
-                role: true,
-                isActive: true,
-                createdAt: true,
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-        res.json(users);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const [users, total] = await Promise.all([
+            prisma_1.default.user.findMany({
+                skip,
+                take: limit,
+                where: {
+                    role: { not: 'superadmin' }
+                },
+                select: {
+                    id: true,
+                    username: true,
+                    fullName: true,
+                    designation: true,
+                    role: true,
+                    isActive: true,
+                    createdAt: true,
+                },
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma_1.default.user.count({
+                where: {
+                    role: { not: 'superadmin' }
+                }
+            })
+        ]);
+        res.json({ data: users, total });
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch users' });

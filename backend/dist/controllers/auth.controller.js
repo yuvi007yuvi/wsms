@@ -14,17 +14,29 @@ const login = async (req, res) => {
         // First run initialization logic (creates an admin if no users exist)
         const userCount = await prisma_1.default.user.count();
         if (userCount === 0) {
-            const hashedPassword = await bcrypt_1.default.hash('admin123', 10);
+            const hashedAdminPassword = await bcrypt_1.default.hash('admin123', 10);
+            const hashedSuperAdminPassword = await bcrypt_1.default.hash('superadmin123', 10);
+            // Create superadmin
+            await prisma_1.default.user.create({
+                data: {
+                    username: 'superadmin',
+                    password: hashedSuperAdminPassword,
+                    role: 'superadmin',
+                    fullName: 'Master Superadmin',
+                    designation: 'Platform Owner'
+                }
+            });
+            // Create regular admin
             await prisma_1.default.user.create({
                 data: {
                     username: 'admin',
-                    password: hashedPassword,
+                    password: hashedAdminPassword,
                     role: 'admin',
                     fullName: 'System Admin',
                     designation: 'Administrator'
                 }
             });
-            console.log('Created default admin user (admin / admin123)');
+            console.log('Created default accounts (superadmin / admin)');
         }
         const user = await prisma_1.default.user.findUnique({
             where: { username },

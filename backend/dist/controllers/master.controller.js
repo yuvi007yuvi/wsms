@@ -10,11 +10,20 @@ const createCrudHandlers = (modelName) => {
     return {
         getAll: async (req, res) => {
             try {
-                // @ts-ignore
-                const data = await prisma_1.default[modelName].findMany({
-                    orderBy: { createdAt: 'desc' }
-                });
-                res.json(data);
+                const page = parseInt(req.query.page) || 1;
+                const limit = parseInt(req.query.limit) || 10;
+                const skip = (page - 1) * limit;
+                const [data, total] = await Promise.all([
+                    // @ts-ignore
+                    prisma_1.default[modelName].findMany({
+                        skip,
+                        take: limit,
+                        orderBy: { createdAt: 'desc' }
+                    }),
+                    // @ts-ignore
+                    prisma_1.default[modelName].count()
+                ]);
+                res.json({ data, total });
             }
             catch (error) {
                 res.status(500).json({ error: `Failed to fetch ${modelName}s` });
@@ -91,20 +100,12 @@ const createCrudHandlers = (modelName) => {
                 if (!req.body.items || !Array.isArray(req.body.items)) {
                     return res.status(400).json({ error: 'Invalid data format. Expected { items: [] }' });
                 }
-                let count = 0;
-                for (const item of req.body.items) {
-                    try {
-                        // @ts-ignore
-                        await prisma_1.default[modelName].create({ data: item });
-                        count++;
-                    }
-                    catch (e) {
-                        // Ignore unique constraint violations (duplicates)
-                        if (e.code !== 'P2002')
-                            throw e;
-                    }
-                }
-                res.status(201).json({ success: true, count });
+                // @ts-ignore
+                const result = await prisma_1.default[modelName].createMany({
+                    data: req.body.items,
+                    skipDuplicates: true,
+                });
+                res.status(201).json({ success: true, count: result.count });
             }
             catch (error) {
                 console.error(`Bulk import error for ${modelName}:`, error);
@@ -117,11 +118,29 @@ exports.vehicleController = {
     ...createCrudHandlers('vehicle'),
     getAll: async (req, res) => {
         try {
-            const data = await prisma_1.default.vehicle.findMany({
-                orderBy: { createdAt: 'desc' },
-                include: { vehicleType: true }
-            });
-            res.json(data);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const skip = (page - 1) * limit;
+            const [data, total] = await Promise.all([
+                prisma_1.default.vehicle.findMany({
+                    skip,
+                    take: limit,
+                    orderBy: { createdAt: 'desc' },
+                    select: {
+                        id: true,
+                        vehicleNumber: true,
+                        driverName: true,
+                        mobile: true,
+                        owner: true,
+                        tareWeight: true,
+                        isActive: true,
+                        createdAt: true,
+                        vehicleType: { select: { id: true, name: true, tareWeight: true } }
+                    }
+                }),
+                prisma_1.default.vehicle.count()
+            ]);
+            res.json({ data, total });
         }
         catch (error) {
             res.status(500).json({ error: 'Failed to fetch vehicles' });
@@ -132,19 +151,11 @@ exports.vehicleController = {
             if (!req.body.vehicles || !Array.isArray(req.body.vehicles)) {
                 return res.status(400).json({ error: 'Invalid data format. Expected { vehicles: [] }' });
             }
-            let count = 0;
-            for (const vehicle of req.body.vehicles) {
-                try {
-                    await prisma_1.default.vehicle.create({ data: vehicle });
-                    count++;
-                }
-                catch (e) {
-                    // Ignore unique constraint violations (duplicates)
-                    if (e.code !== 'P2002')
-                        throw e;
-                }
-            }
-            res.status(201).json({ success: true, count });
+            const result = await prisma_1.default.vehicle.createMany({
+                data: req.body.vehicles,
+                skipDuplicates: true
+            });
+            res.status(201).json({ success: true, count: result.count });
         }
         catch (error) {
             console.error('Bulk import error:', error);

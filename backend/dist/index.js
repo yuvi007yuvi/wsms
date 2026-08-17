@@ -20,7 +20,7 @@ const io = new socket_io_1.Server(server, {
     },
 });
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: '*'
 }));
 app.use(express_1.default.json());
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
@@ -51,11 +51,9 @@ io.on('connection', (socket) => {
 // Hardware weighbridge integration (via shared service)
 (0, weighbridge_service_1.setupWeighbridge)(io);
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
-    server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 // Scheduled cron job to check subscription expirations every hour
 node_cron_1.default.schedule('0 * * * *', async () => {
     console.log('Running subscription expiry check cron job...');
