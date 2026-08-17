@@ -43,11 +43,11 @@ export default function Weighment() {
     }
   });
 
-  const vehicles = masterData?.vehicles || [];
-  const materials = masterData?.materials || [];
-  const sources = masterData?.sources || [];
-  const destinations = masterData?.destinations || [];
-  const vehicleTypes = masterData?.vehicleTypes || [];
+  const vehicles = Array.isArray(masterData?.vehicles) ? masterData.vehicles : [];
+  const materials = Array.isArray(masterData?.materials) ? masterData.materials : [];
+  const sources = Array.isArray(masterData?.sources) ? masterData.sources : [];
+  const destinations = Array.isArray(masterData?.destinations) ? masterData.destinations : [];
+  const vehicleTypes = Array.isArray(masterData?.vehicleTypes) ? masterData.vehicleTypes : [];
 
   // Form State
   const [vehicleId, setVehicleId] = useState('');
