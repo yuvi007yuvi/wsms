@@ -129,7 +129,7 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
           vehicleTypeId: true,
           vehicleType: { select: { name: true } },
           vehicle: {
-            select: { vehicleNumber: true, driverName: true }
+            select: { vehicleNumber: true, driverName: true, vehicleType: { select: { name: true } } }
           },
           material: { select: { name: true } },
           source: { select: { name: true } },
