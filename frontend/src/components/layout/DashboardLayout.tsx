@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope, Menu } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
@@ -25,6 +26,7 @@ const navItems = [
 
 export default function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -222,6 +224,91 @@ export default function DashboardLayout() {
         <header className="flex h-12 items-center gap-4 border-b bg-white px-4 shadow-sm z-10 lg:px-6 justify-between no-print shrink-0">
           {/* Left: Breadcrumbs Only */}
           <div className="flex items-center gap-2 text-sm">
+            {/* Mobile Menu Trigger */}
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+              <SheetTrigger asChild>
+                <button className="md:hidden text-slate-600 hover:text-slate-900 transition-colors mr-2">
+                  <Menu className="w-5 h-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-64 bg-gradient-to-b from-green-50 to-green-100/80 border-r border-green-200 flex flex-col no-print">
+                <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
+                  <Link to="/" className="flex flex-col items-center gap-1" onClick={() => setIsMobileOpen(false)}>
+                    <img src="/images.jpg" alt="WeighT360Pro" className="object-contain rounded shadow-sm bg-white p-1 transition-all h-12 w-12" />
+                    <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{t('WeighT360Pro')}</span>
+                  </Link>
+
+                  {/* Project Badge moved here */}
+                  {projectName && (
+                    <div className="mt-3 flex flex-col items-center bg-blue-50/80 rounded border border-blue-100 shadow-sm overflow-hidden w-full">
+                      <span className="font-bold text-blue-700 px-2 py-1 text-xs uppercase text-center w-full truncate" title={projectName}>
+                        {projectName}
+                      </span>
+                      {subscriptionExpiry && (
+                        <span className="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-1 border-t border-blue-200 w-full text-center">
+                          {new Date(subscriptionExpiry) > new Date()
+                            ? `${formatDistanceToNow(new Date(subscriptionExpiry))} left`
+                            : 'Expired'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-auto py-2 overflow-x-hidden">
+                  <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
+                    {filteredNavItems.map((item) => {
+                      const isActive = location.pathname.startsWith(item.path);
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors font-semibold",
+                            isActive
+                              ? "bg-green-600 text-white shadow-sm"
+                              : "text-green-800 hover:text-green-950 hover:bg-white/60"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{t(item.name)}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Sidebar Footer Controls */}
+                <div className="p-2 mt-auto flex flex-col gap-2 border-t border-green-200/80 bg-white/40">
+                  <button
+                    onClick={() => { toggleLanguage(); setIsMobileOpen(false); }}
+                    className="flex items-center justify-center text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 py-1.5 rounded-sm transition-colors w-full px-2"
+                  >
+                    <span className="mr-1.5">Language:</span>
+                    {i18n.language === 'en' ? 'हिन्दी' : 'English'}
+                  </button>
+
+                  <button
+                    onClick={() => { handleLogout(); setIsMobileOpen(false); }}
+                    className="flex items-center justify-center text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 py-1.5 rounded-sm transition-colors w-full px-2"
+                  >
+                    <LogOut className="w-4 h-4 mr-1.5" />
+                    {t('Logout')}
+                  </button>
+
+                  {/* Developer Credit */}
+                  <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
+                    <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
+                      YUVRAJ SINGH TOMAR
+                    </span>
+                    <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.0</span>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
             <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
             <span className="text-slate-300 hidden md:inline-block">/</span>
             <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
