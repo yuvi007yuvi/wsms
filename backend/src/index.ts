@@ -43,6 +43,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
+// Root route for ping services like cron-job.org
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
+});
+
 // Socket.io for Real-time Weight Updates
 io.on('connection', (socket) => {
   console.log('Client connected to weight stream');
