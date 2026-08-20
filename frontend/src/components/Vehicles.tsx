@@ -142,6 +142,7 @@ export default function Vehicles() {
             data={vehicles} 
             exportFilename="vehicles_master" 
             importEndpoint="/master/vehicles/bulk" 
+            exportEndpoint="/master/vehicles"
             onImportSuccess={fetchVehicles} 
           />
           <Dialog open={open} onOpenChange={handleOpenChange}>

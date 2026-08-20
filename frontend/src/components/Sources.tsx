@@ -110,6 +110,7 @@ export default function Sources() {
             data={sources} 
             exportFilename="ward_work_master" 
             importEndpoint="/master/sources/bulk" 
+            exportEndpoint="/master/sources"
             onImportSuccess={fetchSources} 
           />
           <Dialog open={open} onOpenChange={handleOpenChange}>

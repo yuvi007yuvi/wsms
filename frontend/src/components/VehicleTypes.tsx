@@ -83,7 +83,8 @@ export default function VehicleTypes() {
           <ImportExportButtons 
             data={vehicleTypes} 
             exportFilename="vehicle_types_master" 
-            importEndpoint="/master/vehicle-types/bulk" 
+            importEndpoint="/master/vehicle-types/bulk"
+            exportEndpoint="/master/vehicle-types" 
             onImportSuccess={fetchVehicleTypes} 
           />
           <Dialog open={open} onOpenChange={setOpen}>

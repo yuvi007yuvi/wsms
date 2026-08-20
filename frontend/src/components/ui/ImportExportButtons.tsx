@@ -6,18 +6,31 @@ import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 
 interface ImportExportButtonsProps {
-  data: any[];
+  data?: any[];
   exportFilename: string;
   importEndpoint: string;
+  exportEndpoint?: string;
   onImportSuccess: () => void;
 }
 
-export function ImportExportButtons({ data, exportFilename, importEndpoint, onImportSuccess }: ImportExportButtonsProps) {
+export function ImportExportButtons({ data = [], exportFilename, importEndpoint, exportEndpoint, onImportSuccess }: ImportExportButtonsProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
-    if (data.length === 0) {
+  const handleExport = async () => {
+    let exportData = data;
+
+    if (exportEndpoint) {
+      try {
+        const res = await api.get(exportEndpoint, { params: { limit: 100000 } });
+        exportData = res.data?.data || res.data || [];
+      } catch (error) {
+        toast({ title: 'Failed to fetch data for export', variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (!exportData || exportData.length === 0) {
       toast({ title: 'No data to export', variant: 'destructive' });
       return;
     }
@@ -25,7 +38,7 @@ export function ImportExportButtons({ data, exportFilename, importEndpoint, onIm
     // Create a deep copy to remove internal fields like id, createdAt, updatedAt if desired,
     // but typically we can just export everything or let the user decide.
     // For simplicity, we export raw data, stripping out complex objects if any.
-    const cleanData = data.map(item => {
+    const cleanData = exportData.map((item: any) => {
       const cleanItem = { ...item };
       // Remove nested relational objects (like vehicleType) from CSV
       for (const key in cleanItem) {

@@ -82,6 +82,7 @@ export default function Materials() {
             data={materials} 
             exportFilename="materials_master" 
             importEndpoint="/master/materials/bulk" 
+            exportEndpoint="/master/materials"
             onImportSuccess={fetchMaterials} 
           />
           <Dialog open={open} onOpenChange={setOpen}>

@@ -112,6 +112,7 @@ export default function Destinations() {
             data={destinations}
             exportFilename="destinations_master"
             importEndpoint="/master/destinations/bulk"
+            exportEndpoint="/master/destinations"
             onImportSuccess={fetchDestinations}
           />
           <Dialog open={open} onOpenChange={handleOpenChange}>
