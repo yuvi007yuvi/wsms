@@ -362,19 +362,24 @@ export default function Reports() {
           {/* Table */}
           <div className="flex-1 overflow-auto">
             <Table>
-              <TableHeader className="bg-slate-100 sticky top-0 z-10 shadow-[0_1px_0_0_#CBD5E1]">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 w-16">{t('S.No.')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Receipt No.')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Date')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Vehicle')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Ward')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Vehicle Type')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Gross Wt')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Tare Wt')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Net Wt')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Time')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Actions')}</TableHead>
+              <TableHeader className="sticky top-0 z-10 shadow-sm">
+                <TableRow className="bg-[#92D050] hover:bg-[#92D050]">
+                  <TableHead colSpan={4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NATURE GREEN WASTE COLLECTION REPORT</TableHead>
+                  <TableHead colSpan={3} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NO. OF RECEIPTS - {summaryStats.count}</TableHead>
+                  <TableHead colSpan={4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">DATED: {new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-')}</TableHead>
+                </TableRow>
+                <TableRow className="bg-[#FFC000] hover:bg-[#FFC000]">
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 w-16 text-center">{t('S.NO.')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('RECEIPT NO.')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('DATE')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('VEHICLE')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('WARD')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('VEHICLE TYPE')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('GROSS WEIGHT')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('TARE WEIGHT')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('NET WEIGHT')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('TIME')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('ACTIONS')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -395,18 +400,18 @@ export default function Reports() {
                   </TableRow>
                 ) : (
                   paginatedSlips.map((s, index) => (
-                    <TableRow key={s.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{s.slipNumber}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleDateString()}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs font-bold text-slate-700">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{s.source?.name || 'N/A'}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600 truncate max-w-[150px]">{s.vehicleType?.name || s.vehicle?.vehicleType?.name || 'N/A'}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.grossWeight}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.tareWeight}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-right font-bold text-slate-900 bg-blue-50/30">{s.netWeight}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-500">{new Date(s.date).toLocaleTimeString(undefined, { timeStyle: 'short' })}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-right">
+                    <TableRow key={s.id} className="hover:bg-blue-50/50 transition-colors">
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs font-medium text-black border border-slate-300 text-center">{s.slipNumber}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{new Date(s.date).toLocaleDateString()}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs font-medium text-black border border-slate-300 text-center">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.source?.name || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center truncate max-w-[150px]">{s.vehicleType?.name || s.vehicle?.vehicleType?.name || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.grossWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.tareWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs font-bold text-black border border-slate-300 text-center bg-blue-50/30">{s.netWeight}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{new Date(s.date).toLocaleTimeString(undefined, { timeStyle: 'short' })}</TableCell>
+                      <TableCell className="py-1.5 px-3 border border-slate-300 text-center">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
                             <Printer className="h-3 w-3 mr-1" /> {t('Print')}
