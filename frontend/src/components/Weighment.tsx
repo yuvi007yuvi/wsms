@@ -343,14 +343,7 @@ export default function Weighment() {
             </>
           )}
 
-          <div className="space-y-1 col-span-2">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Remarks')}</Label>
-            <Input 
-              placeholder={t("Optional remarks...")} 
-              value={remarks} 
-              onChange={(e) => setRemarks(e.target.value)} 
-            />
-          </div>
+
         </CardContent>
       </Card>
 
