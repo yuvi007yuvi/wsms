@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
@@ -20,6 +21,7 @@ export default function Vehicles() {
   const [pageSize] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const { toast } = useToast();
 
   // Form
@@ -36,7 +38,7 @@ export default function Vehicles() {
     setLoading(true);
     try {
       const res = await api.get('/master/vehicles', {
-        params: { page: currentPage, limit: pageSize, search: searchQuery }
+        params: { page: currentPage, limit: pageSize, search: debouncedSearchQuery }
       });
       if (res.data && res.data.data) {
         setVehicles(res.data.data);
@@ -62,11 +64,12 @@ export default function Vehicles() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchVehicles();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [currentPage, pageSize, searchQuery]);
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [currentPage, pageSize, debouncedSearchQuery]);
 
   useEffect(() => {
     fetchVehicleTypes();
@@ -194,7 +197,6 @@ export default function Vehicles() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setCurrentPage(1);
                 }}
               />
             </div>
