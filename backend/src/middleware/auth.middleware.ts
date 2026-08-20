@@ -12,6 +12,7 @@ export interface AuthRequest extends Request {
     role: string;
     projectId?: string;
   };
+  dbUser?: any; // Cached DB user to avoid re-fetching in subscription check
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
@@ -23,27 +24,15 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, async (err, user) => {
-    if (err || !user) {
+  try {
+    const user = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
+    if (!user) {
       res.status(403).json({ error: 'Invalid or expired token' });
       return;
     }
-    
-    const decodedUser = user as AuthRequest['user'];
-    
-    if (decodedUser) {
-      // Verify user actually exists in the database and is active
-      const dbUser = await prisma.user.findUnique({ 
-        where: { id: decodedUser.id },
-      });
-      
-      if (!dbUser || !dbUser.isActive) {
-        res.status(401).json({ error: 'User no longer exists or is inactive' });
-        return;
-      }
-    }
-    
-    req.user = decodedUser;
+    req.user = user;
     next();
-  });
+  } catch (err) {
+    res.status(403).json({ error: 'Invalid or expired token' });
+  }
 };

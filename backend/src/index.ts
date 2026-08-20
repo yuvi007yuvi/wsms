@@ -65,27 +65,19 @@ cron.schedule('0 * * * *', async () => {
   console.log('Running subscription expiry check cron job...');
   try {
     const now = new Date();
-    // Use raw query or updateMany if supported, but here we just find and update
-    const expiredProjects = await prisma.project.findMany({
+    // Single updateMany instead of find + loop
+    const result = await prisma.project.updateMany({
       where: {
         isActive: true,
         subscriptionExpiry: {
           lte: now
         }
-      }
+      },
+      data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
     });
 
-    if (expiredProjects.length > 0) {
-      console.log(`Found ${expiredProjects.length} expired projects. Disabling them...`);
-      for (const project of expiredProjects) {
-        // Disable locally and in cloud (since it's online now)
-        await prisma.project.update({
-          where: { id: project.id },
-          data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
-        });
-        
-        console.log(`Disabled project: ${project.name}`);
-      }
+    if (result.count > 0) {
+      console.log(`Disabled ${result.count} expired projects.`);
     }
   } catch (error) {
     console.error('Error in subscription expiry cron job:', error);

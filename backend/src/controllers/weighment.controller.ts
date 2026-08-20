@@ -3,12 +3,16 @@ import prisma from '../utils/prisma';
 
 // Helper to generate unique slip number
 const generateSlipNumber = async () => {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
   const count = await prisma.weighmentSlip.count({
     where: {
       date: {
-        gte: new Date(new Date().setHours(0,0,0,0)),
-        lte: new Date(new Date().setHours(23,59,59,999))
+        gte: startOfDay,
+        lte: endOfDay
       }
     }
   });
@@ -21,11 +25,19 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
   try {
     const { vehicleId, vehicleTypeId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
     
-    // Fetch vehicle for Tare Weight
-    const vehicle = await prisma.vehicle.findUnique({ 
-      where: { id: vehicleId },
-      include: { vehicleType: true }
-    });
+    // Run slip number generation and vehicle fetch IN PARALLEL
+    const [slipNumber, vehicle] = await Promise.all([
+      generateSlipNumber(),
+      prisma.vehicle.findUnique({ 
+        where: { id: vehicleId },
+        select: { 
+          id: true, 
+          tareWeight: true, 
+          vehicleType: { select: { tareWeight: true } } 
+        }
+      })
+    ]);
+
     if (!vehicle) {
       res.status(400).json({ error: 'Vehicle not found' });
       return;
@@ -42,8 +54,6 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       return;
     }
 
-    const slipNumber = await generateSlipNumber();
-
     // @ts-ignore
     const slip = await prisma.weighmentSlip.create({
       data: {
@@ -57,19 +67,28 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         tareWeight,
         netWeight,
         // @ts-ignore
-        operatorId: req.user.id, // from auth middleware
+        operatorId: req.user.id,
         remarks,
         driverName,
         // @ts-ignore
         projectId: req.user.projectId || null
       },
-      include: {
-        vehicle: true,
-        vehicleType: true,
-        material: true,
-        source: true,
-        destination: true,
-        operator: true
+      select: {
+        id: true,
+        slipNumber: true,
+        date: true,
+        grossWeight: true,
+        tareWeight: true,
+        netWeight: true,
+        remarks: true,
+        driverName: true,
+        createdAt: true,
+        vehicle: { select: { id: true, vehicleNumber: true } },
+        vehicleType: { select: { id: true, name: true } },
+        material: { select: { id: true, name: true } },
+        source: { select: { id: true, name: true } },
+        destination: { select: { id: true, name: true } },
+        operator: { select: { id: true, username: true } }
       }
     });
 
