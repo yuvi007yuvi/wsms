@@ -13,12 +13,13 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
         const [data, total] = await Promise.all([
           // @ts-ignore
           prisma[modelName].findMany({
+            where: { isActive: true },
             skip,
             take: limit,
             orderBy: { createdAt: 'desc' }
           }),
           // @ts-ignore
-          prisma[modelName].count()
+          prisma[modelName].count({ where: { isActive: true } })
         ]);
         res.json({ data, total });
       } catch (error) {
@@ -76,14 +77,12 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
     delete: async (req: Request, res: Response) => {
       try {
         // @ts-ignore
-        await prisma[modelName].delete({
-          where: { id: req.params.id }
+        await prisma[modelName].update({
+          where: { id: req.params.id },
+          data: { isActive: false }
         });
         res.json({ success: true });
       } catch (error: any) {
-        if (error.code === 'P2003') {
-          return res.status(400).json({ error: `Cannot delete: This ${modelName} is already used in weighment slips.` });
-        }
         res.status(400).json({ error: `Failed to delete ${modelName}` });
       }
     },
@@ -118,10 +117,11 @@ export const vehicleController = {
       const skip = (page - 1) * limit;
 
       const whereClause = search ? {
+        isActive: true,
         OR: [
           { vehicleNumber: { contains: search, mode: 'insensitive' as any } }
         ]
-      } : {};
+      } : { isActive: true };
 
       const [data, total] = await Promise.all([
         prisma.vehicle.findMany({

@@ -13,7 +13,8 @@ export const getUsers = async (req: Request, res: Response) => {
         skip,
         take: limit,
         where: {
-          role: { not: 'superadmin' }
+          role: { not: 'superadmin' },
+          isActive: true
         },
         select: {
           id: true,
@@ -28,7 +29,8 @@ export const getUsers = async (req: Request, res: Response) => {
       }),
       prisma.user.count({
         where: {
-          role: { not: 'superadmin' }
+          role: { not: 'superadmin' },
+          isActive: true
         }
       })
     ]);
@@ -137,8 +139,9 @@ export const deleteUser = async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.user.delete({
-      where: { id }
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false }
     });
     res.json({ success: true });
   } catch (error) {
