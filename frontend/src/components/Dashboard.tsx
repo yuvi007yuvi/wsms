@@ -8,9 +8,8 @@ import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { CardGridSkeleton } from '@/components/ui/LoadingSkeletons';
 
-export default function Dashboard() {
   const { t } = useTranslation();
-  const [slips, setSlips] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [materialsCount, setMaterialsCount] = useState(0);
   const [vehiclesCount, setVehiclesCount] = useState(0);
   const [materialsList, setMaterialsList] = useState<any[]>([]);
@@ -28,20 +27,27 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [slipsRes, materialsRes, vehiclesRes, sourcesRes] = await Promise.all([
-        api.get('/weighment'),
+      const query = new URLSearchParams();
+      if (dateFrom) query.append('dateFrom', dateFrom);
+      if (dateTo) query.append('dateTo', dateTo);
+      if (filterVehicleType !== 'all') query.append('vehicleType', filterVehicleType);
+      if (filterMaterial !== 'all') query.append('materialId', filterMaterial);
+      if (filterSource !== 'all') query.append('sourceId', filterSource);
+
+      const [statsRes, materialsRes, vehiclesRes, sourcesRes] = await Promise.all([
+        api.get(`/dashboard/stats?${query.toString()}`),
         api.get('/master/materials'),
         api.get('/master/vehicles'),
         api.get('/master/sources'),
       ]);
       const extractData = (res: any) => Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
       
-      const slipsData = extractData(slipsRes);
+      setStats(statsRes.data?.data || null);
+      
       const materialsData = extractData(materialsRes);
       const vehiclesData = extractData(vehiclesRes);
       const sourcesData = extractData(sourcesRes);
 
-      setSlips(slipsData);
       setMaterialsList(materialsData);
       setMaterialsCount(materialsData.length);
       setVehiclesList(vehiclesData);
@@ -54,37 +60,11 @@ export default function Dashboard() {
     }
   };
 
+  const hasFilters = dateFrom || dateTo || filterVehicleType !== 'all' || filterMaterial !== 'all' || filterSource !== 'all';
+
   useEffect(() => {
     fetchData();
-  }, []);
-
-  // Apply filters
-  const filteredSlips = useMemo(() => {
-    let results = slips;
-
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      from.setHours(0, 0, 0, 0);
-      results = results.filter(s => new Date(s.date) >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      results = results.filter(s => new Date(s.date) <= to);
-    }
-    if (filterVehicleType !== 'all') {
-      results = results.filter(s => (s.vehicle?.vehicleType?.name || '') === filterVehicleType);
-    }
-    if (filterMaterial !== 'all') {
-      results = results.filter(s => s.materialId === filterMaterial);
-    }
-    if (filterSource !== 'all') {
-      results = results.filter(s => s.sourceId === filterSource);
-    }
-    return results;
-  }, [slips, dateFrom, dateTo, filterVehicleType, filterMaterial, filterSource]);
-
-  const hasFilters = dateFrom || dateTo || filterVehicleType !== 'all' || filterMaterial !== 'all' || filterSource !== 'all';
+  }, [dateFrom, dateTo, filterVehicleType, filterMaterial, filterSource]);
 
   // Unique vehicle types for filter dropdown
   const vehicleTypes_list = useMemo(() => {
@@ -108,139 +88,6 @@ export default function Dashboard() {
     setFilterVehicleType('all'); setFilterMaterial('all'); setFilterSource('all');
   };
 
-  const stats = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // When filters are active, use filtered slips. Otherwise, default to today's slips.
-    const baseSlips = hasFilters ? filteredSlips : slips.filter(s => new Date(s.date) >= today);
-    const todaySlips = baseSlips;
-    const yesterdaySlips = slips.filter(s => {
-      const d = new Date(s.date);
-      return d >= yesterday && d < today;
-    });
-
-    const totalSlipsToday = todaySlips.length;
-    const totalSlipsYesterday = yesterdaySlips.length;
-    const totalNetWeight = todaySlips.reduce((sum, s) => sum + (s.netWeight || 0), 0);
-    const totalNetWeightYesterday = yesterdaySlips.reduce((sum, s) => sum + (s.netWeight || 0), 0);
-    const totalGrossWeight = todaySlips.reduce((sum, s) => sum + (s.grossWeight || 0), 0);
-    const totalTareWeight = todaySlips.reduce((sum, s) => sum + (s.tareWeight || 0), 0);
-    const vehicleVisits = todaySlips.length;
-    const vehicleVisitsYesterday = yesterdaySlips.length;
-    const uniqueVehiclesToday = new Set(todaySlips.map(s => s.vehicleId)).size;
-    const avgNetWeight = totalSlipsToday > 0 ? Math.round(totalNetWeight / totalSlipsToday) : 0;
-
-    // Percentage changes
-    const slipChange = totalSlipsYesterday > 0 ? Math.round(((totalSlipsToday - totalSlipsYesterday) / totalSlipsYesterday) * 100) : totalSlipsToday > 0 ? 100 : 0;
-    const weightChange = totalNetWeightYesterday > 0 ? Math.round(((totalNetWeight - totalNetWeightYesterday) / totalNetWeightYesterday) * 100) : totalNetWeight > 0 ? 100 : 0;
-    const visitChange = vehicleVisitsYesterday > 0 ? Math.round(((vehicleVisits - vehicleVisitsYesterday) / vehicleVisitsYesterday) * 100) : vehicleVisits > 0 ? 100 : 0;
-
-    // Daily Trend (Last 7 Days) - with slip count + weight
-    const dailyTrend = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const start = new Date(d.setHours(0, 0, 0, 0));
-      const end = new Date(d.setHours(23, 59, 59, 999));
-      
-      const daySlips = slips.filter(s => {
-        const date = new Date(s.date);
-        return date >= start && date <= end;
-      });
-      
-      dailyTrend.push({
-        name: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        netWeight: daySlips.reduce((sum, s) => sum + (s.netWeight || 0), 0),
-        grossWeight: daySlips.reduce((sum, s) => sum + (s.grossWeight || 0), 0),
-        slips: daySlips.length
-      });
-    }
-
-    // Hourly Trend (Today)
-    const hourly = [];
-    for (let i = 6; i < 20; i += 2) {
-      const hourSlips = todaySlips.filter(s => {
-        const h = new Date(s.date).getHours();
-        return h >= i && h < i + 2;
-      });
-      hourly.push({
-        name: `${i > 12 ? i - 12 : i}${i >= 12 ? 'pm' : 'am'}`,
-        slips: hourSlips.length,
-        weight: hourSlips.reduce((sum, s) => sum + (s.netWeight || 0), 0)
-      });
-    }
-
-    // Vehicle Type Breakdown (Today)
-    const vehicleTypeMap = new Map();
-    todaySlips.forEach(s => {
-      const vType = s.vehicle?.vehicleType?.name || 'Unknown';
-      if (!vehicleTypeMap.has(vType)) {
-        vehicleTypeMap.set(vType, { name: vType, count: 0, weight: 0 });
-      }
-      const data = vehicleTypeMap.get(vType);
-      data.count += 1;
-      data.weight += (s.netWeight || 0);
-    });
-    const vehicleTypes = Array.from(vehicleTypeMap.values());
-
-    // Material Breakdown (Today)
-    const materialMap = new Map();
-    todaySlips.forEach(s => {
-      const mName = s.material?.name || 'Unknown';
-      if (!materialMap.has(mName)) {
-        materialMap.set(mName, { name: mName, count: 0, weight: 0 });
-      }
-      const data = materialMap.get(mName);
-      data.count += 1;
-      data.weight += (s.netWeight || 0);
-    });
-    const materialBreakdown = Array.from(materialMap.values());
-
-    // Source Breakdown (Today)
-    const sourceMap = new Map();
-    todaySlips.forEach(s => {
-      const sName = s.source?.name || 'Unknown';
-      if (!sourceMap.has(sName)) {
-        sourceMap.set(sName, { name: sName, count: 0, weight: 0 });
-      }
-      const data = sourceMap.get(sName);
-      data.count += 1;
-      data.weight += (s.netWeight || 0);
-    });
-    const sourceBreakdown = Array.from(sourceMap.values());
-
-    // Destination Breakdown (Today)
-    const destMap = new Map();
-    todaySlips.forEach(s => {
-      const dName = s.destination?.name || 'Unknown';
-      if (!destMap.has(dName)) {
-        destMap.set(dName, { name: dName, count: 0, weight: 0 });
-      }
-      const data = destMap.get(dName);
-      data.count += 1;
-      data.weight += (s.netWeight || 0);
-    });
-    const destBreakdown = Array.from(destMap.values());
-
-    // Recent Slips (last 5)
-    const recentSlips = todaySlips.slice(0, 5);
-
-    // Peak Hour
-    const peakHour = hourly.reduce((max, h) => h.slips > max.slips ? h : max, { name: '-', slips: 0, weight: 0 });
-
-    return {
-      totalSlipsToday, totalNetWeight, totalGrossWeight, totalTareWeight, vehicleVisits,
-      uniqueVehiclesToday, avgNetWeight, slipChange, weightChange, visitChange,
-      dailyTrend, hourly, vehicleTypes, materialBreakdown, sourceBreakdown, destBreakdown,
-      recentSlips, peakHour
-    };
-  }, [slips, filteredSlips, hasFilters]);
-
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
   const ChangeIndicator = ({ value, invert = false }: { value: number, invert?: boolean }) => (
@@ -262,7 +109,7 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {loading ? (
+      {loading || !stats ? (
         <div className="pt-4">
           <CardGridSkeleton />
         </div>
@@ -661,7 +508,7 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500">{t('All-time Slips')}</span>
-              <span className="text-sm font-bold text-slate-900">{slips.length}</span>
+              <span className="text-sm font-bold text-slate-900">{stats.totalSlipsAllTime}</span>
             </div>
             <div className="border-t border-slate-100 pt-3">
               <div className="flex justify-between items-center">
