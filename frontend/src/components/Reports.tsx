@@ -153,22 +153,24 @@ export default function Reports() {
       const res = await api.get(`/weighment?${params.toString()}`);
       const exportSlips = res.data?.data || res.data || [];
 
-      const headers = ['Slip Number', 'Date', 'Vehicle', 'Material', 'Source', 'Destination', 'Operator', 'Gross Wt', 'Tare Wt', 'Net Wt', 'Remarks'];
+      const headers = ['S.NO.', 'RECEIPT NO.', 'DATE', 'VEHICLE', 'WARD', 'VEHICLE TYPE', 'GROSS WEIGHT', 'TARE WEIGHT', 'NET WEIGHT', 'TIME'];
       const csvContent = [
         headers.join(','),
-        ...exportSlips.map((s: any) => [
-        s.slipNumber,
-        new Date(s.date).toLocaleString().replace(',', ''),
-        s.vehicle?.vehicleNumber || '',
-        s.material?.name || '',
-        s.source?.name || '',
-        s.destination?.name || '',
-        s.operator?.username || '',
-        s.grossWeight,
-        s.tareWeight,
-        s.netWeight,
-        `"${(s.remarks || '').replace(/"/g, '""')}"`
-      ].join(','))
+        ...exportSlips.map((s: any, index: number) => {
+          const d = new Date(s.date);
+          return [
+            index + 1,
+            s.slipNumber,
+            d.toLocaleDateString(),
+            s.vehicle?.vehicleNumber || '',
+            `"${(s.source?.name || '').replace(/"/g, '""')}"`,
+            `"${(s.vehicleType?.name || s.vehicle?.vehicleType?.name || '').replace(/"/g, '""')}"`,
+            s.grossWeight,
+            s.tareWeight,
+            s.netWeight,
+            d.toLocaleTimeString()
+          ].join(',');
+        })
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -362,16 +364,16 @@ export default function Reports() {
             <Table>
               <TableHeader className="bg-slate-100 sticky top-0 z-10 shadow-[0_1px_0_0_#CBD5E1]">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 w-16">Sr. No.</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Date & Time')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Slip No')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 w-16">{t('S.No.')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Receipt No.')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Date')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Vehicle')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Material')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Operator')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Ward')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Vehicle Type')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Gross Wt')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Tare Wt')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Net Wt')}</TableHead>
-                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 max-w-[150px]">{t('Remarks')}</TableHead>
+                  <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700">{t('Time')}</TableHead>
                   <TableHead className="h-8 py-1 px-3 text-xs font-semibold text-slate-700 text-right">{t('Actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -395,15 +397,15 @@ export default function Reports() {
                   paginatedSlips.map((s, index) => (
                     <TableRow key={s.id} className="border-b border-slate-200 hover:bg-blue-50/50 transition-colors">
                       <TableCell className="py-1.5 px-3 text-xs text-slate-600">{(safeCurrentPage - 1) * pageSize + index + 1}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short'})}</TableCell>
                       <TableCell className="py-1.5 px-3 text-xs font-medium text-slate-900">{s.slipNumber}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{new Date(s.date).toLocaleDateString()}</TableCell>
                       <TableCell className="py-1.5 px-3 text-xs font-bold text-slate-700">{s.vehicle?.vehicleNumber || 'N/A'}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{s.material?.name || 'N/A'}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-600 capitalize">{s.operator?.username || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600">{s.source?.name || 'N/A'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-600 truncate max-w-[150px]">{s.vehicleType?.name || s.vehicle?.vehicleType?.name || 'N/A'}</TableCell>
                       <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.grossWeight}</TableCell>
                       <TableCell className="py-1.5 px-3 text-xs text-right text-slate-600">{s.tareWeight}</TableCell>
                       <TableCell className="py-1.5 px-3 text-xs text-right font-bold text-slate-900 bg-blue-50/30">{s.netWeight}</TableCell>
-                      <TableCell className="py-1.5 px-3 text-xs text-slate-500 truncate max-w-[150px]" title={s.remarks || ''}>{s.remarks || '-'}</TableCell>
+                      <TableCell className="py-1.5 px-3 text-xs text-slate-500">{new Date(s.date).toLocaleTimeString(undefined, { timeStyle: 'short' })}</TableCell>
                       <TableCell className="py-1.5 px-3 text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-100 rounded-sm" onClick={() => handlePrint(s)}>
