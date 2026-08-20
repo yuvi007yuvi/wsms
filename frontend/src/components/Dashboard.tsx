@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { CardGridSkeleton } from '@/components/ui/LoadingSkeletons';
 
+export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
   const [materialsCount, setMaterialsCount] = useState(0);
