@@ -154,7 +154,7 @@ export default function Reports() {
       const res = await api.get(`/weighment?${params.toString()}`);
       const exportSlips = res.data?.data || res.data || [];
 
-      const standardHeaders = ['S.NO.', 'RECEIPT NO.', 'DATE', 'VEHICLE', 'WARD', 'VEHICLE TYPE', 'GROSS WEIGHT', 'TARE WEIGHT', 'NET WEIGHT', 'TIME'];
+      const standardHeaders = ['S.NO.', 'RECEIPT NO.', 'DATE', 'VEHICLE', 'WARD', 'VEHICLE TYPE', 'GROSS WEIGHT', 'TARE WEIGHT', 'NET WEIGHT', 'OPERATOR', 'TIME'];
       const greenAssistHeaders = ['S.No.', 'Zone Name', 'Ward Name', 'Vehicle Number', 'Gross Weight (Kg)', 'Tare Weight (Kg)', 'Net Weight (Kg)', 'Content Type', 'Date Of Weighment', 'Receipt Number', 'Vehicle Type', 'Weighbridge Party Name', 'Date of Entry', 'Time of Entry', 'Driver Name', 'Driver Mobile Number', 'Supervisor Name', 'Supervisor Display ID', 'Supervisor Contact Number', 'Zone In-Charge Name', 'In Date', 'In Time', 'Out Date', 'Out Time'];
       
       const headers = isGreenAssistFormat ? greenAssistHeaders : standardHeaders;
@@ -187,7 +187,7 @@ export default function Reports() {
               timeStr, // Time of Entry
               `"${(s.driverName || '').replace(/"/g, '""')}"`, // Driver Name
               s.vehicle?.mobile || '', // Driver Mobile Number
-              '', // Supervisor Name
+              `"${(s.operator?.username || '').replace(/"/g, '""')}"`, // Supervisor Name (Operator)
               '', // Supervisor Display ID
               '', // Supervisor Contact Number
               '', // Zone In-Charge Name
@@ -208,6 +208,7 @@ export default function Reports() {
             s.grossWeight,
             s.tareWeight,
             s.netWeight,
+            `"${(s.operator?.username || '').replace(/"/g, '""')}"`, // Operator
             timeStr
           ].join(',');
         })
@@ -460,6 +461,7 @@ export default function Reports() {
                       <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('GROSS WEIGHT')}</TableHead>
                       <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('TARE WEIGHT')}</TableHead>
                       <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('NET WEIGHT')}</TableHead>
+                      <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('OPERATOR')}</TableHead>
                       <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('TIME')}</TableHead>
                       <TableHead className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center">{t('ACTIONS')}</TableHead>
                     </>
@@ -469,13 +471,13 @@ export default function Reports() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={isGreenAssistFormat ? 25 : 11} className="p-4">
+                    <TableCell colSpan={isGreenAssistFormat ? 25 : 12} className="p-4">
                       <TableSkeleton rows={10} />
                     </TableCell>
                   </TableRow>
                 ) : paginatedSlips.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isGreenAssistFormat ? 25 : 11} className="text-center py-6 text-slate-500">
+                    <TableCell colSpan={isGreenAssistFormat ? 25 : 12} className="text-center py-6 text-slate-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="h-8 w-8 text-slate-300 mb-2" />
                         <p>{t('No weighment slips found. Generate a slip first.')}</p>
@@ -508,7 +510,7 @@ export default function Reports() {
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center whitespace-nowrap">{timeStr}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.driverName || ''}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.vehicle?.mobile || ''}</TableCell>
-                            <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center"></TableCell>
+                            <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.operator?.username || ''}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center"></TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center"></TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center"></TableCell>
@@ -528,6 +530,7 @@ export default function Reports() {
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.grossWeight}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center">{s.tareWeight}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs font-bold text-black border border-slate-300 text-center bg-blue-50/30">{s.netWeight}</TableCell>
+                            <TableCell className="py-1.5 px-3 text-xs font-medium text-black border border-slate-300 text-center text-slate-600 bg-slate-50">{s.operator?.username || 'N/A'}</TableCell>
                             <TableCell className="py-1.5 px-3 text-xs text-black border border-slate-300 text-center whitespace-nowrap">{timeStr}</TableCell>
                           </>
                         )}
