@@ -11,7 +11,6 @@ import { CardGridSkeleton } from '@/components/ui/LoadingSkeletons';
 export default function Dashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
-  const [materialsCount, setMaterialsCount] = useState(0);
   const [vehiclesCount, setVehiclesCount] = useState(0);
   const [materialsList, setMaterialsList] = useState<any[]>([]);
   const [vehiclesList, setVehiclesList] = useState<any[]>([]);
@@ -50,7 +49,6 @@ export default function Dashboard() {
       const sourcesData = extractData(sourcesRes);
 
       setMaterialsList(materialsData);
-      setMaterialsCount(materialsRes.data?.total || materialsData.length);
       setVehiclesList(vehiclesData);
       setVehiclesCount(vehiclesRes.data?.total || vehiclesData.length);
       setSourcesList(sourcesData);
