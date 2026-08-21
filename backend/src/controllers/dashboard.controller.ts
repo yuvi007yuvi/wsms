@@ -32,7 +32,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Fetch ONLY the required fields to keep the query lightning fast and memory small
     const slips = await prisma.weighmentSlip.findMany({
       where: {
-        isActive: true,
         date: {
           gte: minDate,
           lte: maxDate
