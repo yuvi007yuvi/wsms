@@ -194,6 +194,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const destBreakdown = Array.from(destMap.values());
 
     const recentSlips = todaySlips.slice(0, 5);
+    const lowestSlips = [...todaySlips].sort((a, b) => (a.netWeight || 0) - (b.netWeight || 0)).slice(0, 10);
     const peakHour = hourly.reduce((max, h) => h.slips > max.slips ? h : max, { name: '-', slips: 0, weight: 0 });
 
     res.json({
@@ -201,7 +202,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         totalSlipsToday, totalNetWeight, totalGrossWeight, totalTareWeight, vehicleVisits,
         uniqueVehiclesToday, avgNetWeight, slipChange, weightChange, visitChange,
         dailyTrend, hourly, vehicleTypes, materialBreakdown, sourceBreakdown, destBreakdown,
-        recentSlips, peakHour, totalSlipsAllTime: slips.length // Approximate or we could run a real count.
+        recentSlips, lowestSlips, peakHour, totalSlipsAllTime: slips.length // Approximate or we could run a real count.
       }
     });
 

@@ -444,15 +444,16 @@ export default function Dashboard() {
 
       {/* Row 5: Recent Activity + Quick Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Recent Slips */}
+        {/* Lowest 10 Slips */}
         <div className="md:col-span-2 bg-white border border-slate-300 rounded-sm shadow-sm flex flex-col">
-          <div className="p-4 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-800">{t('Recent Activity (Today)')}</h3>
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-slate-800">{t('Lowest 10 Slips (Today)')}</h3>
+            <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">By Net Weight</span>
           </div>
-          <div className="p-0">
-            {stats.recentSlips.length > 0 ? (
+          <div className="p-0 overflow-y-auto max-h-[300px]">
+            {stats.lowestSlips && stats.lowestSlips.length > 0 ? (
               <table className="w-full text-xs">
-                <thead className="bg-slate-50">
+                <thead className="bg-slate-50 sticky top-0">
                   <tr>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Time')}</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Slip No')}</th>
@@ -462,13 +463,13 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.recentSlips.map((s: any) => (
+                  {stats.lowestSlips.map((s: any) => (
                     <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-2 text-slate-500">{new Date(s.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="px-4 py-2 font-medium text-slate-800">{s.slipNumber}</td>
                       <td className="px-4 py-2 font-bold text-slate-700">{s.vehicle?.vehicleNumber || '-'}</td>
                       <td className="px-4 py-2 text-slate-600">{s.material?.name || '-'}</td>
-                      <td className="px-4 py-2 text-right font-bold text-green-700">{s.netWeight?.toLocaleString()} KG</td>
+                      <td className="px-4 py-2 text-right font-bold text-red-600">{s.netWeight?.toLocaleString()} KG</td>
                     </tr>
                   ))}
                 </tbody>

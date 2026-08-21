@@ -71,7 +71,6 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
       data: {
         slipNumber,
         vehicleId,
-        vehicleTypeId: vehicleTypeId && vehicleTypeId !== 'all' ? vehicleTypeId : null,
         materialId,
         sourceId,
         destinationId,
@@ -95,8 +94,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         remarks: true,
         driverName: true,
         createdAt: true,
-        vehicle: { select: { id: true, vehicleNumber: true } },
-        vehicleType: { select: { id: true, name: true } },
+        vehicle: { select: { id: true, vehicleNumber: true, vehicleType: { select: { name: true } } } },
         material: { select: { id: true, name: true } },
         source: { select: { id: true, name: true } },
         destination: { select: { id: true, name: true } },
@@ -157,8 +155,6 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
           remarks: true,
           driverName: true,
           createdAt: true,
-          vehicleTypeId: true,
-          vehicleType: { select: { name: true } },
           vehicle: {
             select: { vehicleNumber: true, driverName: true, vehicleType: { select: { name: true } } }
           },
