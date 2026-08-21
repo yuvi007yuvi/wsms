@@ -70,19 +70,19 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
     const slip = await prisma.weighmentSlip.create({
       data: {
         slipNumber,
-        vehicleId,
-        materialId,
-        sourceId,
-        destinationId,
+        vehicle: { connect: { id: vehicleId } },
+        material: { connect: { id: materialId } },
+        source: { connect: { id: sourceId } },
+        destination: { connect: { id: destinationId } },
         grossWeight,
         tareWeight,
         netWeight,
         // @ts-ignore
-        operatorId: req.user.id,
+        operator: { connect: { id: req.user.id } },
         remarks,
         driverName,
         // @ts-ignore
-        projectId: req.user.projectId || null
+        ...(req.user.projectId ? { project: { connect: { id: req.user.projectId } } } : {})
       },
       select: {
         id: true,
