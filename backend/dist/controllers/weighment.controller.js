@@ -7,27 +7,37 @@ exports.deleteWeighmentSlip = exports.getWeighmentSlips = exports.createWeighmen
 const prisma_1 = __importDefault(require("../utils/prisma"));
 // Helper to generate unique slip number
 const generateSlipNumber = async () => {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     const count = await prisma_1.default.weighmentSlip.count({
         where: {
             date: {
-                gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                lte: new Date(new Date().setHours(23, 59, 59, 999))
+                gte: startOfDay,
+                lte: endOfDay
             }
         }
     });
-    const seq = String(count + 1).padStart(6, '0');
-    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
-    return `WS-${dateStr}-${seq}-${randomStr}`;
+    const seq = String(count + 1).padStart(4, '0');
+    const shortDate = dateStr.slice(2); // YYMMDD
+    return `WS${shortDate}-${seq}`;
 };
 const createWeighmentSlip = async (req, res) => {
     try {
         const { vehicleId, vehicleTypeId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
-        // Fetch vehicle for Tare Weight
-        const vehicle = await prisma_1.default.vehicle.findUnique({
-            where: { id: vehicleId },
-            include: { vehicleType: true }
-        });
+        // Run slip number generation and vehicle fetch IN PARALLEL
+        const [slipNumber, vehicle] = await Promise.all([
+            generateSlipNumber(),
+            prisma_1.default.vehicle.findUnique({
+                where: { id: vehicleId },
+                select: {
+                    id: true,
+                    tareWeight: true,
+                    vehicleType: { select: { tareWeight: true } }
+                }
+            })
+        ]);
         if (!vehicle) {
             res.status(400).json({ error: 'Vehicle not found' });
             return;
@@ -41,7 +51,6 @@ const createWeighmentSlip = async (req, res) => {
             res.status(400).json({ error: 'Gross weight cannot be less than tare weight' });
             return;
         }
-        const slipNumber = await generateSlipNumber();
         // @ts-ignore
         const slip = await prisma_1.default.weighmentSlip.create({
             data: {
@@ -55,18 +64,28 @@ const createWeighmentSlip = async (req, res) => {
                 tareWeight,
                 netWeight,
                 // @ts-ignore
-                operatorId: req.user.id, // from auth middleware
+                operatorId: req.user.id,
                 remarks,
                 driverName,
                 // @ts-ignore
                 projectId: req.user.projectId || null
             },
-            include: {
-                vehicle: true,
-                material: true,
-                source: true,
-                destination: true,
-                operator: true
+            select: {
+                id: true,
+                slipNumber: true,
+                date: true,
+                grossWeight: true,
+                tareWeight: true,
+                netWeight: true,
+                remarks: true,
+                driverName: true,
+                createdAt: true,
+                vehicle: { select: { id: true, vehicleNumber: true } },
+                vehicleType: { select: { id: true, name: true } },
+                material: { select: { id: true, name: true } },
+                source: { select: { id: true, name: true } },
+                destination: { select: { id: true, name: true } },
+                operator: { select: { id: true, username: true } }
             }
         });
         res.status(201).json(slip);
@@ -122,7 +141,7 @@ const getWeighmentSlips = async (req, res) => {
                     vehicleTypeId: true,
                     vehicleType: { select: { name: true } },
                     vehicle: {
-                        select: { vehicleNumber: true, driverName: true }
+                        select: { vehicleNumber: true, driverName: true, vehicleType: { select: { name: true } } }
                     },
                     material: { select: { name: true } },
                     source: { select: { name: true } },

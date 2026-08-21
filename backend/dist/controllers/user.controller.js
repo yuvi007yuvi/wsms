@@ -16,7 +16,8 @@ const getUsers = async (req, res) => {
                 skip,
                 take: limit,
                 where: {
-                    role: { not: 'superadmin' }
+                    role: { not: 'superadmin' },
+                    isActive: true
                 },
                 select: {
                     id: true,
@@ -31,7 +32,8 @@ const getUsers = async (req, res) => {
             }),
             prisma_1.default.user.count({
                 where: {
-                    role: { not: 'superadmin' }
+                    role: { not: 'superadmin' },
+                    isActive: true
                 }
             })
         ]);
@@ -128,8 +130,9 @@ const deleteUser = async (req, res) => {
             res.status(403).json({ error: 'Cannot delete superadmin accounts' });
             return;
         }
-        await prisma_1.default.user.delete({
-            where: { id }
+        await prisma_1.default.user.update({
+            where: { id },
+            data: { isActive: false }
         });
         res.json({ success: true });
     }

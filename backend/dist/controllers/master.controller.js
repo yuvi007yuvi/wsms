@@ -16,12 +16,13 @@ const createCrudHandlers = (modelName) => {
                 const [data, total] = await Promise.all([
                     // @ts-ignore
                     prisma_1.default[modelName].findMany({
+                        where: { isActive: true },
                         skip,
                         take: limit,
                         orderBy: { createdAt: 'desc' }
                     }),
                     // @ts-ignore
-                    prisma_1.default[modelName].count()
+                    prisma_1.default[modelName].count({ where: { isActive: true } })
                 ]);
                 res.json({ data, total });
             }
@@ -83,15 +84,13 @@ const createCrudHandlers = (modelName) => {
         delete: async (req, res) => {
             try {
                 // @ts-ignore
-                await prisma_1.default[modelName].delete({
-                    where: { id: req.params.id }
+                await prisma_1.default[modelName].update({
+                    where: { id: req.params.id },
+                    data: { isActive: false }
                 });
                 res.json({ success: true });
             }
             catch (error) {
-                if (error.code === 'P2003') {
-                    return res.status(400).json({ error: `Cannot delete: This ${modelName} is already used in weighment slips.` });
-                }
                 res.status(400).json({ error: `Failed to delete ${modelName}` });
             }
         },
@@ -120,9 +119,17 @@ exports.vehicleController = {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search;
             const skip = (page - 1) * limit;
+            const whereClause = search ? {
+                isActive: true,
+                OR: [
+                    { vehicleNumber: { contains: search, mode: 'insensitive' } }
+                ]
+            } : { isActive: true };
             const [data, total] = await Promise.all([
                 prisma_1.default.vehicle.findMany({
+                    where: whereClause,
                     skip,
                     take: limit,
                     orderBy: { createdAt: 'desc' },
@@ -138,7 +145,7 @@ exports.vehicleController = {
                         vehicleType: { select: { id: true, name: true, tareWeight: true } }
                     }
                 }),
-                prisma_1.default.vehicle.count()
+                prisma_1.default.vehicle.count({ where: whereClause })
             ]);
             res.json({ data, total });
         }

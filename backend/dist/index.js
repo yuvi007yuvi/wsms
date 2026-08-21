@@ -30,6 +30,7 @@ const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const setting_routes_1 = __importDefault(require("./routes/setting.routes"));
 const system_routes_1 = __importDefault(require("./routes/system.routes"));
 const superadmin_routes_1 = __importDefault(require("./routes/superadmin.routes"));
+const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
 // Routes will be added here
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/master', master_routes_1.default);
@@ -38,8 +39,13 @@ app.use('/api/users', user_routes_1.default);
 app.use('/api/settings', setting_routes_1.default);
 app.use('/api/system', system_routes_1.default);
 app.use('/api/superadmin', superadmin_routes_1.default);
+app.use('/api/dashboard', dashboard_routes_1.default);
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
+});
+// Root route for ping services like cron-job.org
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
 });
 // Socket.io for Real-time Weight Updates
 io.on('connection', (socket) => {
@@ -59,25 +65,18 @@ node_cron_1.default.schedule('0 * * * *', async () => {
     console.log('Running subscription expiry check cron job...');
     try {
         const now = new Date();
-        // Use raw query or updateMany if supported, but here we just find and update
-        const expiredProjects = await prisma_1.default.project.findMany({
+        // Single updateMany instead of find + loop
+        const result = await prisma_1.default.project.updateMany({
             where: {
                 isActive: true,
                 subscriptionExpiry: {
                     lte: now
                 }
-            }
+            },
+            data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
         });
-        if (expiredProjects.length > 0) {
-            console.log(`Found ${expiredProjects.length} expired projects. Disabling them...`);
-            for (const project of expiredProjects) {
-                // Disable locally and in cloud (since it's online now)
-                await prisma_1.default.project.update({
-                    where: { id: project.id },
-                    data: { isActive: false, disableReason: 'Your subscription has expired. Please contact support.' }
-                });
-                console.log(`Disabled project: ${project.name}`);
-            }
+        if (result.count > 0) {
+            console.log(`Disabled ${result.count} expired projects.`);
         }
     }
     catch (error) {
