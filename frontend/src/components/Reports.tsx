@@ -419,7 +419,25 @@ export default function Reports() {
                 <TableRow className="bg-[#92D050] hover:bg-[#92D050]">
                   <TableHead colSpan={isGreenAssistFormat ? 8 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NATURE GREEN WASTE COLLECTION REPORT</TableHead>
                   <TableHead colSpan={isGreenAssistFormat ? 8 : 3} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NO. OF RECEIPTS - {summaryStats.count}</TableHead>
-                  <TableHead colSpan={isGreenAssistFormat ? 9 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">DATED: {new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-')}</TableHead>
+                  <TableHead colSpan={isGreenAssistFormat ? 9 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">
+                    DATED: {(() => {
+                      if (dateFrom && dateTo) {
+                        if (dateFrom === dateTo) {
+                          return new Date(dateFrom).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                        }
+                        const fromStr = new Date(dateFrom).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                        const toStr = new Date(dateTo).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                        return `${fromStr} TO ${toStr}`;
+                      } else if (dateFrom) {
+                        const fromStr = new Date(dateFrom).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                        return `${fromStr} ONWARDS`;
+                      } else if (dateTo) {
+                        const toStr = new Date(dateTo).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                        return `UP TO ${toStr}`;
+                      }
+                      return new Date().toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '-');
+                    })()}
+                  </TableHead>
                 </TableRow>
                 <TableRow className="bg-[#FFC000] hover:bg-[#FFC000]">
                   {isGreenAssistFormat ? (

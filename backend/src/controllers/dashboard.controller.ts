@@ -139,7 +139,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const hourly = [];
     for (let i = 6; i < 20; i += 2) {
       const hourSlips = todaySlips.filter((s: any) => {
-        const h = new Date(s.date).getHours();
+        // Convert to IST to get the correct hour
+        const d = new Date(s.date);
+        const istTime = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const h = istTime.getHours();
         return h >= i && h < i + 2;
       });
       hourly.push({
