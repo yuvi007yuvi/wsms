@@ -216,10 +216,10 @@ export default function Weighment() {
       setDriverName('');
       setManualTareWeight('');
       
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error generating slip',
-        description: 'Failed to save to database.',
+        description: error.response?.data?.error || 'Failed to save to database.',
         variant: 'destructive'
       });
     } finally {
