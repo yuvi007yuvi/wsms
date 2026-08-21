@@ -16,6 +16,7 @@ export default function Reports() {
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSlipToPrint, setSelectedSlipToPrint] = useState<any>(null);
+  const [isGreenAssistFormat, setIsGreenAssistFormat] = useState(false);
 
   // Date Range Filter
   const [dateFrom, setDateFrom] = useState('');
@@ -153,22 +154,61 @@ export default function Reports() {
       const res = await api.get(`/weighment?${params.toString()}`);
       const exportSlips = res.data?.data || res.data || [];
 
-      const headers = ['S.NO.', 'RECEIPT NO.', 'DATE', 'VEHICLE', 'WARD', 'VEHICLE TYPE', 'GROSS WEIGHT', 'TARE WEIGHT', 'NET WEIGHT', 'TIME'];
+      const standardHeaders = ['S.NO.', 'RECEIPT NO.', 'DATE', 'VEHICLE', 'WARD', 'VEHICLE TYPE', 'GROSS WEIGHT', 'TARE WEIGHT', 'NET WEIGHT', 'TIME'];
+      const greenAssistHeaders = ['S.No.', 'Zone Name', 'Ward Name', 'Vehicle Number', 'Gross Weight (Kg)', 'Tare Weight (Kg)', 'Net Weight (Kg)', 'Content Type', 'Date Of Weighment', 'Receipt Number', 'Vehicle Type', 'Weighbridge Party Name', 'Date of Entry', 'Time of Entry', 'Driver Name', 'Driver Mobile Number', 'Supervisor Name', 'Supervisor Display ID', 'Supervisor Contact Number', 'Zone In-Charge Name', 'In Date', 'In Time', 'Out Date', 'Out Time'];
+      
+      const headers = isGreenAssistFormat ? greenAssistHeaders : standardHeaders;
+      
       const csvContent = [
         headers.join(','),
         ...exportSlips.map((s: any, index: number) => {
           const d = new Date(s.date);
+          const dateStr = d.toLocaleDateString('en-IN');
+          const timeStr = d.toLocaleTimeString('en-IN');
+          const wardName = `"${(s.source?.name || '').replace(/"/g, '""')}"`;
+          const vehicleNumber = s.vehicle?.vehicleNumber || '';
+          const vehicleType = `"${(s.vehicleType?.name || s.vehicle?.vehicleType?.name || '').replace(/"/g, '""')}"`;
+          
+          if (isGreenAssistFormat) {
+            return [
+              index + 1,
+              '', // Zone Name
+              wardName, // Ward Name
+              vehicleNumber,
+              s.grossWeight,
+              s.tareWeight,
+              s.netWeight,
+              `"${(s.material?.name || '').replace(/"/g, '""')}"`, // Content Type
+              dateStr, // Date of Weighment
+              s.slipNumber,
+              vehicleType,
+              '', // Weighbridge Party Name
+              dateStr, // Date of Entry
+              timeStr, // Time of Entry
+              `"${(s.driverName || '').replace(/"/g, '""')}"`, // Driver Name
+              s.vehicle?.mobile || '', // Driver Mobile Number
+              '', // Supervisor Name
+              '', // Supervisor Display ID
+              '', // Supervisor Contact Number
+              '', // Zone In-Charge Name
+              dateStr, // In Date
+              timeStr, // In Time
+              dateStr, // Out Date
+              timeStr // Out Time
+            ].join(',');
+          }
+
           return [
             index + 1,
             s.slipNumber,
-            d.toLocaleDateString(),
-            s.vehicle?.vehicleNumber || '',
-            `"${(s.source?.name || '').replace(/"/g, '""')}"`,
-            `"${(s.vehicleType?.name || s.vehicle?.vehicleType?.name || '').replace(/"/g, '""')}"`,
+            dateStr,
+            vehicleNumber,
+            wardName,
+            vehicleType,
             s.grossWeight,
             s.tareWeight,
             s.netWeight,
-            d.toLocaleTimeString()
+            timeStr
           ].join(',');
         })
     ].join('\n');
@@ -306,7 +346,19 @@ export default function Reports() {
               <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300" onClick={fetchSlips}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> {t('Refresh')}
               </Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300" onClick={handleExportCSV}>
+              <div className="flex items-center ml-2 mr-1 gap-1.5">
+                <input 
+                  type="checkbox" 
+                  id="greenAssistToggle"
+                  checked={isGreenAssistFormat} 
+                  onChange={(e) => setIsGreenAssistFormat(e.target.checked)} 
+                  className="h-3.5 w-3.5 accent-green-600 rounded cursor-pointer"
+                />
+                <label htmlFor="greenAssistToggle" className="text-xs font-medium text-slate-600 cursor-pointer">
+                  Green Assist Format
+                </label>
+              </div>
+              <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300 bg-green-50 hover:bg-green-100 text-green-700 border-green-200" onClick={handleExportCSV}>
                 <Download className="h-3.5 w-3.5 mr-1" /> {t('Export CSV')}
               </Button>
             </div>
