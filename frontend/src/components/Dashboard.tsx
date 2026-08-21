@@ -50,9 +50,9 @@ export default function Dashboard() {
       const sourcesData = extractData(sourcesRes);
 
       setMaterialsList(materialsData);
-      setMaterialsCount(materialsData.length);
+      setMaterialsCount(materialsRes.data?.total || materialsData.length);
       setVehiclesList(vehiclesData);
-      setVehiclesCount(vehiclesData.length);
+      setVehiclesCount(vehiclesRes.data?.total || vehiclesData.length);
       setSourcesList(sourcesData);
     } catch (error) {
       console.error(error);
@@ -492,8 +492,8 @@ export default function Dashboard() {
               <span className="text-sm font-bold text-slate-900">{vehiclesCount}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-500">{t('Materials Tracked')}</span>
-              <span className="text-sm font-bold text-slate-900">{materialsCount}</span>
+              <span className="text-xs text-slate-500">{t('Materials Tracked (Today)')}</span>
+              <span className="text-sm font-bold text-slate-900">{stats.materialBreakdown.length}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500">{t('Avg Net Weight / Slip')}</span>
