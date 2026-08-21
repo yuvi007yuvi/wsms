@@ -182,7 +182,6 @@ export default function Weighment() {
     try {
       const res = await api.post('/weighment', {
         vehicleId,
-        vehicleTypeId,https://127.0.0.1:63218/static/artifacts/9ab995ed-696f-46c6-ba36-c42c064ba04f/.user_uploaded/media_1787305323198.png?csrf=9dced27b-05bc-434b-946d-a8ec55c40185
         materialId,
         sourceId,
         destinationId,
