@@ -8,15 +8,27 @@ const generateSlipNumber = async () => {
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  const count = await prisma.weighmentSlip.count({
+  const lastSlip = await prisma.weighmentSlip.findFirst({
     where: {
       date: {
         gte: startOfDay,
         lte: endOfDay
       }
+    },
+    orderBy: {
+      slipNumber: 'desc'
     }
   });
-  const seq = String(count + 1).padStart(4, '0');
+
+  let seqNum = 1;
+  if (lastSlip && lastSlip.slipNumber.includes('-')) {
+    const lastSeq = parseInt(lastSlip.slipNumber.split('-')[1], 10);
+    if (!isNaN(lastSeq)) {
+      seqNum = lastSeq + 1;
+    }
+  }
+
+  const seq = String(seqNum).padStart(4, '0');
   const shortDate = dateStr.slice(2); // YYMMDD
   return `WS${shortDate}-${seq}`;
 };
