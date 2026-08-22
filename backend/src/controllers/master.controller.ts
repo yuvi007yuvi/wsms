@@ -116,6 +116,59 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
 
 export const vehicleController = {
   ...createCrudHandlers('vehicle'),
+  create: async (req: Request, res: Response) => {
+    try {
+      const payload = { ...req.body };
+      // @ts-ignore
+      payload.projectId = req.user?.projectId || null;
+
+      const existing = await prisma.vehicle.findUnique({
+        where: { vehicleNumber: payload.vehicleNumber }
+      });
+
+      if (existing) {
+        if (!existing.isActive) {
+          const data = await prisma.vehicle.update({
+            where: { id: existing.id },
+            data: { ...payload, isActive: true }
+          });
+          return res.status(201).json(data);
+        } else {
+          return res.status(400).json({ error: `Vehicle number ${payload.vehicleNumber} already exists.` });
+        }
+      }
+
+      const data = await prisma.vehicle.create({
+        data: payload
+      });
+      res.status(201).json(data);
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === 'P2002') {
+        return res.status(400).json({ error: `Vehicle number ${req.body.vehicleNumber} already exists or a unique constraint was violated.` });
+      }
+      res.status(400).json({ error: 'Failed to create vehicle' });
+    }
+  },
+  update: async (req: Request, res: Response) => {
+    try {
+      const payload = { ...req.body };
+      // @ts-ignore
+      payload.projectId = req.user?.projectId || null;
+
+      const data = await prisma.vehicle.update({
+        where: { id: req.params.id as string },
+        data: payload
+      });
+      res.json(data);
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === 'P2002') {
+        return res.status(400).json({ error: `Vehicle number ${req.body.vehicleNumber} already exists in the system (it may be inactive/deleted).` });
+      }
+      res.status(400).json({ error: 'Failed to update vehicle' });
+    }
+  },
   getAll: async (req: Request, res: Response) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
