@@ -34,23 +34,24 @@ export default function Dashboard() {
       if (filterMaterial !== 'all') query.append('materialId', filterMaterial);
       if (filterSource !== 'all') query.append('sourceId', filterSource);
 
-      const [statsRes, materialsRes, vehiclesRes, sourcesRes] = await Promise.all([
+      const [statsRes, materialsRes, vehiclesRes, sourcesRes, vehicleTypesRes] = await Promise.all([
         api.get(`/dashboard/stats?${query.toString()}`),
-        api.get('/master/materials'),
-        api.get('/master/vehicles'),
-        api.get('/master/sources'),
+        api.get('/master/materials?limit=1000'),
+        api.get('/master/vehicles?limit=1'), // only need total count
+        api.get('/master/sources?limit=1000'),
+        api.get('/master/vehicle-types?limit=1000')
       ]);
       const extractData = (res: any) => Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
       
       setStats(statsRes.data?.data || null);
       
       const materialsData = extractData(materialsRes);
-      const vehiclesData = extractData(vehiclesRes);
       const sourcesData = extractData(sourcesRes);
+      const vehicleTypesData = extractData(vehicleTypesRes);
 
       setMaterialsList(materialsData);
-      setVehiclesList(vehiclesData);
-      setVehiclesCount(vehiclesRes.data?.total || vehiclesData.length);
+      setVehiclesList(vehicleTypesData); // Temporarily reusing vehiclesList state for vehicle types
+      setVehiclesCount(vehiclesRes.data?.total || 0);
       setSourcesList(sourcesData);
     } catch (error) {
       console.error(error);
@@ -67,7 +68,8 @@ export default function Dashboard() {
 
   // Unique vehicle types for filter dropdown
   const vehicleTypes_list = useMemo(() => {
-    const types = new Set(vehiclesList.map(v => v.vehicleType?.name).filter(Boolean));
+    // We now have vehicle types directly
+    const types = new Set(vehiclesList.map(vt => vt.name).filter(Boolean));
     return Array.from(types);
   }, [vehiclesList]);
 
