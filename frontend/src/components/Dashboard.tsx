@@ -328,12 +328,22 @@ export default function Dashboard() {
             {stats.vehicleTypes.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={stats.vehicleTypes} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="weight" nameKey="name">
+                  <Pie 
+                    data={stats.vehicleTypes} 
+                    cx="50%" cy="45%" 
+                    innerRadius={45} outerRadius={75} 
+                    paddingAngle={2} 
+                    dataKey="weight" 
+                    nameKey="name"
+                    label={(props: any) => `${(props.percent * 100).toFixed(1)}% (${props.payload.count || props.count || 0})`}
+                    labelLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                    className="text-[9px] font-medium"
+                  >
                     {stats.vehicleTypes.map((_entry: any, index: number) => (
                       <Cell key={`cell-vt-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `${formatTon(Number(value))} TONS`} contentStyle={{ borderRadius: '4px', fontSize: '11px' }} />
+                  <Tooltip formatter={(value, name) => [`${formatTon(Number(value))} TONS`, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px' }} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -353,12 +363,22 @@ export default function Dashboard() {
             {stats.materialBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={stats.materialBreakdown} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="weight" nameKey="name">
+                  <Pie 
+                    data={stats.materialBreakdown} 
+                    cx="50%" cy="45%" 
+                    innerRadius={45} outerRadius={75} 
+                    paddingAngle={2} 
+                    dataKey="weight" 
+                    nameKey="name"
+                    label={(props: any) => `${(props.percent * 100).toFixed(1)}% (${props.payload.count || props.count || 0})`}
+                    labelLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                    className="text-[9px] font-medium"
+                  >
                     {stats.materialBreakdown.map((_entry: any, index: number) => (
                       <Cell key={`cell-mat-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `${formatTon(Number(value))} TONS`} contentStyle={{ borderRadius: '4px', fontSize: '11px' }} />
+                  <Tooltip formatter={(value, name) => [`${formatTon(Number(value))} TONS`, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px' }} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -421,26 +441,30 @@ export default function Dashboard() {
             <h3 className="text-sm font-semibold text-slate-800">{t('Lowest 10 Slips (Today)')}</h3>
             <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">By Net Weight</span>
           </div>
-          <div className="p-0 overflow-y-auto max-h-[300px]">
+          <div className="p-0">
             {stats.lowestSlips && stats.lowestSlips.length > 0 ? (
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 sticky top-0">
                   <tr>
+                    <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Sr.No')}</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Time')}</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Slip No')}</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Vehicle')}</th>
+                    <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Vehicle Type')}</th>
                     <th className="text-left px-4 py-2 font-semibold text-slate-600">{t('Material')}</th>
-                    <th className="text-right px-4 py-2 font-semibold text-slate-600">{t('Net Wt (TONS)')}</th>
+                    <th className="text-right px-4 py-2 font-semibold text-slate-600">{t('Net Wt (KG)')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.lowestSlips.map((s: any) => (
+                  {stats.lowestSlips.map((s: any, index: number) => (
                     <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-2 text-slate-500 font-medium">{index + 1}</td>
                       <td className="px-4 py-2 text-slate-500">{new Date(s.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="px-4 py-2 font-medium text-slate-800">{s.slipNumber}</td>
                       <td className="px-4 py-2 font-bold text-slate-700">{s.vehicle?.vehicleNumber || '-'}</td>
+                      <td className="px-4 py-2 text-slate-600">{s.vehicle?.vehicleType?.name || '-'}</td>
                       <td className="px-4 py-2 text-slate-600">{s.material?.name || '-'}</td>
-                      <td className="px-4 py-2 text-right font-bold text-red-600">{formatTon(s.netWeight)} TONS</td>
+                      <td className="px-4 py-2 text-right font-bold text-red-600">{s.netWeight?.toLocaleString() || '0'} KG</td>
                     </tr>
                   ))}
                 </tbody>

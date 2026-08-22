@@ -30,7 +30,11 @@ export default function SummaryReports() {
 
       const res = await api.get(`/weighment/summary?${params.toString()}`);
       if (res.data && res.data.data) {
-        setData(res.data.data);
+        let fetchedData = res.data.data;
+        if (reportType === 'ward') {
+          fetchedData = fetchedData.sort((a: any, b: any) => (a.key || '').localeCompare(b.key || '', undefined, { numeric: true, sensitivity: 'base' }));
+        }
+        setData(fetchedData);
       }
     } catch (error) {
       console.error(error);
@@ -208,11 +212,56 @@ export default function SummaryReports() {
           <span className="font-bold text-green-700">{totalNet.toLocaleString()} KG</span>
         </div>
         
+        {/* Vehicle Type Breakdown Cards (Only for vehicleType report) */}
+        {reportType === 'vehicleType' && !loading && data.length > 0 && (
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 border-b border-slate-200 shrink-0">
+            {['primary', 'secondary', 'others'].map(group => {
+              const items = data.filter(item => {
+                const name = (item.key || '').toLowerCase();
+                if (group === 'primary') return name.includes('primary');
+                if (group === 'secondary') return name.includes('secondary');
+                return !name.includes('primary') && !name.includes('secondary');
+              });
+              const total = items.reduce((sum, item) => sum + item.netWeight, 0);
+              
+              const isPrimary = group === 'primary';
+              const isSecondary = group === 'secondary';
+              
+              const title = isPrimary ? 'Primary Total' : isSecondary ? 'Secondary Total' : 'Others';
+              
+              const bgOuter = 'bg-white border-slate-200 shadow-sm';
+              const bgInner = isPrimary ? 'bg-gradient-to-br from-indigo-500 to-indigo-600' : isSecondary ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : 'bg-gradient-to-br from-slate-600 to-slate-700';
+              
+              const titleCls = isPrimary ? 'text-indigo-100' : isSecondary ? 'text-emerald-100' : 'text-slate-300';
+              const unitCls = isPrimary ? 'text-indigo-200' : isSecondary ? 'text-emerald-200' : 'text-slate-400';
+
+              return (
+                <div key={group} className={`flex flex-col rounded-sm border overflow-hidden ${bgOuter}`}>
+                  <div className={`p-4 flex flex-col items-center justify-center ${bgInner}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${titleCls}`}>{t(title)}</span>
+                    <span className="text-2xl font-black mt-1 text-white">{(total / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className={`text-[10px] font-bold ${unitCls}`}>TONS</span></span>
+                  </div>
+                  <div className="p-3 flex flex-col gap-2">
+                    {items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No {group} vehicles</div>}
+                    {items.map((vt, i) => (
+                      <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
+                        <span className="text-slate-600 font-medium truncate pr-2">{vt.key}</span>
+                        <span className="font-bold text-slate-800">{(vt.netWeight / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TONS</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Table */}
         <div className="flex-1 overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 z-10 shadow-sm bg-slate-100">
               <TableRow>
+                <TableHead className="font-bold text-black border border-slate-300 w-16 text-center">{t('Sr.No')}</TableHead>
                 <TableHead className="font-bold text-black border border-slate-300">{getCategoryLabel()}</TableHead>
                 <TableHead className="font-bold text-black border border-slate-300 text-right">Slip Count</TableHead>
                 <TableHead className="font-bold text-black border border-slate-300 text-right">Gross Weight (Kg)</TableHead>
@@ -223,13 +272,13 @@ export default function SummaryReports() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-4">
+                  <TableCell colSpan={6} className="p-4">
                     <TableSkeleton rows={5} />
                   </TableCell>
                 </TableRow>
               ) : data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-10 text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <FileText className="h-8 w-8 text-slate-300 mb-2" />
                       <p>{t('No data available for the selected period.')}</p>
@@ -239,6 +288,7 @@ export default function SummaryReports() {
               ) : (
                 data.map((item, index) => (
                   <TableRow key={index} className="hover:bg-slate-50">
+                    <TableCell className="border border-slate-300 font-medium text-center text-slate-500">{index + 1}</TableCell>
                     <TableCell className="border border-slate-300 font-medium">{item.key}</TableCell>
                     <TableCell className="border border-slate-300 text-right">{item.count}</TableCell>
                     <TableCell className="border border-slate-300 text-right">{item.grossWeight.toLocaleString()}</TableCell>

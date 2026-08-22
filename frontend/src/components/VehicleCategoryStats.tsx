@@ -111,15 +111,15 @@ export default function VehicleCategoryStats() {
         )}
         
         {/* Primary Group */}
-        <div className="flex flex-col bg-blue-50/30 rounded-sm border border-blue-100 overflow-hidden">
-          <div className="p-4 bg-blue-100/50 flex flex-col items-center justify-center border-b border-blue-100">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t('Primary Total')}</span>
-            <span className="text-2xl font-black text-blue-600 mt-1">{formatTon(primary.total)} <span className="text-[10px] font-bold text-blue-400">TONS</span></span>
+        <div className="flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-4 bg-gradient-to-br from-indigo-500 to-indigo-600 flex flex-col items-center justify-center">
+            <span className="text-xs font-bold text-indigo-100 uppercase tracking-wider">{t('Primary Total')}</span>
+            <span className="text-2xl font-black text-white mt-1">{formatTon(primary.total)} <span className="text-[10px] font-bold text-indigo-200">TONS</span></span>
           </div>
           <div className="p-3 flex flex-col gap-2">
             {primary.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No primary vehicles</div>}
             {primary.items.map((vt, i) => (
-              <div key={i} className="flex justify-between items-center text-xs">
+              <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
                 <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
@@ -128,15 +128,15 @@ export default function VehicleCategoryStats() {
         </div>
         
         {/* Secondary Group */}
-        <div className="flex flex-col bg-emerald-50/30 rounded-sm border border-emerald-100 overflow-hidden">
-          <div className="p-4 bg-emerald-100/50 flex flex-col items-center justify-center border-b border-emerald-100">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t('Secondary Total')}</span>
-            <span className="text-2xl font-black text-emerald-600 mt-1">{formatTon(secondary.total)} <span className="text-[10px] font-bold text-emerald-400">TONS</span></span>
+        <div className="flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 flex flex-col items-center justify-center">
+            <span className="text-xs font-bold text-emerald-100 uppercase tracking-wider">{t('Secondary Total')}</span>
+            <span className="text-2xl font-black text-white mt-1">{formatTon(secondary.total)} <span className="text-[10px] font-bold text-emerald-200">TONS</span></span>
           </div>
           <div className="p-3 flex flex-col gap-2">
             {secondary.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No secondary vehicles</div>}
             {secondary.items.map((vt, i) => (
-              <div key={i} className="flex justify-between items-center text-xs">
+              <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
                 <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
@@ -145,15 +145,15 @@ export default function VehicleCategoryStats() {
         </div>
         
         {/* Others Group */}
-        <div className="flex flex-col bg-slate-50/50 rounded-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 bg-slate-100/50 flex flex-col items-center justify-center border-b border-slate-200">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t('Others')}</span>
-            <span className="text-2xl font-black text-slate-700 mt-1">{formatTon(others.total)} <span className="text-[10px] font-bold text-slate-400">TONS</span></span>
+        <div className="flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden shadow-sm">
+          <div className="p-4 bg-gradient-to-br from-slate-600 to-slate-700 flex flex-col items-center justify-center">
+            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('Others')}</span>
+            <span className="text-2xl font-black text-white mt-1">{formatTon(others.total)} <span className="text-[10px] font-bold text-slate-400">TONS</span></span>
           </div>
           <div className="p-3 flex flex-col gap-2">
             {others.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No other vehicles</div>}
             {others.items.map((vt, i) => (
-              <div key={i} className="flex justify-between items-center text-xs">
+              <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
                 <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
