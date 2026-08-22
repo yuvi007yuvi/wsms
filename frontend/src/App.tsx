@@ -31,6 +31,7 @@ import Superadmin from './components/Superadmin';
 import Billing from './components/Billing';
 import Diagnostics from './components/Diagnostics';
 import TripAnalysis from './components/TripAnalysis';
+import SummaryReports from './components/SummaryReports';
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             <Route path="sources" element={<Sources />} />
             <Route path="destinations" element={<Destinations />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="summary-reports" element={<SummaryReports />} />
             <Route path="pricing" element={<Pricing />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />

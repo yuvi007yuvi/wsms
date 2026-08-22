@@ -16,6 +16,7 @@ const navItems = [
   { name: 'Sources', path: '/sources', icon: MapPin },
   { name: 'Destinations', path: '/destinations', icon: Anchor },
   { name: 'Slip History', path: '/reports', icon: FileText },
+  { name: 'Summary Reports', path: '/summary-reports', icon: FileText },
   { name: 'Trip Analysis', path: '/trips', icon: Truck },
   { name: 'Pricing Plans', path: '/pricing', icon: CreditCard },
   { name: 'Users', path: '/users', icon: Users },

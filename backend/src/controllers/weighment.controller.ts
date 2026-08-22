@@ -192,3 +192,97 @@ export const deleteWeighmentSlip = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to delete slip' });
   }
 };
+
+export const getWeighmentSummary = async (req: Request, res: Response) => {
+  try {
+    const { dateFrom, dateTo, reportType } = req.query;
+    
+    let where: any = {};
+    
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = new Date(dateFrom as string);
+      if (dateTo) {
+        const to = new Date(dateTo as string);
+        to.setHours(23, 59, 59, 999);
+        where.date.lte = to;
+      }
+    }
+
+    // Fetch required fields to group in JS
+    const slips = await prisma.weighmentSlip.findMany({
+      where,
+      select: {
+        date: true,
+        grossWeight: true,
+        tareWeight: true,
+        netWeight: true,
+        vehicle: {
+          select: { vehicleType: { select: { name: true } } }
+        },
+        vehicleType: { select: { name: true } },
+        source: { select: { name: true } },
+        destination: { select: { name: true } }
+      },
+      // Limit to prevent memory issues on very large datasets
+      take: 100000
+    });
+
+    const summaryMap = new Map<string, any>();
+
+    for (const slip of slips) {
+      let key = 'Unknown';
+      
+      switch (reportType) {
+        case 'daily': {
+          const d = new Date(slip.date);
+          key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          break;
+        }
+        case 'vehicleType':
+          key = slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'Unknown';
+          break;
+        case 'ward':
+        case 'source':
+          key = slip.source?.name || 'Unknown';
+          break;
+        case 'work':
+        case 'destination':
+          key = slip.destination?.name || 'Unknown';
+          break;
+        default:
+          key = 'All';
+      }
+
+      if (!summaryMap.has(key)) {
+        summaryMap.set(key, {
+          key,
+          count: 0,
+          grossWeight: 0,
+          tareWeight: 0,
+          netWeight: 0
+        });
+      }
+
+      const current = summaryMap.get(key);
+      current.count += 1;
+      current.grossWeight += slip.grossWeight || 0;
+      current.tareWeight += slip.tareWeight || 0;
+      current.netWeight += slip.netWeight || 0;
+    }
+
+    const data = Array.from(summaryMap.values());
+    
+    // Sort logic
+    if (reportType === 'daily') {
+      data.sort((a, b) => b.key.localeCompare(a.key)); // Newest first
+    } else {
+      data.sort((a, b) => b.netWeight - a.netWeight); // Highest weight first
+    }
+
+    res.json({ data });
+  } catch (error) {
+    console.error('Error fetching weighment summary:', error);
+    res.status(500).json({ error: 'Failed to fetch summary reports' });
+  }
+};
