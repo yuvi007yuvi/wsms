@@ -114,8 +114,12 @@ export default function Vehicles() {
       }
       handleOpenChange(false);
       fetchVehicles();
-    } catch (error) {
-      toast({ title: 'Error saving vehicle', variant: 'destructive' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Error saving vehicle', 
+        description: error.response?.data?.error || 'Unknown error occurred',
+        variant: 'destructive' 
+      });
     }
   };
 

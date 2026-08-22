@@ -51,8 +51,11 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
           data: payload
         });
         res.status(201).json(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
+        if (error.code === 'P2002') {
+          return res.status(400).json({ error: `This ${modelName} already exists or a unique constraint was violated.` });
+        }
         res.status(400).json({ error: `Failed to create ${modelName}` });
       }
     },
@@ -70,7 +73,11 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
           data: payload
         });
         res.json(data);
-      } catch (error) {
+      } catch (error: any) {
+        console.error(error);
+        if (error.code === 'P2002') {
+          return res.status(400).json({ error: `This ${modelName} already exists or a unique constraint was violated.` });
+        }
         res.status(400).json({ error: `Failed to update ${modelName}` });
       }
     },

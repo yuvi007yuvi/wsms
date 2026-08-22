@@ -286,7 +286,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `${formatTon(val)}T`} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip formatter={(value: number, name: string) => [`${formatTon(value)} TONS`, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px', border: '1px solid #e5e7eb' }} />
+                <Tooltip formatter={(value: any, name: any) => [`${formatTon(value)} TONS`, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px', border: '1px solid #e5e7eb' }} />
                 <Area type="monotone" dataKey="grossWeight" name={t("Gross")} stroke="#3b82f6" strokeWidth={2} fill="url(#gradGross)" />
                 <Area type="monotone" dataKey="netWeight" name={t("Net")} stroke="#10b981" strokeWidth={2} fill="url(#gradNet)" />
               </AreaChart>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tickFormatter={(val) => `${formatTon(val)}T`} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip formatter={(value: number, name: string) => [name.includes('Weight') ? `${formatTon(value)} TONS` : value, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px', border: '1px solid #e5e7eb' }} />
+                <Tooltip formatter={(value: any, name: any) => [name.includes('Weight') ? `${formatTon(value)} TONS` : value, name]} contentStyle={{ borderRadius: '4px', fontSize: '11px', border: '1px solid #e5e7eb' }} />
                 <Bar yAxisId="left" dataKey="slips" name={t("Slips")} fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Line yAxisId="right" type="monotone" dataKey="weight" name={t("Weight")} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
               </BarChart>
