@@ -277,7 +277,7 @@ export const getWeighmentSummary = async (req: Request, res: Response) => {
     if (reportType === 'daily') {
       data.sort((a, b) => b.key.localeCompare(a.key)); // Newest first
     } else {
-      data.sort((a, b) => b.netWeight - a.netWeight); // Highest weight first
+      data.sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: 'base' })); // Alphabetical ascending
     }
 
     res.json({ data });
