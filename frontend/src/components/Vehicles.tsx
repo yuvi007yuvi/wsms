@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Search, Filter, RefreshCw, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, RefreshCw, Edit2, RotateCcw, ArchiveRestore } from 'lucide-react';
 import { ImportExportButtons } from '@/components/ui/ImportExportButtons';
 import api from '@/lib/api';
 
@@ -23,6 +23,10 @@ export default function Vehicles() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const { toast } = useToast();
+
+  const [showDeletedModal, setShowDeletedModal] = useState(false);
+  const [deletedVehicles, setDeletedVehicles] = useState<any[]>([]);
+  const [deletedLoading, setDeletedLoading] = useState(false);
 
   // Form
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -74,6 +78,45 @@ export default function Vehicles() {
   useEffect(() => {
     fetchVehicleTypes();
   }, []);
+
+  const fetchDeletedVehicles = async () => {
+    setDeletedLoading(true);
+    try {
+      const res = await api.get('/master/vehicles', {
+        params: { page: 1, limit: 1000, isActive: 'false' }
+      });
+      if (res.data && res.data.data) {
+        setDeletedVehicles(res.data.data);
+      } else {
+        setDeletedVehicles(res.data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showDeletedModal) {
+      fetchDeletedVehicles();
+    }
+  }, [showDeletedModal]);
+
+  const handleRestore = async (id: string) => {
+    try {
+      await api.put(`/master/vehicles/${id}`, { isActive: true });
+      toast({ title: 'Vehicle restored successfully' });
+      fetchDeletedVehicles();
+      fetchVehicles();
+    } catch (error: any) {
+      toast({ 
+        title: 'Error restoring vehicle', 
+        description: error.response?.data?.error || 'Unknown error occurred',
+        variant: 'destructive' 
+      });
+    }
+  };
 
   const handleEdit = (v: any) => {
     setVehicleNumber(v.vehicleNumber);
@@ -152,6 +195,9 @@ export default function Vehicles() {
             exportEndpoint="/master/vehicles"
             onImportSuccess={fetchVehicles} 
           />
+          <Button onClick={() => setShowDeletedModal(true)} size="sm" variant="outline" className="h-8 text-xs font-bold uppercase tracking-wider border-slate-300">
+            <ArchiveRestore className="mr-2 h-4 w-4" /> Deleted
+          </Button>
           <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenChange(true)} size="sm" className="h-8 text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 rounded-sm">
@@ -188,6 +234,54 @@ export default function Vehicles() {
         </Dialog>
         </div>
       </div>
+
+      <Dialog open={showDeletedModal} onOpenChange={setShowDeletedModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Deleted / Disabled Vehicles</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto mt-4">
+            <Table>
+              <TableHeader className="bg-slate-100/80 sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider">Sr. No.</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider">Vehicle Number</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider">Type</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deletedLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="p-4">
+                      <TableSkeleton rows={3} />
+                    </TableCell>
+                  </TableRow>
+                ) : deletedVehicles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                      No deleted vehicles found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  deletedVehicles.map((v, index) => (
+                    <TableRow key={v.id}>
+                      <TableCell className="py-2 text-sm">{index + 1}</TableCell>
+                      <TableCell className="py-2 text-sm font-medium">{v.vehicleNumber}</TableCell>
+                      <TableCell className="py-2 text-sm">{v.vehicleType?.name || '-'}</TableCell>
+                      <TableCell className="py-2 text-right">
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleRestore(v.id)}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> Restore
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-col flex-1 bg-white border border-slate-300 rounded-sm shadow-sm overflow-hidden">
         {/* Table Toolbar */}

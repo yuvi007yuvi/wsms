@@ -98,7 +98,7 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
         if (!req.body.items || !Array.isArray(req.body.items)) {
           return res.status(400).json({ error: 'Invalid data format. Expected { items: [] }' });
         }
-        
+
         // @ts-ignore
         const result = await prisma[modelName].createMany({
           data: req.body.items,
@@ -176,12 +176,16 @@ export const vehicleController = {
       const search = req.query.search as string;
       const skip = (page - 1) * limit;
 
-      const whereClause = search ? {
-        isActive: true,
-        OR: [
+      const isActiveParam = req.query.isActive;
+      const isActiveFilter = String(isActiveParam) === 'false' ? false : true;
+      console.log('GET /vehicles - isActiveParam:', isActiveParam, 'isActiveFilter:', isActiveFilter);
+
+      const whereClause: any = { isActive: isActiveFilter };
+      if (search) {
+        whereClause.OR = [
           { vehicleNumber: { contains: search, mode: 'insensitive' as any } }
-        ]
-      } : { isActive: true };
+        ];
+      }
 
       const [data, total] = await Promise.all([
         prisma.vehicle.findMany({
