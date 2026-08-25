@@ -32,6 +32,9 @@ export default function Vehicles() {
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [vehicleTypeId, setVehicleTypeId] = useState('');
   const [tareWeight, setTareWeight] = useState('');
+  const [driverName, setDriverName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [owner, setOwner] = useState('');
   const [vehicleTypes, setVehicleTypes] = useState<any[]>([]);
   
 
@@ -82,9 +85,7 @@ export default function Vehicles() {
   const fetchDeletedVehicles = async () => {
     setDeletedLoading(true);
     try {
-      const res = await api.get('/master/vehicles', {
-        params: { page: 1, limit: 1000, isActive: 'false' }
-      });
+      const res = await api.get('/master/vehicles/deleted');
       if (res.data && res.data.data) {
         setDeletedVehicles(res.data.data);
       } else {
@@ -118,10 +119,28 @@ export default function Vehicles() {
     }
   };
 
+  const handlePermanentDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this vehicle? This action cannot be undone.')) return;
+    try {
+      await api.delete(`/master/vehicles/${id}/permanent`);
+      toast({ title: 'Vehicle permanently deleted' });
+      fetchDeletedVehicles();
+    } catch (error: any) {
+      toast({ 
+        title: 'Error deleting vehicle', 
+        description: error.response?.data?.error || 'Unknown error occurred',
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const handleEdit = (v: any) => {
     setVehicleNumber(v.vehicleNumber);
     setVehicleTypeId(v.vehicleTypeId || '');
     setTareWeight(v.tareWeight ? v.tareWeight.toString() : '');
+    setDriverName(v.driverName || '');
+    setMobile(v.mobile || '');
+    setOwner(v.owner || '');
     setEditingId(v.id);
     setOpen(true);
   };
@@ -133,26 +152,31 @@ export default function Vehicles() {
       setVehicleNumber('');
       setVehicleTypeId('');
       setTareWeight('');
+      setDriverName('');
+      setMobile('');
+      setOwner('');
       setEditingId(null);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!vehicleNumber || !vehicleTypeId) return;
     try {
+      const payload = {
+        vehicleNumber,
+        vehicleTypeId,
+        tareWeight: parseFloat(tareWeight) || 0,
+        driverName: driverName || null,
+        mobile: mobile || null,
+        owner: owner || null
+      };
+
       if (editingId) {
-        await api.put(`/master/vehicles/${editingId}`, {
-          vehicleNumber,
-          vehicleTypeId,
-          tareWeight: parseFloat(tareWeight) || 0
-        });
+        await api.put(`/master/vehicles/${editingId}`, payload);
         toast({ title: 'Vehicle updated successfully' });
       } else {
-        await api.post('/master/vehicles', {
-          vehicleNumber,
-          vehicleTypeId,
-          tareWeight: parseFloat(tareWeight) || 0
-        });
+        await api.post('/master/vehicles', payload);
         toast({ title: 'Vehicle saved successfully' });
       }
       handleOpenChange(false);
@@ -209,24 +233,38 @@ export default function Vehicles() {
               <DialogTitle>{editingId ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSave} className="grid grid-cols-1 gap-4 mt-4">
-              <div className="space-y-2">
-                <Label>Vehicle Number</Label>
-                <Input value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value)} required />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Vehicle Number *</Label>
+                  <Input value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Vehicle Type *</Label>
+                  <SearchableSelect
+                    options={vehicleTypes.map(t => ({ value: t.id, label: t.name }))}
+                    value={vehicleTypeId}
+                    onValueChange={setVehicleTypeId}
+                    placeholder="Select Vehicle Type..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tare Weight (kg)</Label>
+                  <Input type="number" value={tareWeight} onChange={e => setTareWeight(e.target.value)} placeholder="0" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Driver Name</Label>
+                  <Input value={driverName} onChange={e => setDriverName(e.target.value)} placeholder="e.g. John Doe" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mobile</Label>
+                  <Input value={mobile} onChange={e => setMobile(e.target.value)} placeholder="e.g. 9876543210" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Owner / Agency</Label>
+                  <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="Owner Name" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Vehicle Type</Label>
-                <SearchableSelect
-                  options={vehicleTypes.map(t => ({ value: t.id, label: t.name }))}
-                  value={vehicleTypeId}
-                  onValueChange={setVehicleTypeId}
-                  placeholder="Select Vehicle Type..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tare Weight (kg)</Label>
-                <Input type="number" value={tareWeight} onChange={e => setTareWeight(e.target.value)} placeholder="0" />
-              </div>
-              <Button type="submit" className="w-full h-10 mt-2 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm" disabled={!vehicleNumber || !vehicleTypeId}>
+              <Button type="submit" className="w-full h-10 mt-4 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm" disabled={!vehicleNumber || !vehicleTypeId}>
                 {editingId ? 'Update Vehicle' : 'Save Vehicle'}
               </Button>
             </form>
@@ -247,32 +285,47 @@ export default function Vehicles() {
                   <TableHead className="text-xs font-bold uppercase tracking-wider">Sr. No.</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider">Vehicle Number</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider">Type</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider">Driver / Mobile</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider">Owner</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider text-right">Tare (kg)</TableHead>
                   <TableHead className="text-xs font-bold uppercase tracking-wider text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {deletedLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="p-4">
+                    <TableCell colSpan={7} className="p-4">
                       <TableSkeleton rows={3} />
                     </TableCell>
                   </TableRow>
                 ) : deletedVehicles.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                       No deleted vehicles found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   deletedVehicles.map((v, index) => (
                     <TableRow key={v.id}>
-                      <TableCell className="py-2 text-sm">{index + 1}</TableCell>
-                      <TableCell className="py-2 text-sm font-medium">{v.vehicleNumber}</TableCell>
-                      <TableCell className="py-2 text-sm">{v.vehicleType?.name || '-'}</TableCell>
-                      <TableCell className="py-2 text-right">
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleRestore(v.id)}>
-                          <RotateCcw className="h-3 w-3 mr-1" /> Restore
-                        </Button>
+                        <TableCell className="py-2 text-sm">{index + 1}</TableCell>
+                        <TableCell className="py-2 text-sm font-medium">{v.vehicleNumber}</TableCell>
+                        <TableCell className="py-2 text-sm">{v.vehicleType?.name || '-'}</TableCell>
+                        <TableCell className="py-2 text-sm">
+                          {v.driverName ? <div>{v.driverName}</div> : null}
+                          {v.mobile ? <div className="text-xs text-slate-400">{v.mobile}</div> : null}
+                          {!v.driverName && !v.mobile ? '-' : null}
+                        </TableCell>
+                        <TableCell className="py-2 text-sm">{v.owner || '-'}</TableCell>
+                        <TableCell className="py-2 text-sm font-bold text-right">{v.tareWeight || 0}</TableCell>
+                        <TableCell className="py-2 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleRestore(v.id)}>
+                            <RotateCcw className="h-3 w-3 mr-1" /> Restore
+                          </Button>
+                          <Button variant="destructive" size="sm" className="h-7 text-xs bg-red-600 hover:bg-red-700" onClick={() => handlePermanentDelete(v.id)}>
+                            <Trash2 className="h-3 w-3 mr-1" /> Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -316,20 +369,22 @@ export default function Vehicles() {
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Vehicle Number</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Type</TableHead>
-                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Tare Weight (kg)</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Driver / Mobile</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Owner</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Tare (kg)</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-4">
+                  <TableCell colSpan={7} className="p-4">
                     <TableSkeleton rows={5} />
                   </TableCell>
                 </TableRow>
               ) : vehicles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                     No vehicles found. Add one to get started.
                   </TableCell>
                 </TableRow>
@@ -339,6 +394,12 @@ export default function Vehicles() {
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{index + 1}</TableCell>
                     <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{v.vehicleNumber}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{v.vehicleType?.name || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">
+                      {v.driverName ? <div>{v.driverName}</div> : null}
+                      {v.mobile ? <div className="text-xs text-slate-400">{v.mobile}</div> : null}
+                      {!v.driverName && !v.mobile ? '-' : null}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{v.owner || '-'}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-900 font-bold text-right">{v.tareWeight || 0}</TableCell>
                     <TableCell className="py-3 px-4 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(v)}>
