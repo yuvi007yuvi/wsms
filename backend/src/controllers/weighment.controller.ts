@@ -4,7 +4,10 @@ import prisma from '../utils/prisma';
 // Helper to generate unique slip number
 const generateSlipNumber = async () => {
   const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const dateStr = `${yyyy}${mm}${dd}`;
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
@@ -112,7 +115,7 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
 export const getWeighmentSlips = async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, Math.min(1000, parseInt(req.query.limit as string) || 10));
+    const limit = Math.max(1, Math.min(1000000, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
     
     const { search, dateFrom, dateTo } = req.query;
@@ -121,12 +124,8 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
     
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = new Date(dateFrom as string);
-      if (dateTo) {
-        const to = new Date(dateTo as string);
-        to.setHours(23, 59, 59, 999);
-        where.date.lte = to;
-      }
+      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00`);
+      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999`);
     }
     
     if (search) {
@@ -201,12 +200,8 @@ export const getWeighmentSummary = async (req: Request, res: Response) => {
     
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = new Date(dateFrom as string);
-      if (dateTo) {
-        const to = new Date(dateTo as string);
-        to.setHours(23, 59, 59, 999);
-        where.date.lte = to;
-      }
+      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00`);
+      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999`);
     }
 
     // Fetch required fields to group in JS
