@@ -4,18 +4,18 @@ import prisma from '../utils/prisma';
 // Helper to generate unique slip number
 const generateSlipNumber = async () => {
   const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
+  // Shift by +5:30 to get IST time for extracting YYYY, MM, DD
+  const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+  const yyyy = istTime.getUTCFullYear();
+  const mm = String(istTime.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(istTime.getUTCDate()).padStart(2, '0');
   const dateStr = `${yyyy}${mm}${dd}`;
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const shortDate = dateStr.slice(2); // YYMMDD
 
   const lastSlip = await prisma.weighmentSlip.findFirst({
     where: {
-      date: {
-        gte: startOfDay,
-        lte: endOfDay
+      slipNumber: {
+        startsWith: `WS${shortDate}-`
       }
     },
     orderBy: {
@@ -32,7 +32,6 @@ const generateSlipNumber = async () => {
   }
 
   const seq = String(seqNum).padStart(4, '0');
-  const shortDate = dateStr.slice(2); // YYMMDD
   return `WS${shortDate}-${seq}`;
 };
 
@@ -124,8 +123,8 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
     
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00`);
-      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999`);
+      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00+05:30`);
+      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999+05:30`);
     }
     
     if (search) {
@@ -200,8 +199,8 @@ export const getWeighmentSummary = async (req: Request, res: Response) => {
     
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00`);
-      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999`);
+      if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00+05:30`);
+      if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999+05:30`);
     }
 
     // Fetch required fields to group in JS
@@ -230,8 +229,8 @@ export const getWeighmentSummary = async (req: Request, res: Response) => {
       
       switch (reportType) {
         case 'daily': {
-          const d = new Date(slip.date);
-          key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const d = new Date(new Date(slip.date).getTime() + (5.5 * 60 * 60 * 1000));
+          key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
           break;
         }
         case 'vehicleType':
