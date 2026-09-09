@@ -14,8 +14,15 @@ export default function TripAnalysis() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Date Range Filter
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const getLocalStr = (d: Date = new Date()) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const [dateFrom, setDateFrom] = useState(getLocalStr());
+  const [dateTo, setDateTo] = useState(getLocalStr());
 
   const [loading, setLoading] = useState(false);
   const [expandedVehicles, setExpandedVehicles] = useState<Set<string>>(new Set());
@@ -99,6 +106,16 @@ export default function TripAnalysis() {
     return Array.from(map.values()).sort((a, b) => b.totalNet - a.totalNet);
   }, [slips]);
 
+  // Compute trip frequency (e.g., how many vehicles did 1 trip, 2 trips, etc.)
+  const tripFrequency = useMemo(() => {
+    const freq = new Map<number, number>();
+    vehicleStats.forEach(stat => {
+      const trips = stat.trips.length;
+      freq.set(trips, (freq.get(trips) || 0) + 1);
+    });
+    return Array.from(freq.entries()).sort((a, b) => a[0] - b[0]);
+  }, [vehicleStats]);
+
   const expandAll = () => {
     const allVehicles = new Set(vehicleStats.map(v => v.vehicleNo));
     setExpandedVehicles(allVehicles);
@@ -149,18 +166,31 @@ export default function TripAnalysis() {
         </div>
 
         {/* Header Stats */}
-        <div className="flex items-center gap-6 px-4 py-2 border-b border-slate-200 bg-slate-100 text-xs flex-shrink-0 justify-between">
-          <div className="flex gap-6">
-            <span className="text-slate-600 font-medium">{t('Total Vehicles')}: <span className="font-bold text-slate-800">{vehicleStats.length}</span></span>
-            <span className="text-slate-300">|</span>
-            <span className="text-slate-600 font-medium">{t('Total Trips')}: <span className="font-bold text-slate-800">{slips.length}</span></span>
-            <span className="text-slate-300">|</span>
-            <span className="text-slate-600 font-medium">{t('Total Net Wt')}: <span className="font-bold text-green-700">{vehicleStats.reduce((a, b) => a + b.totalNet, 0).toLocaleString()} KG</span></span>
+        <div className="flex flex-col border-b border-slate-200 bg-slate-100 flex-shrink-0">
+          <div className="flex items-center gap-6 px-4 py-2 justify-between">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 items-center">
+              <span className="text-slate-600 text-xs font-medium">{t('Total Vehicles')}: <span className="font-bold text-slate-800">{vehicleStats.length}</span></span>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-600 text-xs font-medium">{t('Total Trips')}: <span className="font-bold text-slate-800">{slips.length}</span></span>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-600 text-xs font-medium">{t('Total Net Wt')}: <span className="font-bold text-green-700">{vehicleStats.reduce((a, b) => a + b.totalNet, 0).toLocaleString()} KG</span></span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={expandAll} className="h-6 text-[10px] px-2 text-slate-600">Expand All</Button>
+              <Button variant="ghost" size="sm" onClick={collapseAll} className="h-6 text-[10px] px-2 text-slate-600">Collapse All</Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={expandAll} className="h-6 text-[10px] px-2 text-slate-600">Expand All</Button>
-            <Button variant="ghost" size="sm" onClick={collapseAll} className="h-6 text-[10px] px-2 text-slate-600">Collapse All</Button>
-          </div>
+          {tripFrequency.length > 0 && (
+            <div className="px-4 py-2 border-t border-slate-200/60 bg-slate-50/80 flex flex-wrap gap-3 items-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('Vehicles by Trip Count')}:</span>
+              {tripFrequency.map(([trips, count]) => (
+                <div key={trips} className="flex items-center gap-1.5 bg-white border border-slate-200 px-2 py-0.5 rounded-full shadow-sm">
+                  <span className="text-[10px] text-slate-500">{trips} {trips === 1 ? 'Trip' : 'Trips'}:</span>
+                  <span className="text-xs font-bold text-slate-800">{count} {t('Vehicles')}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Table Area */}

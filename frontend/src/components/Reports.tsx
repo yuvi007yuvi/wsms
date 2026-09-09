@@ -18,9 +18,16 @@ export default function Reports() {
   const [selectedSlipToPrint, setSelectedSlipToPrint] = useState<any>(null);
   const [isGreenAssistFormat, setIsGreenAssistFormat] = useState(false);
 
+  const getLocalStr = (d: Date = new Date()) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   // Date Range Filter
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(getLocalStr());
+  const [dateTo, setDateTo] = useState(getLocalStr());
 
   // Pagination & Server Data
   const [currentPage, setCurrentPage] = useState(1);
@@ -218,7 +225,7 @@ export default function Reports() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `slips_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `slips_${getLocalStr()}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -261,7 +268,7 @@ export default function Reports() {
 
   const setQuickDateRange = (range: 'today' | 'week' | 'month' | 'all') => {
     const now = new Date();
-    const toStr = now.toISOString().slice(0, 10);
+    const toStr = getLocalStr(now);
     
     switch (range) {
       case 'today':
@@ -271,14 +278,14 @@ export default function Reports() {
       case 'week': {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        setDateFrom(weekAgo.toISOString().slice(0, 10));
+        setDateFrom(getLocalStr(weekAgo));
         setDateTo(toStr);
         break;
       }
       case 'month': {
         const monthAgo = new Date();
         monthAgo.setDate(monthAgo.getDate() - 30);
-        setDateFrom(monthAgo.toISOString().slice(0, 10));
+        setDateFrom(getLocalStr(monthAgo));
         setDateTo(toStr);
         break;
       }

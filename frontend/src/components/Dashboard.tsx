@@ -18,7 +18,13 @@ export default function Dashboard() {
   const [sourcesList, setSourcesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getTodayStr = () => new Date().toISOString().slice(0, 10);
+  const getTodayStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   // Filters
   const [dateFrom, setDateFrom] = useState(getTodayStr());
@@ -77,12 +83,18 @@ export default function Dashboard() {
   }, [vehiclesList]);
 
   const setQuickDateRange = (range: 'today' | 'week' | 'month' | 'all') => {
+    const getLocalStr = (d: Date) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
     const now = new Date();
-    const toStr = now.toISOString().slice(0, 10);
+    const toStr = getLocalStr(now);
     switch (range) {
       case 'today': setDateFrom(toStr); setDateTo(toStr); break;
-      case 'week': { const w = new Date(); w.setDate(w.getDate() - 7); setDateFrom(w.toISOString().slice(0, 10)); setDateTo(toStr); break; }
-      case 'month': { const m = new Date(); m.setDate(m.getDate() - 30); setDateFrom(m.toISOString().slice(0, 10)); setDateTo(toStr); break; }
+      case 'week': { const w = new Date(); w.setDate(w.getDate() - 7); setDateFrom(getLocalStr(w)); setDateTo(toStr); break; }
+      case 'month': { const m = new Date(); m.setDate(m.getDate() - 30); setDateFrom(getLocalStr(m)); setDateTo(toStr); break; }
       case 'all': setDateFrom(''); setDateTo(''); break;
     }
   };

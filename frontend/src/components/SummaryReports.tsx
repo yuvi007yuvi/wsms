@@ -14,9 +14,16 @@ export default function SummaryReports() {
   const [data, setData] = useState<any[]>([]);
   const [reportType, setReportType] = useState('daily');
   
+  const getLocalStr = (d: Date = new Date()) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   // Date Range Filter
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(getLocalStr());
+  const [dateTo, setDateTo] = useState(getLocalStr());
 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -68,7 +75,7 @@ export default function SummaryReports() {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `summary_${reportType}_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `summary_${reportType}_${getLocalStr()}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -86,7 +93,7 @@ export default function SummaryReports() {
 
   const setQuickDateRange = (range: 'today' | 'week' | 'month' | 'all') => {
     const now = new Date();
-    const toStr = now.toISOString().slice(0, 10);
+    const toStr = getLocalStr(now);
     
     switch (range) {
       case 'today':
@@ -96,14 +103,14 @@ export default function SummaryReports() {
       case 'week': {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        setDateFrom(weekAgo.toISOString().slice(0, 10));
+        setDateFrom(getLocalStr(weekAgo));
         setDateTo(toStr);
         break;
       }
       case 'month': {
         const monthAgo = new Date();
         monthAgo.setDate(monthAgo.getDate() - 30);
-        setDateFrom(monthAgo.toISOString().slice(0, 10));
+        setDateFrom(getLocalStr(monthAgo));
         setDateTo(toStr);
         break;
       }

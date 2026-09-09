@@ -120,7 +120,9 @@ export default function VehicleCategoryStats() {
             {primary.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No primary vehicles</div>}
             {primary.items.map((vt, i) => (
               <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
-                <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
+                <span className="text-slate-600 font-medium truncate pr-2">
+                  {vt.name} <span className="text-[9px] text-slate-400 ml-1">({vt.count} {t('Trips')})</span>
+                </span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
             ))}
@@ -137,7 +139,9 @@ export default function VehicleCategoryStats() {
             {secondary.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No secondary vehicles</div>}
             {secondary.items.map((vt, i) => (
               <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
-                <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
+                <span className="text-slate-600 font-medium truncate pr-2">
+                  {vt.name} <span className="text-[9px] text-slate-400 ml-1">({vt.count} {t('Trips')})</span>
+                </span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
             ))}
@@ -154,7 +158,9 @@ export default function VehicleCategoryStats() {
             {others.items.length === 0 && <div className="text-[10px] text-slate-400 text-center py-2">No other vehicles</div>}
             {others.items.map((vt, i) => (
               <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0 last:pb-0">
-                <span className="text-slate-600 font-medium truncate pr-2">{vt.name}</span>
+                <span className="text-slate-600 font-medium truncate pr-2">
+                  {vt.name} <span className="text-[9px] text-slate-400 ml-1">({vt.count} {t('Trips')})</span>
+                </span>
                 <span className="font-bold text-slate-800">{formatTon(vt.weight)}</span>
               </div>
             ))}
