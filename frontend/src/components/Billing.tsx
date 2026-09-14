@@ -62,13 +62,17 @@ export default function Billing() {
     }
   }, [navigate]);
 
+  const [billerName, setBillerName] = useState(() => localStorage.getItem('billerName') || 'Yuvraj Singh Tomar');
+  const [billerAddress, setBillerAddress] = useState(() => localStorage.getItem('billerAddress') || 'BEHIND OLD POLICE STATION GALI.NO 2 AMBAH (M.P)');
+  const [descOption, setDescOption] = useState<'productOnly' | 'withPlan'>('productOnly');
+
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('WT360-GEN-001');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   
-  const [items, setItems] = useState([{ id: 1, description: '', quantity: 1, price: 0 }]);
+  const [items, setItems] = useState([{ id: 1, description: 'Weight360Pro', quantity: 1, price: 5999 }]);
   const [taxRate, setTaxRate] = useState(0);
   const [settings, setSettings] = useState<any>({});
   
@@ -84,12 +88,27 @@ export default function Billing() {
   const [upiId, setUpiId] = useState('7869708888@kotakbank');
   const [upiName, setUpiName] = useState('YUVRAJ SINGH TOMAR');
 
+  const handleBillerNameChange = (val: string) => {
+    setBillerName(val);
+    localStorage.setItem('billerName', val);
+  };
+
+  const handleBillerAddressChange = (val: string) => {
+    setBillerAddress(val);
+    localStorage.setItem('billerAddress', val);
+  };
+
   const fetchInvoices = () => {
     api.get('/superadmin/invoices').then(res => setInvoices(res.data)).catch(err => console.error(err));
   };
 
   useEffect(() => {
-    api.get('/settings').then(res => setSettings(res.data)).catch(err => console.error(err));
+    api.get('/settings').then(res => {
+      setSettings(res.data);
+      if (res.data?.address && !localStorage.getItem('billerAddress')) {
+        setBillerAddress(res.data.address);
+      }
+    }).catch(err => console.error(err));
     api.get('/superadmin/projects').then(res => setProjects(res.data)).catch(err => console.error(err));
     fetchInvoices();
   }, []);
@@ -105,27 +124,38 @@ export default function Billing() {
   };
 
   const generateSubscriptionBill = () => {
-    let desc = '';
     let price = 0;
     
     const durationNum = parseInt(selectedDuration);
     let durationText = durationNum === 12 ? 'Annual' : `${durationNum} Month(s)`;
+    let planTitle = 'Municipal Professional Plan';
 
     if (selectedPlanBase === 'starter') {
-      desc = `Starter Site Plan - ${durationText} Subscription`;
+      planTitle = 'Starter Site Plan';
       if (durationNum === 12) {
         price = 1999 * 12; // 23988
       } else {
         price = 2499 * durationNum;
       }
     } else if (selectedPlanBase === 'professional') {
-      desc = `Municipal Professional Plan - ${durationText} Subscription`;
+      planTitle = 'Municipal Professional Plan';
       if (durationNum === 12) {
         price = 4799 * 12; // 57588
       } else {
         price = 5999 * durationNum;
       }
+    } else if (selectedPlanBase === 'enterprise') {
+      planTitle = 'Enterprise Corporate Plan';
+      if (durationNum === 12) {
+        price = 9999 * 12; // 119988
+      } else {
+        price = 12499 * durationNum;
+      }
     }
+
+    const desc = descOption === 'withPlan' 
+      ? `Weight360Pro - ${planTitle} - ${durationText} Subscription`
+      : 'Weight360Pro';
 
     setItems([{ id: Date.now(), description: desc, quantity: 1, price }]);
   };
@@ -234,6 +264,7 @@ export default function Billing() {
             <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" value={selectedPlanBase} onChange={e => setSelectedPlanBase(e.target.value)}>
               <option value="starter">Starter Site Plan (Base ₹2,499/mo)</option>
               <option value="professional">Municipal Professional (Base ₹5,999/mo)</option>
+              <option value="enterprise">Enterprise Corporate (Base ₹12,499/mo)</option>
             </select>
           </div>
           <div className="space-y-2 flex-1">
@@ -245,6 +276,13 @@ export default function Billing() {
               <option value="12">1 Year (Annual Discount)</option>
             </select>
           </div>
+          <div className="space-y-2 flex-1">
+            <Label>Description of Goods</Label>
+            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-medium" value={descOption} onChange={e => setDescOption(e.target.value as any)}>
+              <option value="productOnly">Weight360Pro</option>
+              <option value="withPlan">Weight360Pro - Plan &amp; Duration</option>
+            </select>
+          </div>
           <Button onClick={generateSubscriptionBill} className="bg-blue-600 hover:bg-blue-700">Generate</Button>
         </CardContent>
       </Card>
@@ -252,10 +290,22 @@ export default function Billing() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 no-print">
         <Card>
           <CardHeader>
-            <CardTitle>Client Details</CardTitle>
+            <CardTitle>Biller &amp; Client Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="p-3 bg-blue-50/70 rounded-md border border-blue-100 space-y-3">
+              <div className="font-semibold text-xs text-blue-900 uppercase tracking-wide">Biller / Issuer (Invoice Top Header)</div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-700">Name on Top</Label>
+                <Input value={billerName} onChange={e => handleBillerNameChange(e.target.value)} placeholder="e.g. Yuvraj Singh Tomar" className="h-9 bg-white" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-700">Address on Top</Label>
+                <Input value={billerAddress} onChange={e => handleBillerAddressChange(e.target.value)} placeholder="Address" className="h-9 bg-white" />
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
               <Label>Client Name</Label>
               <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="e.g. Acme Corp" />
             </div>
@@ -412,8 +462,8 @@ export default function Billing() {
           {/* Company & Invoice Details */}
           <div className="flex border-b border-black">
             <div className="w-1/2 border-r border-black p-2 flex flex-col">
-              <span className="font-bold text-xl">{settings.companyName !== 'Default Company Ltd' && settings.companyName ? settings.companyName : 'WeighT360Pro Solutions'}</span>
-              <span className="whitespace-pre-line mt-1 text-sm">{settings.address || 'Tech Park, Block A\nIndustrial Area'}</span>
+              <span className="font-bold text-xl uppercase">{billerName || 'Yuvraj Singh Tomar'}</span>
+              <span className="whitespace-pre-line mt-1 text-sm">{billerAddress || settings.address || 'BEHIND OLD POLICE STATION GALI.NO 2 AMBAH (M.P)'}</span>
             </div>
             <div className="w-1/2 flex flex-col">
               <div className="flex border-b border-black flex-1">

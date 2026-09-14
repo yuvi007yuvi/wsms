@@ -12,6 +12,11 @@ export const checkSubscription = async (req: AuthRequest, res: Response, next: N
     return;
   }
 
+  // Service accounts (such as Green Assist API integration) bypass individual user checks
+  if (req.user.isServiceAccount) {
+    return next();
+  }
+
   try {
     const userId = req.user.id;
     const now = Date.now();
