@@ -142,8 +142,8 @@ export default function DashboardLayout() {
 
         <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
           <Link to="/" className="flex flex-col items-center gap-1">
-            <img src="/images.jpg" alt="WeighT360Pro" className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
-            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{t('WeighT360Pro')}</span>}
+            <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
+            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>}
           </Link>
 
           {/* Project Badge moved here */}
@@ -244,8 +244,8 @@ export default function DashboardLayout() {
               <SheetContent side="left" className="p-0 w-64 bg-gradient-to-b from-green-50 to-green-100/80 border-r border-green-200 flex flex-col no-print">
                 <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
                   <Link to="/" className="flex flex-col items-center gap-1" onClick={() => setIsMobileOpen(false)}>
-                    <img src="/images.jpg" alt="WeighT360Pro" className="object-contain rounded shadow-sm bg-white p-1 transition-all h-12 w-12" />
-                    <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{t('WeighT360Pro')}</span>
+                    <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className="object-contain rounded shadow-sm bg-white p-1 transition-all h-12 w-12" />
+                    <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>
                   </Link>
 
                   {/* Project Badge moved here */}
@@ -319,7 +319,7 @@ export default function DashboardLayout() {
               </SheetContent>
             </Sheet>
 
-            <span className="font-semibold text-slate-800 hidden md:inline-block">{t('WeighT360Pro')}</span>
+            <span className="font-semibold text-slate-800 hidden md:inline-block">{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>
             <span className="text-slate-300 hidden md:inline-block">/</span>
             <span className="font-bold text-slate-600 uppercase tracking-wider text-xs">{t(currentNavItem.name)}</span>
           </div>
