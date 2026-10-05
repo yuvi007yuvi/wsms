@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Printer, FileText, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Printer, FileText, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
 const RECITY_WARDS: Record<string, string> = {
@@ -71,6 +71,7 @@ export default function RecityLetterheadReport({
   const [previewPage, setPreviewPage] = useState(1);
 
   const [strictFilter, setStrictFilter] = useState(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Rows per page: page 1 has certification intro text, so 9 rows fit comfortably like the sample PDF.
   // Subsequent pages have 11 rows.
@@ -168,32 +169,42 @@ export default function RecityLetterheadReport({
     const element = document.getElementById('recity-letterhead-print-content');
     if (!element) return;
     
+    setIsGeneratingPDF(true);
+    
     // Temporarily make it block for the capture so html2canvas sees it
-    const originalDisplay = element.style.display;
-    const originalPos = element.style.position;
-    const originalLeft = element.style.left;
-    const originalTop = element.style.top;
+    const originalDisplay = element.style.display || '';
+    const originalPos = element.style.position || '';
+    const originalLeft = element.style.left || '';
+    const originalTop = element.style.top || '';
+    const originalZIndex = element.style.zIndex || '';
     
     element.style.display = 'block';
     element.style.position = 'absolute';
-    element.style.left = '-9999px';
+    // Position it at 0,0 but behind the modal so it paints correctly
+    element.style.left = '0';
     element.style.top = '0';
+    element.style.zIndex = '-9999';
 
-    const opt: any = {
-      margin:       0,
-      filename:     `Recity_Letterhead_${formatDateDMY(new Date())}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+    // Allow browser 1 tick to compute layout before capturing
+    setTimeout(() => {
+      const opt: any = {
+        margin:       0,
+        filename:     `Recity_Letterhead_${formatDateDMY(new Date())}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1024 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
 
-    html2pdf().set(opt).from(element).save().then(() => {
-      // Revert display back
-      element.style.display = originalDisplay;
-      element.style.position = originalPos;
-      element.style.left = originalLeft;
-      element.style.top = originalTop;
-    });
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Revert display back
+        element.style.display = originalDisplay;
+        element.style.position = originalPos;
+        element.style.left = originalLeft;
+        element.style.top = originalTop;
+        element.style.zIndex = originalZIndex;
+        setIsGeneratingPDF(false);
+      });
+    }, 150);
   };
 
   const handlePrint = () => {
@@ -224,10 +235,19 @@ export default function RecityLetterheadReport({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-blue-600 text-blue-700 hover:bg-blue-50 font-semibold text-xs h-8 px-4"
+                className="border-blue-600 text-blue-700 hover:bg-blue-50 font-semibold text-xs h-8 px-4 disabled:opacity-50"
                 onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
               >
-                <Download className="w-4 h-4 mr-1.5" /> Download PDF
+                {isGeneratingPDF ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-1.5" /> Download PDF
+                  </>
+                )}
               </Button>
               <Button
                 variant="default"
