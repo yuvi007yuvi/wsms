@@ -215,7 +215,7 @@ export default function DashboardLayout() {
           </button>
 
           {/* Developer Credit */}
-          {!isCollapsed && (
+          {!isCollapsed && userRole !== 'recity-admin' && (
             <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
               <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
               <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
@@ -308,13 +308,15 @@ export default function DashboardLayout() {
                   </button>
 
                   {/* Developer Credit */}
-                  <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
-                    <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
-                    <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
-                      NATURE GREEN
-                    </span>
-                    <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.1</span>
-                  </div>
+                  {userRole !== 'recity-admin' && (
+                    <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
+                      <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
+                      <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
+                        NATURE GREEN
+                      </span>
+                      <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.1</span>
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
