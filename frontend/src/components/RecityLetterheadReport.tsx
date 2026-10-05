@@ -73,10 +73,10 @@ export default function RecityLetterheadReport({
   const [strictFilter, setStrictFilter] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  // Rows per page: page 1 has certification intro text, so 9 rows fit comfortably like the sample PDF.
-  // Subsequent pages have 11 rows.
-  const FIRST_PAGE_ROWS = 9;
-  const SUBSEQUENT_PAGE_ROWS = 11;
+  // Rows per page: page 1 has certification intro text.
+  // We can comfortably fit around 25 rows on page 1, and 32 on subsequent pages.
+  const FIRST_PAGE_ROWS = 25;
+  const SUBSEQUENT_PAGE_ROWS = 32;
 
   // Format date as DD-MM-YYYY
   const formatDateDMY = (dStr?: string | Date) => {
@@ -524,7 +524,7 @@ function PageContent({
                   const vehicleType = slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'D2D';
                   const materialType = slip.material?.name || 'MSW';
                   
-                  const overallIdx = pageIndex === 0 ? idx + 1 : 9 + (pageIndex - 1) * 11 + idx + 1;
+                  const overallIdx = pageIndex === 0 ? idx + 1 : FIRST_PAGE_ROWS + (pageIndex - 1) * SUBSEQUENT_PAGE_ROWS + idx + 1;
 
                   return (
                     <tr key={slip.id || idx} className="border-b border-black text-center text-[9px]">
