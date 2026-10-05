@@ -166,25 +166,26 @@ export default function RecityLetterheadReport({
   const totalNet = filteredSlips.reduce((sum, s) => sum + (Number(s.netWeight) || 0), 0);
 
   const handleDownloadPDF = () => {
-    const element = document.getElementById('recity-letterhead-print-content');
-    if (!element) return;
+    const originalElement = document.getElementById('recity-letterhead-print-content');
+    if (!originalElement) return;
     
     setIsGeneratingPDF(true);
+
+    // Create a temporary container attached directly to body
+    // This bypasses any overflow: hidden rules on parent containers that cause html2canvas to crop
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '0';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '210mm';
+    tempContainer.style.zIndex = '-9999';
+    tempContainer.style.backgroundColor = 'white';
+
+    const clonedElement = originalElement.cloneNode(true) as HTMLElement;
+    clonedElement.style.display = 'block';
     
-    // Temporarily make it block for the capture so html2canvas sees it
-    const originalDisplay = element.style.display || '';
-    const originalPos = element.style.position || '';
-    const originalLeft = element.style.left || '';
-    const originalTop = element.style.top || '';
-    const originalZIndex = element.style.zIndex || '';
-    
-    // Render it visibly but underneath the modal's z-index (modal is usually 50)
-    element.style.display = 'block';
-    element.style.position = 'fixed';
-    element.style.left = '0';
-    element.style.top = '0';
-    element.style.width = '210mm';
-    element.style.zIndex = '40';
+    tempContainer.appendChild(clonedElement);
+    document.body.appendChild(tempContainer);
 
     // Allow browser 1 tick to compute layout before capturing
     setTimeout(() => {
@@ -196,23 +197,12 @@ export default function RecityLetterheadReport({
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      html2pdf().set(opt).from(element).save().then(() => {
-        // Revert display back
-        element.style.display = originalDisplay;
-        element.style.position = originalPos;
-        element.style.left = originalLeft;
-        element.style.top = originalTop;
-        element.style.width = '';
-        element.style.zIndex = originalZIndex;
+      html2pdf().set(opt).from(clonedElement).save().then(() => {
+        document.body.removeChild(tempContainer);
         setIsGeneratingPDF(false);
       }).catch((err: any) => {
         console.error("PDF Generation Error", err);
-        element.style.display = originalDisplay;
-        element.style.position = originalPos;
-        element.style.left = originalLeft;
-        element.style.top = originalTop;
-        element.style.width = '';
-        element.style.zIndex = originalZIndex;
+        if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer);
         setIsGeneratingPDF(false);
       });
     }, 150);
