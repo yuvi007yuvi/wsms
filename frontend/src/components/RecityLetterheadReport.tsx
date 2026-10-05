@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Printer, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Printer, FileText, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 const RECITY_WARDS: Record<string, string> = {
   "61": "CHAUBIYA PADA",
@@ -163,6 +164,38 @@ export default function RecityLetterheadReport({
   const totalTare = filteredSlips.reduce((sum, s) => sum + (Number(s.tareWeight) || 0), 0);
   const totalNet = filteredSlips.reduce((sum, s) => sum + (Number(s.netWeight) || 0), 0);
 
+  const handleDownloadPDF = () => {
+    const element = document.getElementById('recity-letterhead-print-content');
+    if (!element) return;
+    
+    // Temporarily make it block for the capture so html2canvas sees it
+    const originalDisplay = element.style.display;
+    const originalPos = element.style.position;
+    const originalLeft = element.style.left;
+    const originalTop = element.style.top;
+    
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+
+    const opt: any = {
+      margin:       0,
+      filename:     `Recity_Letterhead_${formatDateDMY(new Date())}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      // Revert display back
+      element.style.display = originalDisplay;
+      element.style.position = originalPos;
+      element.style.left = originalLeft;
+      element.style.top = originalTop;
+    });
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -188,6 +221,14 @@ export default function RecityLetterheadReport({
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-blue-600 text-blue-700 hover:bg-blue-50 font-semibold text-xs h-8 px-4"
+                onClick={handleDownloadPDF}
+              >
+                <Download className="w-4 h-4 mr-1.5" /> Download PDF
+              </Button>
               <Button
                 variant="default"
                 size="sm"
@@ -316,7 +357,7 @@ export default function RecityLetterheadReport({
       </Dialog>
 
       {/* Actual Print Media Rendering (Hidden on Screen, Active only when printing) */}
-      <div className="print-only w-full bg-white text-black m-0 p-0">
+      <div id="recity-letterhead-print-content" className="print-only w-full bg-white text-black m-0 p-0">
         {pages.map((pageSlips, pageIndex) => (
           <div
             key={pageIndex}

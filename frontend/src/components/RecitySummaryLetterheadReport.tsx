@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Printer, FileText } from 'lucide-react';
+import { Printer, FileText, Download } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 const RECITY_WARDS: Record<string, string> = {
   "61": "CHAUBIYA PADA",
@@ -113,6 +114,38 @@ export default function RecitySummaryLetterheadReport({
   const totalTare = processedData.reduce((sum, item) => sum + (Number(item.tareWeight) || 0), 0);
   const totalNet = processedData.reduce((sum, item) => sum + (Number(item.netWeight) || 0), 0);
 
+  const handleDownloadPDF = () => {
+    const element = document.getElementById('recity-summary-print-content');
+    if (!element) return;
+    
+    // Temporarily make it block for the capture so html2canvas sees it
+    const originalDisplay = element.style.display;
+    const originalPos = element.style.position;
+    const originalLeft = element.style.left;
+    const originalTop = element.style.top;
+    
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+
+    const opt: any = {
+      margin:       0,
+      filename:     `Recity_Summary_Report_${formatDateDMY(new Date())}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      // Revert display back
+      element.style.display = originalDisplay;
+      element.style.position = originalPos;
+      element.style.left = originalLeft;
+      element.style.top = originalTop;
+    });
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -137,14 +170,24 @@ export default function RecitySummaryLetterheadReport({
               </div>
             </div>
 
-            <Button
-              variant="default"
-              size="sm"
-              className="bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs h-8 px-4"
-              onClick={handlePrint}
-            >
-              <Printer className="w-4 h-4 mr-1.5" /> Print Now
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-blue-600 text-blue-700 hover:bg-blue-50 font-semibold text-xs h-8 px-4"
+                onClick={handleDownloadPDF}
+              >
+                <Download className="w-4 h-4 mr-1.5" /> Download PDF
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs h-8 px-4"
+                onClick={handlePrint}
+              >
+                <Printer className="w-4 h-4 mr-1.5" /> Print Now
+              </Button>
+            </div>
           </DialogHeader>
 
           {/* Controls Bar */}
@@ -203,7 +246,7 @@ export default function RecitySummaryLetterheadReport({
       </Dialog>
 
       {/* Actual Print Media Output */}
-      <div className="print-only w-full bg-white text-black m-0 p-8 min-h-screen flex flex-col justify-between box-border">
+      <div id="recity-summary-print-content" className="print-only w-full bg-white text-black m-0 p-8 min-h-screen flex flex-col justify-between box-border">
         <SummaryPageContent
           data={processedData}
           categoryLabel={categoryLabel}
