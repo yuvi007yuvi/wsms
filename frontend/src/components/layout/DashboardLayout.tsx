@@ -130,7 +130,8 @@ export default function DashboardLayout() {
     <div className="flex h-screen w-full bg-slate-50">
       {/* Sidebar */}
       <aside className={cn(
-        "flex-col bg-gradient-to-b from-green-50 to-green-100/80 text-slate-900 border-r border-green-200 hidden md:flex no-print shadow-xl z-20 transition-all duration-300 relative",
+        "flex-col text-slate-900 border-r hidden md:flex no-print shadow-xl z-20 transition-all duration-300 relative",
+        userRole === 'recity-admin' ? "bg-gradient-to-b from-blue-50 to-blue-100/80 border-blue-200" : "bg-gradient-to-b from-green-50 to-green-100/80 border-green-200",
         isCollapsed ? "w-20" : "w-64"
       )}>
         <button
@@ -140,10 +141,10 @@ export default function DashboardLayout() {
           <ChevronLeft className={cn("w-4 h-4 transition-transform", isCollapsed && "rotate-180")} />
         </button>
 
-        <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
+        <div className={cn("flex flex-col items-center justify-center p-3 border-b bg-white/40", userRole === 'recity-admin' ? "border-blue-200/60" : "border-green-200/60")}>
           <Link to="/" className="flex flex-col items-center gap-1">
             <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
-            {!isCollapsed && <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>}
+            {!isCollapsed && <span className={cn("font-bold tracking-wider text-lg mt-1 text-center", userRole === 'recity-admin' ? "text-blue-950" : "text-green-950")}>{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>}
           </Link>
 
           {/* Project Badge moved here */}
@@ -174,8 +175,8 @@ export default function DashboardLayout() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors font-semibold",
                     isActive
-                      ? "bg-green-600 text-white shadow-sm"
-                      : "text-green-800 hover:text-green-950 hover:bg-white/60",
+                      ? (userRole === 'recity-admin' ? "bg-blue-600 text-white shadow-sm" : "bg-green-600 text-white shadow-sm")
+                      : (userRole === 'recity-admin' ? "text-blue-800 hover:text-blue-950 hover:bg-white/60" : "text-green-800 hover:text-green-950 hover:bg-white/60"),
                     isCollapsed && "justify-center px-0"
                   )}
                   title={isCollapsed ? t(item.name) : undefined}
@@ -189,7 +190,7 @@ export default function DashboardLayout() {
         </div>
 
         {/* Sidebar Footer Controls */}
-        <div className="p-2 mt-auto flex flex-col gap-2 border-t border-green-200/80 bg-white/40">
+        <div className={cn("p-2 mt-auto flex flex-col gap-2 border-t bg-white/40", userRole === 'recity-admin' ? "border-blue-200/80" : "border-green-200/80")}>
           <button
             onClick={toggleLanguage}
             className={cn(
@@ -241,11 +242,11 @@ export default function DashboardLayout() {
                   <Menu className="w-5 h-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 bg-gradient-to-b from-green-50 to-green-100/80 border-r border-green-200 flex flex-col no-print">
-                <div className="flex flex-col items-center justify-center p-3 border-b border-green-200/60 bg-white/40">
+              <SheetContent side="left" className={cn("p-0 w-64 border-r flex flex-col no-print", userRole === 'recity-admin' ? "bg-gradient-to-b from-blue-50 to-blue-100/80 border-blue-200" : "bg-gradient-to-b from-green-50 to-green-100/80 border-green-200")}>
+                <div className={cn("flex flex-col items-center justify-center p-3 border-b bg-white/40", userRole === 'recity-admin' ? "border-blue-200/60" : "border-green-200/60")}>
                   <Link to="/" className="flex flex-col items-center gap-1" onClick={() => setIsMobileOpen(false)}>
                     <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className="object-contain rounded shadow-sm bg-white p-1 transition-all h-12 w-12" />
-                    <span className="font-bold tracking-wider text-green-950 text-lg mt-1 text-center">{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>
+                    <span className={cn("font-bold tracking-wider text-lg mt-1 text-center", userRole === 'recity-admin' ? "text-blue-950" : "text-green-950")}>{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>
                   </Link>
 
                   {/* Project Badge moved here */}
@@ -277,8 +278,8 @@ export default function DashboardLayout() {
                           className={cn(
                             "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors font-semibold",
                             isActive
-                              ? "bg-green-600 text-white shadow-sm"
-                              : "text-green-800 hover:text-green-950 hover:bg-white/60"
+                              ? (userRole === 'recity-admin' ? "bg-blue-600 text-white shadow-sm" : "bg-green-600 text-white shadow-sm")
+                              : (userRole === 'recity-admin' ? "text-blue-800 hover:text-blue-950 hover:bg-white/60" : "text-green-800 hover:text-green-950 hover:bg-white/60")
                           )}
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
@@ -290,7 +291,7 @@ export default function DashboardLayout() {
                 </div>
 
                 {/* Sidebar Footer Controls */}
-                <div className="p-2 mt-auto flex flex-col gap-2 border-t border-green-200/80 bg-white/40">
+                <div className={cn("p-2 mt-auto flex flex-col gap-2 border-t bg-white/40", userRole === 'recity-admin' ? "border-blue-200/80" : "border-green-200/80")}>
                   <button
                     onClick={() => { toggleLanguage(); setIsMobileOpen(false); }}
                     className="flex items-center justify-center text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-300 py-1.5 rounded-sm transition-colors w-full px-2"
