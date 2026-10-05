@@ -48,8 +48,8 @@ const RECITY_WARDS: Record<string, string> = {
   "31": "NAVNEET NAGAR"
 };
 
-const FIRST_PAGE_ROWS = 25;
-const SUBSEQUENT_PAGE_ROWS = 32;
+const FIRST_PAGE_ROWS = 20;
+const SUBSEQUENT_PAGE_ROWS = 20;
 
 export interface RecityLetterheadProps {
   isOpen: boolean;
@@ -470,7 +470,7 @@ function PageContent({
 
         {/* Certification Intro text (Only on Page 1) */}
         {pageIndex === 0 && (
-          <div className="mb-4 text-[13px] leading-relaxed text-slate-900 space-y-2.5">
+          <div className="mb-4 text-[13px] leading-relaxed text-slate-900 space-y-2.5 text-justify">
             <p>
               This is to certify that we have taken receipt of the following quantities of Municipal Solid Waste
               sent by <strong>{partyName}</strong>, from the wards of <strong>{municipalityName}</strong>, on{' '}
