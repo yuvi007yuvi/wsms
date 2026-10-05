@@ -6,6 +6,48 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Printer, FileText } from 'lucide-react';
 
+const RECITY_WARDS: Record<string, string> = {
+  "61": "CHAUBIYA PADA",
+  "38": "CIVIL LINES",
+  "58": "GAU GHAT",
+  "10": "AURANGABAD PRATHAM",
+  "18": "GENERAL GANJ",
+  "65": "HOLI GALI",
+  "4": "ISHAPUR YAMUNAPAR",
+  "53": "KRISHNAPURI",
+  "64": "GHATI BAHALRAI",
+  "5": "BHARATPURGATE",
+  "29": "KOYALA ALIPUR",
+  "23": "AHEERPADA",
+  "56": "MANDI RAMDAS",
+  "32": "RANCHIBAGAR",
+  "17": "BAIRAGPURA",
+  "42": "MANOHARPURA",
+  "49": "DAMPIER NAGAR",
+  "40": "RAJKUMAR",
+  "36": "JAISINGH PURA",
+  "35": "BANKHANDI",
+  "22": "BADRINAGAR",
+  "26": "NAYA NAGLA",
+  "28": "AURANGABAD DWITIYA",
+  "60": "JAGANNATHPURI",
+  "45": "BIRLA MANDIR",
+  "55": "GOVINDNAGAR",
+  "39": "MAHAVIDYA COLONY",
+  "14": "LAXMINAGAR YAMUNAPAR",
+  "19": "RAMNAGAR YAMUNAPAR",
+  "63": "MALIYAN SADAR",
+  "12": "RADHESHYAM COLONY",
+  "47": "DWARKAPURI",
+  "68": "SHANTI NAGAR",
+  "46": "RADHA NAGAR",
+  "27": "BAD",
+  "7": "LOHWAN",
+  "54": "PRATAPNAGAR",
+  "31": "NAVNEET NAGAR"
+};
+
+
 export interface RecitySummaryLetterheadProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,7 +66,6 @@ export default function RecitySummaryLetterheadReport({
   dateTo
 }: RecitySummaryLetterheadProps) {
   const [includeDigitalLetterhead, setIncludeDigitalLetterhead] = useState(true);
-  const [signatoryName, setSignatoryName] = useState('Aneeta John');
   const [partyName, setPartyName] = useState('Nature Green');
   const [municipalityName, setMunicipalityName] = useState('Mathura Municipal Corporation');
 
@@ -48,10 +89,29 @@ export default function RecitySummaryLetterheadReport({
     return formatDateDMY(new Date());
   };
 
-  const totalSlips = data.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
-  const totalGross = data.reduce((sum, item) => sum + (Number(item.grossWeight) || 0), 0);
-  const totalTare = data.reduce((sum, item) => sum + (Number(item.tareWeight) || 0), 0);
-  const totalNet = data.reduce((sum, item) => sum + (Number(item.netWeight) || 0), 0);
+  // If the summary is grouped by Source/Location, filter and map the keys
+  let processedData = [...data];
+  if (categoryLabel === 'Source/Location') {
+    processedData = data.map(item => {
+      const match = item.key?.match(/\d+/);
+      let mappedName = null;
+      if (match && RECITY_WARDS[match[0]]) {
+        mappedName = RECITY_WARDS[match[0]];
+      } else {
+        const isDirectName = Object.values(RECITY_WARDS).includes(item.key?.toUpperCase() || '');
+        if (isDirectName) mappedName = item.key?.toUpperCase();
+      }
+      if (mappedName) {
+        return { ...item, key: mappedName };
+      }
+      return null;
+    }).filter(Boolean) as any[];
+  }
+
+  const totalSlips = processedData.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+  const totalGross = processedData.reduce((sum, item) => sum + (Number(item.grossWeight) || 0), 0);
+  const totalTare = processedData.reduce((sum, item) => sum + (Number(item.tareWeight) || 0), 0);
+  const totalNet = processedData.reduce((sum, item) => sum + (Number(item.netWeight) || 0), 0);
 
   const handlePrint = () => {
     window.print();
@@ -72,7 +132,7 @@ export default function RecitySummaryLetterheadReport({
                   Recity Summary Report Letterhead Preview
                 </DialogTitle>
                 <p className="text-xs text-slate-500">
-                  {categoryLabel} Summary | {data.length} Categories | {totalSlips} Total Slips
+                  {categoryLabel} Summary | {processedData.length} Categories | {totalSlips} Total Slips
                 </p>
               </div>
             </div>
@@ -104,15 +164,6 @@ export default function RecitySummaryLetterheadReport({
             </div>
 
             <div>
-              <Label className="text-[11px] font-semibold text-slate-700">Signatory Name</Label>
-              <Input
-                value={signatoryName}
-                onChange={(e) => setSignatoryName(e.target.value)}
-                className="h-7 text-xs bg-white mt-1 border-slate-300"
-              />
-            </div>
-
-            <div>
               <Label className="text-[11px] font-semibold text-slate-700">Contractor / Party</Label>
               <Input
                 value={partyName}
@@ -135,10 +186,9 @@ export default function RecitySummaryLetterheadReport({
           <div className="flex-1 overflow-auto bg-slate-200/80 p-6 flex justify-center">
             <div className="w-[210mm] min-h-[297mm] bg-white shadow-xl border border-slate-300 p-8 flex flex-col justify-between text-black text-[12px] font-sans box-border">
               <SummaryPageContent
-                data={data}
+                data={processedData}
                 categoryLabel={categoryLabel}
                 includeDigitalLetterhead={includeDigitalLetterhead}
-                signatoryName={signatoryName}
                 partyName={partyName}
                 municipalityName={municipalityName}
                 certificationDate={getCertificationDateText()}
@@ -155,10 +205,9 @@ export default function RecitySummaryLetterheadReport({
       {/* Actual Print Media Output */}
       <div className="print-only w-full bg-white text-black m-0 p-8 min-h-screen flex flex-col justify-between box-border">
         <SummaryPageContent
-          data={data}
+          data={processedData}
           categoryLabel={categoryLabel}
           includeDigitalLetterhead={includeDigitalLetterhead}
-          signatoryName={signatoryName}
           partyName={partyName}
           municipalityName={municipalityName}
           certificationDate={getCertificationDateText()}
@@ -176,7 +225,6 @@ interface SummaryPageContentProps {
   data: any[];
   categoryLabel: string;
   includeDigitalLetterhead: boolean;
-  signatoryName: string;
   partyName: string;
   municipalityName: string;
   certificationDate: string;
@@ -190,7 +238,6 @@ function SummaryPageContent({
   data,
   categoryLabel,
   includeDigitalLetterhead,
-  signatoryName,
   partyName,
   municipalityName,
   certificationDate,
@@ -265,16 +312,7 @@ function SummaryPageContent({
 
       {/* Signature and Footer */}
       <div className="mt-8">
-        <div className="mb-6 pl-2">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-xs">Signature:</span>
-            <div className="w-48 border-b border-black inline-block mt-3"></div>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold">Name:</span>
-            <span className="italic underline">{signatoryName}</span>
-          </div>
-        </div>
+
 
         {includeDigitalLetterhead ? (
           <div className="pt-2">

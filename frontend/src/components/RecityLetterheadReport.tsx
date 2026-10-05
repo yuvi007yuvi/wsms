@@ -6,6 +6,48 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Printer, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const RECITY_WARDS: Record<string, string> = {
+  "61": "CHAUBIYA PADA",
+  "38": "CIVIL LINES",
+  "58": "GAU GHAT",
+  "10": "AURANGABAD PRATHAM",
+  "18": "GENERAL GANJ",
+  "65": "HOLI GALI",
+  "4": "ISHAPUR YAMUNAPAR",
+  "53": "KRISHNAPURI",
+  "64": "GHATI BAHALRAI",
+  "5": "BHARATPURGATE",
+  "29": "KOYALA ALIPUR",
+  "23": "AHEERPADA",
+  "56": "MANDI RAMDAS",
+  "32": "RANCHIBAGAR",
+  "17": "BAIRAGPURA",
+  "42": "MANOHARPURA",
+  "49": "DAMPIER NAGAR",
+  "40": "RAJKUMAR",
+  "36": "JAISINGH PURA",
+  "35": "BANKHANDI",
+  "22": "BADRINAGAR",
+  "26": "NAYA NAGLA",
+  "28": "AURANGABAD DWITIYA",
+  "60": "JAGANNATHPURI",
+  "45": "BIRLA MANDIR",
+  "55": "GOVINDNAGAR",
+  "39": "MAHAVIDYA COLONY",
+  "14": "LAXMINAGAR YAMUNAPAR",
+  "19": "RAMNAGAR YAMUNAPAR",
+  "63": "MALIYAN SADAR",
+  "12": "RADHESHYAM COLONY",
+  "47": "DWARKAPURI",
+  "68": "SHANTI NAGAR",
+  "46": "RADHA NAGAR",
+  "27": "BAD",
+  "7": "LOHWAN",
+  "54": "PRATAPNAGAR",
+  "31": "NAVNEET NAGAR"
+};
+
+
 export interface RecityLetterheadProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,7 +64,6 @@ export default function RecityLetterheadReport({
   dateTo
 }: RecityLetterheadProps) {
   const [includeDigitalLetterhead, setIncludeDigitalLetterhead] = useState(true);
-  const [signatoryName, setSignatoryName] = useState('Aneeta John');
   const [partyName, setPartyName] = useState('Nature Green');
   const [municipalityName, setMunicipalityName] = useState('Mathura Municipal Corporation');
   const [customCertificationDate, setCustomCertificationDate] = useState('');
@@ -70,9 +111,28 @@ export default function RecityLetterheadReport({
     return formatDateDMY(new Date());
   };
 
+  // Filter slips to ONLY include Recity wards, and map their source.name to the actual Ward Name.
+  const filteredSlips = slips.map(slip => {
+    const sourceName = slip.source?.name || '';
+    const match = sourceName.match(/\d+/);
+    let mappedName = null;
+    
+    if (match && RECITY_WARDS[match[0]]) {
+      mappedName = RECITY_WARDS[match[0]];
+    } else {
+      const isDirectName = Object.values(RECITY_WARDS).includes(sourceName.toUpperCase());
+      if (isDirectName) mappedName = sourceName.toUpperCase();
+    }
+
+    if (mappedName) {
+      return { ...slip, mappedLocation: mappedName };
+    }
+    return null;
+  }).filter(Boolean);
+
   // Chunk slips into pages
   const pages: any[][] = [];
-  let remainingSlips = [...slips];
+  let remainingSlips = [...filteredSlips];
 
   if (remainingSlips.length === 0) {
     pages.push([]);
@@ -91,9 +151,9 @@ export default function RecityLetterheadReport({
   const totalPages = pages.length;
 
   // Calculate overall summary stats
-  const totalGross = slips.reduce((sum, s) => sum + (Number(s.grossWeight) || 0), 0);
-  const totalTare = slips.reduce((sum, s) => sum + (Number(s.tareWeight) || 0), 0);
-  const totalNet = slips.reduce((sum, s) => sum + (Number(s.netWeight) || 0), 0);
+  const totalGross = filteredSlips.reduce((sum, s) => sum + (Number(s.grossWeight) || 0), 0);
+  const totalTare = filteredSlips.reduce((sum, s) => sum + (Number(s.tareWeight) || 0), 0);
+  const totalNet = filteredSlips.reduce((sum, s) => sum + (Number(s.netWeight) || 0), 0);
 
   const handlePrint = () => {
     window.print();
@@ -114,7 +174,7 @@ export default function RecityLetterheadReport({
                   Recity Letterhead Print Preview
                 </DialogTitle>
                 <p className="text-xs text-slate-500">
-                  Total Slips: {slips.length} | {totalPages} Page{totalPages > 1 ? 's' : ''}
+                  Total Slips: {filteredSlips.length} | {totalPages} Page{totalPages > 1 ? 's' : ''}
                 </p>
               </div>
             </div>
@@ -145,16 +205,6 @@ export default function RecityLetterheadReport({
                   {includeDigitalLetterhead ? 'Includes Logo & Footer' : 'Pre-printed Stationery Margin'}
                 </span>
               </Label>
-            </div>
-
-            <div>
-              <Label className="text-[11px] font-semibold text-slate-700">Signatory Name</Label>
-              <Input
-                value={signatoryName}
-                onChange={(e) => setSignatoryName(e.target.value)}
-                className="h-7 text-xs bg-white mt-1 border-slate-300"
-                placeholder="Aneeta John"
-              />
             </div>
 
             <div>
@@ -227,7 +277,6 @@ export default function RecityLetterheadReport({
                 pageIndex={previewPage - 1}
                 pageSlips={pages[previewPage - 1] || []}
                 includeDigitalLetterhead={includeDigitalLetterhead}
-                signatoryName={signatoryName}
                 partyName={partyName}
                 municipalityName={municipalityName}
                 certificationDate={getCertificationDateText()}
@@ -237,7 +286,7 @@ export default function RecityLetterheadReport({
                 totalGross={totalGross}
                 totalTare={totalTare}
                 totalNet={totalNet}
-                totalSlipsCount={slips.length}
+                totalSlipsCount={filteredSlips.length}
               />
             </div>
           </div>
@@ -259,7 +308,6 @@ export default function RecityLetterheadReport({
               pageIndex={pageIndex}
               pageSlips={pageSlips}
               includeDigitalLetterhead={includeDigitalLetterhead}
-              signatoryName={signatoryName}
               partyName={partyName}
               municipalityName={municipalityName}
               certificationDate={getCertificationDateText()}
@@ -269,7 +317,7 @@ export default function RecityLetterheadReport({
               totalGross={totalGross}
               totalTare={totalTare}
               totalNet={totalNet}
-              totalSlipsCount={slips.length}
+              totalSlipsCount={filteredSlips.length}
             />
           </div>
         ))}
@@ -283,7 +331,6 @@ interface PageContentProps {
   pageIndex: number;
   pageSlips: any[];
   includeDigitalLetterhead: boolean;
-  signatoryName: string;
   partyName: string;
   municipalityName: string;
   certificationDate: string;
@@ -300,7 +347,6 @@ function PageContent({
   pageIndex,
   pageSlips,
   includeDigitalLetterhead,
-  signatoryName,
   partyName,
   municipalityName,
   certificationDate,
@@ -390,7 +436,7 @@ function PageContent({
                   const slipDate = slip.date ? formatDateDMY(slip.date) : '';
                   const slipTime = slip.date ? formatDateTime(slip.date) : '';
                   const vehicleNum = slip.vehicle?.vehicleNumber || '-';
-                  const wardLocation = slip.source?.name || '-';
+                  const wardLocation = slip.mappedLocation || slip.source?.name || '-';
                   const vehicleType = slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'D2D';
                   const materialType = slip.material?.name || 'MSW';
 
@@ -432,17 +478,7 @@ function PageContent({
 
       {/* Bottom Section: Signature & Letterhead Footer */}
       <div className="mt-8">
-        {/* Signature Line */}
-        <div className="mb-6 pl-2">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-xs">Signature:</span>
-            <div className="w-48 border-b border-black inline-block mt-3"></div>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold">Name:</span>
-            <span className="italic underline">{signatoryName}</span>
-          </div>
-        </div>
+
 
         {/* Digital Letterhead Footer from docx */}
         {includeDigitalLetterhead ? (
