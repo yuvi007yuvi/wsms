@@ -328,7 +328,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex flex-col items-end text-xs">
               <span className="font-bold text-slate-800">{displayName}</span>
-              <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || (userRole === 'recity-admin' ? 'Recity Admin' : userRole)}</span>
+              <span className="text-slate-500 uppercase tracking-widest text-[10px]">{designation || (userRole === 'recity-admin' ? '' : userRole)}</span>
             </div>
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-sm">
               {displayName[0].toUpperCase()}
