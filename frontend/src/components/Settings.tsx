@@ -16,12 +16,14 @@ const MODULES = [
   'Sources',
   'Destinations',
   'Slip History',
+  'Summary Reports',
+  'Trip Analysis',
   'Pricing Plans',
   'Users',
   'Settings'
 ];
 
-const ROLES = ['operator', 'supervisor', 'manager'];
+const ROLES = ['operator', 'supervisor', 'manager', 'recity-admin'];
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<'general' | 'roles'>('general');
@@ -65,7 +67,11 @@ export default function Settings() {
       // Initialize defaults for missing roles
       ROLES.forEach(r => {
         if (!perms[r]) {
-          perms[r] = MODULES.filter(m => m !== 'Users' && m !== 'Settings'); // default non-admin
+          if (r === 'recity-admin') {
+            perms[r] = ['Slip History', 'Summary Reports', 'Dashboard'];
+          } else {
+            perms[r] = MODULES.filter(m => m !== 'Users' && m !== 'Settings'); // default non-admin
+          }
         }
       });
       setRolePermissions(perms);
@@ -202,9 +208,9 @@ export default function Settings() {
                 {ROLES.map(role => (
                   <div key={role} className="border border-slate-200 rounded-md p-4 bg-slate-50">
                     <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200">
-                      <h3 className="text-lg font-bold capitalize text-slate-800">{role}</h3>
+                      <h3 className="text-lg font-bold capitalize text-slate-800">{role === 'recity-admin' ? 'Recity Admin' : role}</h3>
                       <Button size="sm" onClick={() => handleSaveRole(role)}>
-                        <Save className="mr-2 h-3.5 w-3.5" /> Save {role}
+                        <Save className="mr-2 h-3.5 w-3.5" /> Save {role === 'recity-admin' ? 'Recity Admin' : role}
                       </Button>
                     </div>
                     

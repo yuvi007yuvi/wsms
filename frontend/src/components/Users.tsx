@@ -171,6 +171,7 @@ export default function Users() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="recity-admin">Recity Admin</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                     <SelectItem value="operator">Operator</SelectItem>
@@ -255,7 +256,7 @@ export default function Users() {
                     <TableCell className="py-3 px-4 text-sm font-medium text-slate-900">{u.username}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{u.fullName || '-'}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{u.designation || '-'}</TableCell>
-                    <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role === 'recity-admin' ? 'Recity Admin' : u.role}</TableCell>
                     <TableCell className="py-3 px-4">
                       <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                         {u.isActive ? 'Active' : 'Inactive'}

@@ -5,6 +5,8 @@ echo ==========================================
 echo Starting WSMS (Nature Green Weighment)
 echo ==========================================
 
+set "PATH=%PATH%;C:\Program Files\nodejs"
+
 echo Starting Backend Server...
 start "WSMS Backend" cmd /k "cd backend && npm run dev"
 

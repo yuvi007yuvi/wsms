@@ -4,15 +4,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, RefreshCw, Calendar, FileText } from 'lucide-react';
+import { Download, RefreshCw, Calendar, FileText, Printer } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
+import RecitySummaryLetterheadReport from './RecitySummaryLetterheadReport';
 
 export default function SummaryReports() {
   const { t } = useTranslation();
   const [data, setData] = useState<any[]>([]);
   const [reportType, setReportType] = useState('daily');
+  const [isLetterheadOpen, setIsLetterheadOpen] = useState(false);
   
   const getLocalStr = (d: Date = new Date()) => {
     const yyyy = d.getFullYear();
@@ -136,8 +138,17 @@ export default function SummaryReports() {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <div className="flex justify-between items-end">
+    <>
+      <RecitySummaryLetterheadReport
+        isOpen={isLetterheadOpen}
+        onClose={() => setIsLetterheadOpen(false)}
+        data={data}
+        categoryLabel={getCategoryLabel()}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+      />
+      <div className="flex flex-col h-full space-y-4 no-print">
+        <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('Summary Reports')}</h2>
           <p className="text-sm text-slate-500">{t('View aggregated weighment data.')}</p>
@@ -169,6 +180,15 @@ export default function SummaryReports() {
             </Button>
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300 bg-green-50 hover:bg-green-100 text-green-700 border-green-200" onClick={handleExportCSV}>
               <Download className="h-3.5 w-3.5 mr-1" /> {t('Export CSV')}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
+              onClick={() => setIsLetterheadOpen(true)}
+              disabled={data.length === 0}
+            >
+              <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> Print Recity Letterhead
             </Button>
           </div>
         </div>
@@ -309,5 +329,6 @@ export default function SummaryReports() {
         </div>
       </div>
     </div>
+    </>
   );
 }

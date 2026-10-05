@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Printer, Search, Download, RefreshCw, FileText, Calendar, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import PrintSlip from './PrintSlip';
+import RecityLetterheadReport from './RecityLetterheadReport';
 import { useToast } from '@/hooks/use-toast';
 import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
@@ -17,6 +18,9 @@ export default function Reports() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSlipToPrint, setSelectedSlipToPrint] = useState<any>(null);
   const [isGreenAssistFormat, setIsGreenAssistFormat] = useState(false);
+  const [isRecityLetterheadOpen, setIsRecityLetterheadOpen] = useState(false);
+  const [recityLetterheadSlips, setRecityLetterheadSlips] = useState<any[]>([]);
+  const [loadingLetterhead, setLoadingLetterhead] = useState(false);
 
   const getLocalStr = (d: Date = new Date()) => {
     const yyyy = d.getFullYear();
@@ -237,10 +241,32 @@ export default function Reports() {
   };
 
   const handlePrint = (slip: any) => {
+    setIsRecityLetterheadOpen(false);
     setSelectedSlipToPrint(slip);
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  const handleOpenRecityLetterhead = async () => {
+    setLoadingLetterhead(true);
+    try {
+      // Fetch slips matching current active search and date range filters
+      const params = new URLSearchParams({ page: '1', limit: '1000' });
+      if (searchQuery) params.append('search', searchQuery);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      const res = await api.get(`/weighment?${params.toString()}`);
+      const slipsData = res.data?.data || res.data || [];
+      setRecityLetterheadSlips(slipsData);
+      setSelectedSlipToPrint(null);
+      setIsRecityLetterheadOpen(true);
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Failed to prepare Letterhead Report', variant: 'destructive' });
+    } finally {
+      setLoadingLetterhead(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -316,6 +342,13 @@ export default function Reports() {
   return (
     <>
       <PrintSlip slip={selectedSlipToPrint} />
+      <RecityLetterheadReport
+        isOpen={isRecityLetterheadOpen}
+        onClose={() => setIsRecityLetterheadOpen(false)}
+        slips={recityLetterheadSlips}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+      />
       <div className="flex flex-col h-full space-y-4 no-print">
         <div className="flex justify-between items-end">
           <div>
@@ -368,6 +401,16 @@ export default function Reports() {
               </div>
               <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300 bg-green-50 hover:bg-green-100 text-green-700 border-green-200" onClick={handleExportCSV}>
                 <Download className="h-3.5 w-3.5 mr-1" /> {t('Export CSV')}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
+                onClick={handleOpenRecityLetterhead}
+                disabled={loadingLetterhead}
+              >
+                <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> 
+                {loadingLetterhead ? 'Loading...' : 'Print Recity Letterhead'}
               </Button>
             </div>
           </div>
