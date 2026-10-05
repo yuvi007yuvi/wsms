@@ -95,7 +95,9 @@
   }
   
   [data-radix-portal] {
-    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
   }
 
   .no-print {
