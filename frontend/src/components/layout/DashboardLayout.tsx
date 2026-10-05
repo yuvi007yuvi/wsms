@@ -112,6 +112,9 @@ export default function DashboardLayout() {
     if (userRole === 'superadmin' && location.pathname === '/dashboard') {
       navigate('/superadmin', { replace: true });
     }
+    if (userRole === 'recity-admin' && (location.pathname === '/dashboard' || location.pathname === '/')) {
+      navigate('/reports', { replace: true });
+    }
   }, [userRole, location.pathname, navigate]);
 
   const currentNavItem = navItems.find(item => location.pathname.startsWith(item.path)) || { name: 'Overview' };
@@ -122,8 +125,14 @@ export default function DashboardLayout() {
   };
 
   const handleLogout = () => {
+    const wasRecity = userRole === 'recity-admin';
     localStorage.removeItem('token'); // assuming token is stored in local storage
-    navigate('/login');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    localStorage.removeItem('fullName');
+    localStorage.removeItem('designation');
+    localStorage.removeItem('projectName');
+    navigate(wasRecity ? '/recity-login' : '/login');
   };
 
   return (

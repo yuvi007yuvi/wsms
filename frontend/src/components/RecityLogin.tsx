@@ -38,7 +38,7 @@ export default function RecityLogin() {
         title: 'Login Successful',
         description: 'Welcome to Recity Portal',
       });
-      navigate('/dashboard');
+      navigate('/reports');
     } catch (error: any) {
       const errInfo = getPreciseApiError(error, 'Invalid credentials or inactive account', 'Login Failed');
       setLoginError(errInfo.description);
