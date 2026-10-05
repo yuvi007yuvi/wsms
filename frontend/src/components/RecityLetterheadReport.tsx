@@ -69,6 +69,8 @@ export default function RecityLetterheadReport({
   const [customCertificationDate, setCustomCertificationDate] = useState('');
   const [previewPage, setPreviewPage] = useState(1);
 
+  const [strictFilter, setStrictFilter] = useState(true);
+
   // Rows per page: page 1 has certification intro text, so 9 rows fit comfortably like the sample PDF.
   // Subsequent pages have 11 rows.
   const FIRST_PAGE_ROWS = 9;
@@ -127,6 +129,12 @@ export default function RecityLetterheadReport({
     if (mappedName) {
       return { ...slip, mappedLocation: mappedName };
     }
+    
+    // If strictFilter is off, we still return the slip but with its original name
+    if (!strictFilter) {
+      return { ...slip, mappedLocation: sourceName };
+    }
+    
     return null;
   }).filter(Boolean);
 
@@ -192,7 +200,7 @@ export default function RecityLetterheadReport({
           </DialogHeader>
 
           {/* Controls Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-blue-50/50 border-b border-slate-200 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 p-3 bg-blue-50/50 border-b border-slate-200 text-xs">
             <div className="flex items-center space-x-2">
               <Switch
                 id="digital-letterhead-toggle"
@@ -203,6 +211,20 @@ export default function RecityLetterheadReport({
                 Digital Letterhead
                 <span className="block text-[10px] text-slate-500 font-normal">
                   {includeDigitalLetterhead ? 'Includes Logo & Footer' : 'Pre-printed Stationery Margin'}
+                </span>
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="strict-filter-toggle"
+                checked={strictFilter}
+                onCheckedChange={setStrictFilter}
+              />
+              <Label htmlFor="strict-filter-toggle" className="cursor-pointer font-medium text-slate-700">
+                Filter Wards
+                <span className="block text-[10px] text-slate-500 font-normal">
+                  {strictFilter ? 'Only 38 Recity Wards' : 'Show All Wards'}
                 </span>
               </Label>
             </div>
