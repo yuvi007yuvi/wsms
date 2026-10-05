@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import Login from './components/Login';
+import RecityLogin from './components/RecityLogin';
 import SubscriptionExpired from './components/SubscriptionExpired';
 import Weighment from './components/Weighment';
 import { Toaster } from './components/ui/toaster';
@@ -39,6 +40,7 @@ function App() {
       <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/recity-login" element={<RecityLogin />} />
         <Route path="/subscription-expired" element={<SubscriptionExpired />} />
         
         <Route element={<ProtectedRoute />}>
