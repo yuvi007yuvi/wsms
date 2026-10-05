@@ -128,12 +128,13 @@ export default function RecitySummaryLetterheadReport({
     const originalTop = element.style.top || '';
     const originalZIndex = element.style.zIndex || '';
     
+    // Render it visibly but underneath the modal's z-index (modal is usually 50)
     element.style.display = 'block';
-    element.style.position = 'absolute';
-    // Position it at 0,0 but behind the modal so it paints correctly
+    element.style.position = 'fixed';
     element.style.left = '0';
     element.style.top = '0';
-    element.style.zIndex = '-9999';
+    element.style.width = '210mm';
+    element.style.zIndex = '40';
 
     // Allow browser 1 tick to compute layout before capturing
     setTimeout(() => {
@@ -141,7 +142,7 @@ export default function RecitySummaryLetterheadReport({
         margin:       0,
         filename:     `Recity_Summary_Report_${formatDateDMY(new Date())}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1024 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
@@ -151,6 +152,16 @@ export default function RecitySummaryLetterheadReport({
         element.style.position = originalPos;
         element.style.left = originalLeft;
         element.style.top = originalTop;
+        element.style.width = '';
+        element.style.zIndex = originalZIndex;
+        setIsGeneratingPDF(false);
+      }).catch((err: any) => {
+        console.error("PDF Generation Error", err);
+        element.style.display = originalDisplay;
+        element.style.position = originalPos;
+        element.style.left = originalLeft;
+        element.style.top = originalTop;
+        element.style.width = '';
         element.style.zIndex = originalZIndex;
         setIsGeneratingPDF(false);
       });
