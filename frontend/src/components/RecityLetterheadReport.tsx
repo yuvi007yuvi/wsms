@@ -48,6 +48,8 @@ const RECITY_WARDS: Record<string, string> = {
   "31": "NAVNEET NAGAR"
 };
 
+const FIRST_PAGE_ROWS = 25;
+const SUBSEQUENT_PAGE_ROWS = 32;
 
 export interface RecityLetterheadProps {
   isOpen: boolean;
@@ -72,11 +74,6 @@ export default function RecityLetterheadReport({
 
   const [strictFilter, setStrictFilter] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-
-  // Rows per page: page 1 has certification intro text.
-  // We can comfortably fit around 25 rows on page 1, and 32 on subsequent pages.
-  const FIRST_PAGE_ROWS = 25;
-  const SUBSEQUENT_PAGE_ROWS = 32;
 
   // Format date as DD-MM-YYYY
   const formatDateDMY = (dStr?: string | Date) => {
