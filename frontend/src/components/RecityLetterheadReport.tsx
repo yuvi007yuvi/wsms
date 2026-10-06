@@ -488,21 +488,21 @@ function PageContent({
 
         {/* Data Table */}
         <div className="w-full mt-2">
-          <table className="w-full border-collapse border border-black text-[10px] leading-tight">
+          <table className="w-full border-collapse border border-black text-[8px] leading-tight table-fixed">
             <thead>
-              <tr className="border-b border-black bg-slate-50 font-bold text-center text-[9px] whitespace-nowrap h-7">
-                <th className="border border-black px-1 align-middle">Sl. No.</th>
-                <th className="border border-black px-1 align-middle">Receipt No</th>
-                <th className="border border-black px-1 align-middle">Date</th>
-                <th className="border border-black px-1 align-middle">Party Name</th>
-                <th className="border border-black px-1 align-middle">Vehicle No</th>
-                <th className="border border-black px-1 align-middle">Location</th>
-                <th className="border border-black px-1 align-middle">Vehicle Type</th>
-                <th className="border border-black px-1 align-middle">Material Type</th>
-                <th className="border border-black px-1 align-middle">Gross</th>
-                <th className="border border-black px-1 align-middle">Tare</th>
-                <th className="border border-black px-1 align-middle">Net</th>
-                <th className="border border-black px-1 align-middle">Time</th>
+              <tr className="border-b border-black bg-slate-50 font-bold text-center text-[8px] whitespace-nowrap h-7">
+                <th className="border border-black px-0.5 align-middle w-[5%]">Sl. No.</th>
+                <th className="border border-black px-0.5 align-middle w-[12%]">Receipt No</th>
+                <th className="border border-black px-0.5 align-middle w-[9%]">Date</th>
+                <th className="border border-black px-0.5 align-middle w-[9%]">Party Name</th>
+                <th className="border border-black px-0.5 align-middle w-[9%]">Vehicle No</th>
+                <th className="border border-black px-0.5 align-middle w-[14%]">Location</th>
+                <th className="border border-black px-0.5 align-middle w-[12%]">Vehicle Type</th>
+                <th className="border border-black px-0.5 align-middle w-[6%]">Material Type</th>
+                <th className="border border-black px-0.5 align-middle w-[6%]">Gross</th>
+                <th className="border border-black px-0.5 align-middle w-[6%]">Tare</th>
+                <th className="border border-black px-0.5 align-middle w-[6%]">Net</th>
+                <th className="border border-black px-0.5 align-middle w-[6%]">Time</th>
               </tr>
             </thead>
             <tbody>
@@ -524,19 +524,19 @@ function PageContent({
                   const overallIdx = pageIndex === 0 ? idx + 1 : FIRST_PAGE_ROWS + (pageIndex - 1) * SUBSEQUENT_PAGE_ROWS + idx + 1;
 
                   return (
-                    <tr key={slip.id || idx} className="border-b border-black text-center text-[9px] whitespace-nowrap h-7">
-                      <td className="border border-black px-0.5 align-middle">{overallIdx}</td>
-                      <td className="border border-black px-0.5 align-middle font-medium">{slip.slipNumber}</td>
-                      <td className="border border-black px-0.5 align-middle">{slipDate}</td>
-                      <td className="border border-black px-0.5 align-middle">{partyName}</td>
-                      <td className="border border-black px-0.5 align-middle font-semibold">{vehicleNum}</td>
-                      <td className="border border-black px-0.5 align-middle">{wardLocation}</td>
-                      <td className="border border-black px-0.5 align-middle">{vehicleType}</td>
-                      <td className="border border-black px-0.5 align-middle">{materialType}</td>
-                      <td className="border border-black px-0.5 align-middle">{slip.grossWeight ?? '-'}</td>
-                      <td className="border border-black px-0.5 align-middle">{slip.tareWeight ?? '-'}</td>
-                      <td className="border border-black px-0.5 align-middle font-bold">{slip.netWeight ?? '-'}</td>
-                      <td className="border border-black px-0.5 align-middle">{slipTime}</td>
+                    <tr key={slip.id || idx} className="border-b border-black text-center text-[8px] whitespace-nowrap h-7">
+                      <td className="border border-black px-0.5 align-middle truncate">{overallIdx}</td>
+                      <td className="border border-black px-0.5 align-middle font-medium truncate">{slip.slipNumber}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{slipDate}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{partyName}</td>
+                      <td className="border border-black px-0.5 align-middle font-semibold truncate">{vehicleNum}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{wardLocation}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{vehicleType}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{materialType}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{slip.grossWeight ?? '-'}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{slip.tareWeight ?? '-'}</td>
+                      <td className="border border-black px-0.5 align-middle font-bold truncate">{slip.netWeight ?? '-'}</td>
+                      <td className="border border-black px-0.5 align-middle truncate">{slipTime}</td>
                     </tr>
                   );
                 })
