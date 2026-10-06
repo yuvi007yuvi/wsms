@@ -498,7 +498,7 @@ function PageContent({
                 <th className="border border-black px-1 align-middle">Vehicle No</th>
                 <th className="border border-black px-1 align-middle">Location</th>
                 <th className="border border-black px-1 align-middle">Vehicle Type</th>
-                <th className="border border-black px-1 align-middle">Material</th>
+                <th className="border border-black px-1 align-middle">Material Type</th>
                 <th className="border border-black px-1 align-middle">Gross</th>
                 <th className="border border-black px-1 align-middle">Tare</th>
                 <th className="border border-black px-1 align-middle">Net</th>
@@ -519,7 +519,7 @@ function PageContent({
                   const vehicleNum = slip.vehicle?.vehicleNumber || '-';
                   const wardLocation = slip.mappedLocation || slip.source?.name || '-';
                   const vehicleType = slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'D2D';
-                  const materialType = slip.material?.name || 'MSW';
+                  const materialType = 'MSW';
                   
                   const overallIdx = pageIndex === 0 ? idx + 1 : FIRST_PAGE_ROWS + (pageIndex - 1) * SUBSEQUENT_PAGE_ROWS + idx + 1;
 
