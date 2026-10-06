@@ -488,27 +488,27 @@ function PageContent({
 
         {/* Data Table */}
         <div className="w-full mt-2">
-          <table className="w-full border-collapse border border-black text-[10px] leading-tight table-fixed break-words">
+          <table className="w-full border-collapse border border-black text-[10px] leading-tight">
             <thead>
-              <tr className="border-b border-black bg-slate-50 font-bold text-center text-[9px]">
-                <th className="border border-black p-1 w-[5%]">Sl. No.</th>
-                <th className="border border-black p-1 w-[12%]">Receipt No</th>
-                <th className="border border-black p-1 w-[9%]">Date</th>
-                <th className="border border-black p-1 w-[10%]">Party Name</th>
-                <th className="border border-black p-1 w-[10%]">Vehicle No</th>
-                <th className="border border-black p-1 w-[11%]">Location</th>
-                <th className="border border-black p-1 w-[10%]">Vehicle Type</th>
-                <th className="border border-black p-1 w-[8%]">Material</th>
-                <th className="border border-black p-1 w-[6%]">Gross</th>
-                <th className="border border-black p-1 w-[6%]">Tare</th>
-                <th className="border border-black p-1 w-[6%]">Net</th>
-                <th className="border border-black p-1 w-[7%]">Time</th>
+              <tr className="border-b border-black bg-slate-50 font-bold text-center text-[9px] whitespace-nowrap align-middle">
+                <th className="border border-black p-1">Sl. No.</th>
+                <th className="border border-black p-1">Receipt No</th>
+                <th className="border border-black p-1">Date</th>
+                <th className="border border-black p-1">Party Name</th>
+                <th className="border border-black p-1">Vehicle No</th>
+                <th className="border border-black p-1">Location</th>
+                <th className="border border-black p-1">Vehicle Type</th>
+                <th className="border border-black p-1">Material</th>
+                <th className="border border-black p-1">Gross</th>
+                <th className="border border-black p-1">Tare</th>
+                <th className="border border-black p-1">Net</th>
+                <th className="border border-black p-1">Time</th>
               </tr>
             </thead>
             <tbody>
               {pageSlips.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="border border-black text-center py-6 text-slate-500">
+                  <td colSpan={12} className="border border-black text-center py-6 text-slate-500 align-middle">
                     No weighment records available for this period.
                   </td>
                 </tr>
@@ -524,15 +524,15 @@ function PageContent({
                   const overallIdx = pageIndex === 0 ? idx + 1 : FIRST_PAGE_ROWS + (pageIndex - 1) * SUBSEQUENT_PAGE_ROWS + idx + 1;
 
                   return (
-                    <tr key={slip.id || idx} className="border-b border-black text-center text-[9px]">
+                    <tr key={slip.id || idx} className="border-b border-black text-center text-[9px] whitespace-nowrap align-middle">
                       <td className="border border-black py-1 px-0.5">{overallIdx}</td>
-                      <td className="border border-black py-1 px-0.5 font-medium break-all">{slip.slipNumber}</td>
+                      <td className="border border-black py-1 px-0.5 font-medium">{slip.slipNumber}</td>
                       <td className="border border-black py-1 px-0.5">{slipDate}</td>
-                      <td className="border border-black py-1 px-0.5 truncate">{partyName}</td>
-                      <td className="border border-black py-1 px-0.5 font-semibold break-all">{vehicleNum}</td>
-                      <td className="border border-black py-1 px-0.5 break-words">{wardLocation}</td>
-                      <td className="border border-black py-1 px-0.5 break-words">{vehicleType}</td>
-                      <td className="border border-black py-1 px-0.5 break-words">{materialType}</td>
+                      <td className="border border-black py-1 px-0.5">{partyName}</td>
+                      <td className="border border-black py-1 px-0.5 font-semibold">{vehicleNum}</td>
+                      <td className="border border-black py-1 px-0.5">{wardLocation}</td>
+                      <td className="border border-black py-1 px-0.5">{vehicleType}</td>
+                      <td className="border border-black py-1 px-0.5">{materialType}</td>
                       <td className="border border-black py-1 px-0.5">{slip.grossWeight ?? '-'}</td>
                       <td className="border border-black py-1 px-0.5">{slip.tareWeight ?? '-'}</td>
                       <td className="border border-black py-1 px-0.5 font-bold">{slip.netWeight ?? '-'}</td>
