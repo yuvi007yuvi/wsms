@@ -15,7 +15,8 @@ import {
   Layers, 
   ShieldCheck,
   RefreshCw,
-  FileJson
+  FileJson,
+  FileText
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -133,6 +134,168 @@ export default function ApiGenerator() {
 
   const selectedProjectObj = projects.find(p => p.id === selectedProjectId);
 
+  const handleDownloadApiDoc = () => {
+    const projName = selectedProjectObj?.name || 'All Projects';
+    const projId = selectedProjectId || 'all';
+    const baseUrl = getBaseOrigin();
+    const currentDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>API Documentation & Integration Credentials - ${projName}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; padding: 40px; margin: 0; background: #fff; }
+          .header { border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+          .header h1 { margin: 0; color: #0f172a; font-size: 26px; }
+          .header p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+          .badge { background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 4px; font-weight: 600; font-size: 12px; border: 1px solid #bfdbfe; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-size: 18px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px; }
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+          .field { margin-bottom: 12px; }
+          .field-label { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px; }
+          .field-value { font-family: monospace; font-size: 14px; background: #fff; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; color: #0f172a; word-break: break-all; }
+          .endpoint { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; border-radius: 4px; padding: 15px; margin-bottom: 15px; }
+          .endpoint-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+          .method { background: #22c55e; color: #fff; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 3px; font-family: monospace; }
+          .path { font-family: monospace; font-size: 13px; font-weight: 600; color: #0f172a; }
+          .desc { font-size: 13px; color: #475569; margin: 0 0 10px 0; }
+          pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 8px 0 0 0; }
+          .footer { border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 40px; font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1>REST API Integration Specification</h1>
+            <p>Live Weighment Data Synchronization & Telemetry Interface</p>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge">CONFIDENTIAL</span>
+            <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Date: ${currentDate}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">1. Project & Authentication Credentials</div>
+          <div class="card">
+            <div class="field">
+              <div class="field-label">Target Project / Facility</div>
+              <div class="field-value">${projName} (Project ID: ${projId})</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Authentication Header Key</div>
+              <div class="field-value">x-api-key</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Integration Secret Key (x-api-key)</div>
+              <div class="field-value" style="color: #d97706; font-weight: 700;">${apiKey}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Base API URL</div>
+              <div class="field-value">${baseUrl}/api</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">2. Available Data Sharing Endpoints</div>
+
+          <!-- Endpoint 1 -->
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="path">/api/external/projects/${projId}/slips</span>
+            </div>
+            <p class="desc">Retrieves live weighment slips recorded for this project with vehicle details, tare weight, gross weight, net weight, operator and timestamp.</p>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><b>Query Parameters:</b> <code>dateFrom (YYYY-MM-DD)</code>, <code>dateTo (YYYY-MM-DD)</code>, <code>limit (default 50)</code>, <code>search (optional)</code></div>
+            <pre>curl -X GET "${baseUrl}/api/external/projects/${projId}/slips?limit=10" \
+  -H "x-api-key: ${apiKey}" \
+  -H "Accept: application/json"</pre>
+          </div>
+
+          <!-- Endpoint 2 -->
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="path">/api/external/projects/${projId}/vehicles</span>
+            </div>
+            <p class="desc">Returns complete fleet register for this project with vehicle numbers, vehicle type, driver names, mobile, and tare weights.</p>
+            <pre>curl -X GET "${baseUrl}/api/external/projects/${projId}/vehicles" \
+  -H "x-api-key: ${apiKey}" \
+  -H "Accept: application/json"</pre>
+          </div>
+
+          <!-- Endpoint 3 -->
+          <div class="endpoint">
+            <div class="endpoint-header">
+              <span class="method">GET</span>
+              <span class="path">/api/external/projects/${projId}/summary</span>
+            </div>
+            <p class="desc">Provides real-time aggregated metrics including total trips, net tonnage, average load, and material-wise weight summaries.</p>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><b>Query Parameters:</b> <code>dateFrom (YYYY-MM-DD)</code>, <code>dateTo (YYYY-MM-DD)</code></div>
+            <pre>curl -X GET "${baseUrl}/api/external/projects/${projId}/summary" \
+  -H "x-api-key: ${apiKey}" \
+  -H "Accept: application/json"</pre>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">3. Standard Response Format (JSON)</div>
+          <pre>{
+  "success": true,
+  "projectId": "${projId}",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "totalRecords": 1,
+    "totalNetWeightKg": 14500,
+    "totalNetWeightTons": "14.500"
+  },
+  "data": [
+    {
+      "id": "uuid",
+      "slipNumber": "WS261105-0001",
+      "date": "2026-11-05T14:30:00.000Z",
+      "grossWeight": 25000,
+      "tareWeight": 10500,
+      "netWeight": 14500,
+      "vehicle": { "vehicleNumber": "UP80AB1234", "vehicleType": { "name": "Dumper" } },
+      "material": { "name": "Municipal Solid Waste" },
+      "source": { "name": "Zone 1" },
+      "destination": { "name": "Processing Plant" }
+    }
+  ]
+}</pre>
+        </div>
+
+        <div class="footer">
+          <span>Nature Green Tools & Machines — Weighment Slip Management System (WSMS)</span>
+          <span>Security Notice: Keep your x-api-key confidential</span>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    } else {
+      toast({ title: 'Popup blocked', description: 'Please allow popups to download/print the API document', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full space-y-5 p-1 max-w-7xl mx-auto">
       {/* Header */}
@@ -146,10 +309,16 @@ export default function ApiGenerator() {
             Generate and test secure REST API feeds to share real-time weighment records, vehicles, and summary data with external platforms.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1 bg-green-50 text-green-700 border-green-200 gap-1.5 text-xs font-semibold">
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="px-3 py-1.5 bg-green-50 text-green-700 border-green-200 gap-1.5 text-xs font-semibold">
             <ShieldCheck className="h-4 w-4" /> Live Sync Ready
           </Badge>
+          <Button 
+            onClick={handleDownloadApiDoc}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs tracking-wide h-9 px-3.5 gap-2 shadow-sm rounded-md"
+          >
+            <FileText className="h-4 w-4" /> Generate API Document & Credentials
+          </Button>
         </div>
       </div>
 
