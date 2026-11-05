@@ -4,6 +4,8 @@ import prisma from '../utils/prisma';
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
     const { dateFrom, dateTo, vehicleType, materialId, sourceId } = req.query;
+    // @ts-ignore
+    const authUser = req.user;
 
     // Determine the date range needed. We need at least the last 7 days for the trend chart,
     // plus whatever range the user requested.
@@ -29,14 +31,21 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       if (filterTo > maxDate) maxDate = filterTo;
     }
 
+    const whereClause: any = {
+      date: {
+        gte: minDate,
+        lte: maxDate
+      }
+    };
+
+    // Filter dashboard by project if logged-in user belongs to a project
+    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+      whereClause.projectId = authUser.projectId;
+    }
+
     // Fetch ONLY the required fields to keep the query lightning fast and memory small
     const slips = await prisma.weighmentSlip.findMany({
-      where: {
-        date: {
-          gte: minDate,
-          lte: maxDate
-        }
-      },
+      where: whereClause,
       select: {
         id: true,
         date: true,

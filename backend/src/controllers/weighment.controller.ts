@@ -118,8 +118,15 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
     
     const { search, dateFrom, dateTo } = req.query;
+    // @ts-ignore
+    const authUser = req.user;
     
     let where: any = {};
+
+    // Filter slips by project if user belongs to a specific project
+    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+      where.projectId = authUser.projectId;
+    }
     
     if (dateFrom || dateTo) {
       where.date = {};
