@@ -20,9 +20,17 @@ export default function Superadmin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   
   const [adminOpen, setAdminOpen] = useState(false);
+  const [userModalTab, setUserModalTab] = useState<'assign' | 'create'>('create');
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
+  
+  // New User Form State
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newFullName, setNewFullName] = useState('');
+  const [newDesignation, setNewDesignation] = useState('');
+  const [newRole, setNewRole] = useState('operator');
   
   const [stats, setStats] = useState({ projects: 0, vehicles: 0, slips: 0 });
   
@@ -170,9 +178,33 @@ export default function Superadmin() {
       setAdminOpen(false);
       setSelectedUserId('');
       fetchProjects();
-      fetchUsers(); // Refresh to see updated assignment
+      fetchUsers();
     } catch (error: any) {
       toast({ title: error.response?.data?.error || 'Error assigning user', variant: 'destructive' });
+    }
+  };
+
+  const handleCreateUserForProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post(`/superadmin/projects/${selectedProjectId}/users`, {
+        username: newUsername,
+        password: newPassword,
+        fullName: newFullName,
+        designation: newDesignation,
+        role: newRole
+      });
+      toast({ title: 'New user created and assigned to project!' });
+      setAdminOpen(false);
+      setNewUsername('');
+      setNewPassword('');
+      setNewFullName('');
+      setNewDesignation('');
+      setNewRole('operator');
+      fetchProjects();
+      fetchUsers();
+    } catch (error: any) {
+      toast({ title: error.response?.data?.error || 'Failed to create user', variant: 'destructive' });
     }
   };
 
@@ -342,29 +374,93 @@ export default function Superadmin() {
       </Card>
 
       <Dialog open={adminOpen} onOpenChange={setAdminOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign User to Project</DialogTitle>
+            <DialogTitle>Manage Users for Project</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAssignUser} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select Existing User</Label>
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedUserId} 
-                onChange={e => setSelectedUserId(e.target.value)} 
-                required
-              >
-                <option value="" disabled>-- Select a User --</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.username} {u.fullName ? `(${u.fullName})` : ''} - {u.projectId ? 'Already Assigned' : 'Unassigned'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit" className="w-full">Assign User</Button>
-          </form>
+
+          {/* Mode Switch Tabs */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg text-center text-xs font-semibold mb-2">
+            <button
+              type="button"
+              onClick={() => setUserModalTab('create')}
+              className={`py-2 px-3 rounded-md transition-all ${
+                userModalTab === 'create' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              + Create New User
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserModalTab('assign')}
+              className={`py-2 px-3 rounded-md transition-all ${
+                userModalTab === 'assign' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Assign Existing User
+            </button>
+          </div>
+
+          {userModalTab === 'create' ? (
+            <form onSubmit={handleCreateUserForProject} className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Username *</Label>
+                <Input value={newUsername} onChange={e => setNewUsername(e.target.value)} required placeholder="e.g. urban_operator" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Password *</Label>
+                <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required placeholder="Password" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Full Name</Label>
+                  <Input value={newFullName} onChange={e => setNewFullName(e.target.value)} placeholder="Full Name" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Designation</Label>
+                  <Input value={newDesignation} onChange={e => setNewDesignation(e.target.value)} placeholder="Designation" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Role</Label>
+                <select 
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs"
+                  value={newRole} 
+                  onChange={e => setNewRole(e.target.value)}
+                >
+                  <option value="operator">Operator (Weighment Slip Entry)</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Project Admin</option>
+                  <option value="recity-admin">Recity Admin</option>
+                </select>
+              </div>
+              <Button type="submit" className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold uppercase tracking-wider">
+                Create User & Assign to Project
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleAssignUser} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Select Existing User</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={selectedUserId} 
+                  onChange={e => setSelectedUserId(e.target.value)} 
+                  required
+                >
+                  <option value="" disabled>-- Select a User --</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.username} {u.fullName ? `(${u.fullName})` : ''} - {u.projectId ? 'Already Assigned' : 'Unassigned'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button type="submit" className="w-full text-xs font-bold uppercase tracking-wider">
+                Assign User
+              </Button>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 

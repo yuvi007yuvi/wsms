@@ -24,6 +24,7 @@ router.get('/projects', superadminController.getAllProjects);
 router.post('/projects', superadminController.createProject);
 router.put('/projects/:id', superadminController.updateProject);
 router.get('/users', superadminController.getUsers);
+router.post('/projects/:projectId/users', superadminController.createProjectAdmin);
 router.put('/projects/:projectId/assign-user', superadminController.assignUser);
 
 router.get('/invoices', superadminController.getInvoices);

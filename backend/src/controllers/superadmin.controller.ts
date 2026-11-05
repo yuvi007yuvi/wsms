@@ -84,7 +84,7 @@ export const superadminController = {
   createProjectAdmin: async (req: Request, res: Response) => {
     try {
       const { projectId } = req.params;
-      const { username, password, fullName, designation } = req.body;
+      const { username, password, fullName, designation, role } = req.body;
 
       const existing = await prisma.user.findUnique({ where: { username } });
       if (existing) {
@@ -100,7 +100,7 @@ export const superadminController = {
           password: hashedPassword,
           fullName,
           designation: designation as string | undefined,
-          role: 'admin',
+          role: role || 'operator',
           projectId: projectId as string
         }
       });
@@ -108,7 +108,7 @@ export const superadminController = {
       res.status(201).json({ id: user.id, username: user.username, role: user.role });
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: 'Failed to create project admin' });
+      res.status(400).json({ error: 'Failed to create user' });
     }
   },
 
