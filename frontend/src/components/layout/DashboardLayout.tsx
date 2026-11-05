@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope, Menu } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope, Menu, Share2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Slip History', path: '/reports', icon: FileText },
   { name: 'Summary Reports', path: '/summary-reports', icon: FileText },
   { name: 'Trip Analysis', path: '/trips', icon: Truck },
+  { name: 'API Data Sharing', path: '/api-generator', icon: Share2 },
   { name: 'Pricing Plans', path: '/pricing', icon: CreditCard },
   { name: 'Users', path: '/users', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },

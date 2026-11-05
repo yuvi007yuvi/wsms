@@ -35,18 +35,30 @@ export default function Vehicles() {
   const [driverName, setDriverName] = useState('');
   const [mobile, setMobile] = useState('');
   const [owner, setOwner] = useState('');
+  const [projectId, setProjectId] = useState('');
   const [vehicleTypes, setVehicleTypes] = useState<any[]>([]);
-  
-
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const fetchProjects = async () => {
+    try {
+      const res = await api.get('/external/projects');
+      setProjects(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error('Failed to load projects', error);
+    }
+  };
 
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/master/vehicles', {
-        params: { page: currentPage, limit: pageSize, search: debouncedSearchQuery }
-      });
+      const params: any = { page: currentPage, limit: pageSize, search: debouncedSearchQuery };
+      if (selectedProjectFilter !== 'all') {
+        params.projectId = selectedProjectFilter;
+      }
+      const res = await api.get('/master/vehicles', { params });
       if (res.data && res.data.data) {
         setVehicles(res.data.data);
         setTotalRecords(res.data.total);
@@ -76,10 +88,11 @@ export default function Vehicles() {
 
   useEffect(() => {
     fetchVehicles();
-  }, [currentPage, pageSize, debouncedSearchQuery]);
+  }, [currentPage, pageSize, debouncedSearchQuery, selectedProjectFilter]);
 
   useEffect(() => {
     fetchVehicleTypes();
+    fetchProjects();
   }, []);
 
   const fetchDeletedVehicles = async () => {
@@ -141,6 +154,7 @@ export default function Vehicles() {
     setDriverName(v.driverName || '');
     setMobile(v.mobile || '');
     setOwner(v.owner || '');
+    setProjectId(v.projectId || '');
     setEditingId(v.id);
     setOpen(true);
   };
@@ -155,6 +169,7 @@ export default function Vehicles() {
       setDriverName('');
       setMobile('');
       setOwner('');
+      setProjectId('');
       setEditingId(null);
     }
   };
@@ -163,7 +178,7 @@ export default function Vehicles() {
     e.preventDefault();
     if (!vehicleNumber || !vehicleTypeId) return;
     try {
-      const payload = {
+      const payload: any = {
         vehicleNumber,
         vehicleTypeId,
         tareWeight: parseFloat(tareWeight) || 0,
@@ -171,6 +186,9 @@ export default function Vehicles() {
         mobile: mobile || null,
         owner: owner || null
       };
+      if (projectId) {
+        payload.projectId = projectId;
+      }
 
       if (editingId) {
         await api.put(`/master/vehicles/${editingId}`, payload);
@@ -263,6 +281,15 @@ export default function Vehicles() {
                   <Label>Owner / Agency</Label>
                   <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="Owner Name" />
                 </div>
+                <div className="space-y-2">
+                  <Label>Assign Project</Label>
+                  <select value={projectId} onChange={e => setProjectId(e.target.value)} className="w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="">-- Select Project (Optional) --</option>
+                    {projects.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <Button type="submit" className="w-full h-10 mt-4 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm" disabled={!vehicleNumber || !vehicleTypeId}>
                 {editingId ? 'Update Vehicle' : 'Save Vehicle'}
@@ -354,6 +381,15 @@ export default function Vehicles() {
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300">
               <Filter className="h-3.5 w-3.5 mr-1" /> Filter
             </Button>
+            <div className="flex items-center gap-1.5 ml-2">
+              <span className="text-xs text-slate-500 font-semibold">Project:</span>
+              <select value={selectedProjectFilter} onChange={e => { setSelectedProjectFilter(e.target.value); setCurrentPage(1); }} className="h-8 text-xs rounded-sm border border-slate-300 bg-white px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <option value="all">All Projects</option>
+                {projects.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300" onClick={fetchVehicles}>
@@ -371,6 +407,7 @@ export default function Vehicles() {
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Type</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Driver / Mobile</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Owner</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Project</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Tare (kg)</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
@@ -400,6 +437,7 @@ export default function Vehicles() {
                       {!v.driverName && !v.mobile ? '-' : null}
                     </TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{v.owner || '-'}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">{v.project ? (<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">{v.project.name}</span>) : (<span className="text-xs text-slate-400">Global / Default</span>)}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-900 font-bold text-right">{v.tareWeight || 0}</TableCell>
                     <TableCell className="py-3 px-4 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md mr-1" onClick={() => handleEdit(v)}>

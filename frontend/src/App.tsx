@@ -33,6 +33,7 @@ import Billing from './components/Billing';
 import Diagnostics from './components/Diagnostics';
 import TripAnalysis from './components/TripAnalysis';
 import SummaryReports from './components/SummaryReports';
+import ApiGenerator from './components/ApiGenerator';
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             <Route path="billing" element={<Billing />} />
             <Route path="diagnostics" element={<Diagnostics />} />
             <Route path="trips" element={<TripAnalysis />} />
+            <Route path="api-generator" element={<ApiGenerator />} />
           </Route>
         </Route>
       </Routes>

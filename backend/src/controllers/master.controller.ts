@@ -120,7 +120,14 @@ export const vehicleController = {
     try {
       const payload = { ...req.body };
       // @ts-ignore
-      payload.projectId = req.user?.projectId || null;
+      const authUser = req.user;
+      
+      // Allow passing explicit projectId if superadmin; otherwise default to logged in user's projectId
+      if (authUser?.role === 'superadmin' && payload.projectId) {
+        // keep provided payload.projectId
+      } else {
+        payload.projectId = authUser?.projectId || null;
+      }
 
       const existing = await prisma.vehicle.findUnique({
         where: { vehicleNumber: payload.vehicleNumber }
@@ -130,7 +137,11 @@ export const vehicleController = {
         if (!existing.isActive) {
           const data = await prisma.vehicle.update({
             where: { id: existing.id },
-            data: { ...payload, isActive: true }
+            data: { ...payload, isActive: true },
+            include: {
+              project: { select: { id: true, name: true } },
+              vehicleType: { select: { id: true, name: true, tareWeight: true } }
+            }
           });
           return res.status(201).json(data);
         } else {
@@ -139,7 +150,11 @@ export const vehicleController = {
       }
 
       const data = await prisma.vehicle.create({
-        data: payload
+        data: payload,
+        include: {
+          project: { select: { id: true, name: true } },
+          vehicleType: { select: { id: true, name: true, tareWeight: true } }
+        }
       });
       res.status(201).json(data);
     } catch (error: any) {
@@ -154,11 +169,19 @@ export const vehicleController = {
     try {
       const payload = { ...req.body };
       // @ts-ignore
-      payload.projectId = req.user?.projectId || null;
+      const authUser = req.user;
+
+      if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+        payload.projectId = authUser.projectId;
+      }
 
       const data = await prisma.vehicle.update({
         where: { id: req.params.id as string },
-        data: payload
+        data: payload,
+        include: {
+          project: { select: { id: true, name: true } },
+          vehicleType: { select: { id: true, name: true, tareWeight: true } }
+        }
       });
       res.json(data);
     } catch (error: any) {
@@ -174,16 +197,28 @@ export const vehicleController = {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
+      const projectIdQuery = req.query.projectId as string;
+      // @ts-ignore
+      const authUser = req.user;
       const skip = (page - 1) * limit;
 
       const isActiveParam = req.query.isActive;
       const isActiveFilter = String(isActiveParam) === 'false' ? false : true;
-      console.log('GET /vehicles - isActiveParam:', isActiveParam, 'isActiveFilter:', isActiveFilter);
 
       const whereClause: any = { isActive: isActiveFilter };
+
+      // Apply project isolation
+      if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+        whereClause.projectId = authUser.projectId;
+      } else if (projectIdQuery && projectIdQuery !== 'all') {
+        whereClause.projectId = projectIdQuery;
+      }
+
       if (search) {
         whereClause.OR = [
-          { vehicleNumber: { contains: search, mode: 'insensitive' as any } }
+          { vehicleNumber: { contains: search, mode: 'insensitive' as any } },
+          { driverName: { contains: search, mode: 'insensitive' as any } },
+          { owner: { contains: search, mode: 'insensitive' as any } }
         ];
       }
 
@@ -201,6 +236,8 @@ export const vehicleController = {
             owner: true,
             tareWeight: true,
             isActive: true,
+            projectId: true,
+            project: { select: { id: true, name: true } },
             createdAt: true,
             vehicleType: { select: { id: true, name: true, tareWeight: true } }
           }

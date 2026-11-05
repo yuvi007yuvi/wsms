@@ -29,14 +29,16 @@ export default function Users() {
   
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
-  const userRole = localStorage.getItem('role') || 'operator';
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/users', {
-        params: { page: currentPage, limit: pageSize }
-      });
+      const params: any = { page: currentPage, limit: pageSize };
+      if (selectedProjectFilter !== 'all') {
+        params.projectId = selectedProjectFilter;
+      }
+      const res = await api.get('/users', { params });
       if (res.data && res.data.data) {
         setUsers(res.data.data);
         setTotalRecords(res.data.total);
@@ -62,20 +64,18 @@ export default function Users() {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, selectedProjectFilter]);
   
   useEffect(() => {
-    if (userRole === 'superadmin') {
-      fetchProjects();
-    }
-  }, [userRole]);
+    fetchProjects();
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload: any = { username, role, fullName, designation };
       if (password) payload.password = password;
-      if (userRole === 'superadmin') payload.projectId = projectId;
+      if (projectId) payload.projectId = projectId;
 
       if (editingUserId) {
         await api.put(`/users/${editingUserId}`, payload);
@@ -178,22 +178,19 @@ export default function Users() {
                   </SelectContent>
                 </Select>
               </div>
-              {userRole === 'superadmin' && (
-                <div className="space-y-2 col-span-2">
-                  <Label>Project (Assign Project)</Label>
-                  <Select value={projectId} onValueChange={setProjectId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">-- No Project --</SelectItem>
-                      {projects.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="space-y-2 col-span-2">
+                <Label>Assign Project (Optional)</Label>
+                <select 
+                  value={projectId} 
+                  onChange={e => setProjectId(e.target.value)}
+                  className="w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">-- No Project (Global Account) --</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
               <Button type="submit" className="w-full col-span-2 h-10 mt-2 font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 rounded-sm">
                 {editingUserId ? 'Update User' : 'Save User'}
               </Button>
@@ -212,6 +209,19 @@ export default function Users() {
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300">
               <Filter className="h-3.5 w-3.5 mr-1" /> Filter
             </Button>
+            <div className="flex items-center gap-1.5 ml-2">
+              <span className="text-xs text-slate-500 font-semibold">Project:</span>
+              <select 
+                value={selectedProjectFilter} 
+                onChange={e => { setSelectedProjectFilter(e.target.value); setCurrentPage(1); }} 
+                className="h-8 text-xs rounded-sm border border-slate-300 bg-white px-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="all">All Projects</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300" onClick={fetchUsers}>
@@ -232,6 +242,7 @@ export default function Users() {
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Name</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Designation</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Role</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Project</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Status</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
@@ -257,6 +268,15 @@ export default function Users() {
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{u.fullName || '-'}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600">{u.designation || '-'}</TableCell>
                     <TableCell className="py-3 px-4 text-sm text-slate-600 capitalize">{u.role === 'recity-admin' ? 'Recity Admin' : u.role}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-slate-600">
+                      {u.project ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          {u.project.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">Global Admin</span>
+                      )}
+                    </TableCell>
                     <TableCell className="py-3 px-4">
                       <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${u.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                         {u.isActive ? 'Active' : 'Inactive'}

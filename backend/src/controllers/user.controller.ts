@@ -7,15 +7,26 @@ export const getUsers = async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const projectIdQuery = req.query.projectId as string;
+    const authUser = (req as any).user;
+
+    const where: any = {
+      role: { not: 'superadmin' },
+      isActive: true
+    };
+
+    // If user is not superadmin and belongs to a project, lock to their project
+    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+      where.projectId = authUser.projectId;
+    } else if (projectIdQuery && projectIdQuery !== 'all') {
+      where.projectId = projectIdQuery;
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         skip,
         take: limit,
-        where: {
-          role: { not: 'superadmin' },
-          isActive: true
-        },
+        where,
         select: {
           id: true,
           username: true,
@@ -23,16 +34,13 @@ export const getUsers = async (req: Request, res: Response) => {
           designation: true,
           role: true,
           isActive: true,
+          projectId: true,
+          project: { select: { id: true, name: true } },
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' }
       }),
-      prisma.user.count({
-        where: {
-          role: { not: 'superadmin' },
-          isActive: true
-        }
-      })
+      prisma.user.count({ where })
     ]);
     res.json({ data: users, total });
   } catch (error) {
@@ -42,7 +50,8 @@ export const getUsers = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { username, password, role, fullName, designation } = req.body;
+    const { username, password, role, fullName, designation, projectId } = req.body;
+    const authUser = (req as any).user;
     
     if (role === 'superadmin') {
       res.status(403).json({ error: 'Cannot create superadmin from this endpoint' });
@@ -55,6 +64,12 @@ export const createUser = async (req: Request, res: Response) => {
       return;
     }
 
+    // Determine target project: non-superadmin users can only create for their own project
+    let targetProjectId = projectId || null;
+    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+      targetProjectId = authUser.projectId;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
@@ -62,10 +77,13 @@ export const createUser = async (req: Request, res: Response) => {
         password: hashedPassword,
         fullName,
         designation,
-        role: role || 'operator'
+        role: role || 'operator',
+        projectId: targetProjectId
+      },
+      include: {
+        project: { select: { id: true, name: true } }
       }
     });
-    
 
     // Remove password before returning
     const { password: _, ...userWithoutPassword } = user;
@@ -106,13 +124,18 @@ export const updateUser = async (req: Request, res: Response) => {
       role
     };
 
-    if (authUser?.role === 'superadmin' && projectId !== undefined) {
-      dataToUpdate.projectId = projectId || null;
+    if (projectId !== undefined) {
+      if (authUser?.role === 'superadmin') {
+        dataToUpdate.projectId = projectId || null;
+      }
     }
 
     const user = await prisma.user.update({
       where: { id },
-      data: dataToUpdate
+      data: dataToUpdate,
+      include: {
+        project: { select: { id: true, name: true } }
+      }
     });
     
 

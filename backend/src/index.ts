@@ -30,6 +30,7 @@ import settingRoutes from './routes/setting.routes';
 import systemRoutes from './routes/system.routes';
 import superadminRoutes from './routes/superadmin.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import externalRoutes from './routes/external.routes';
 
 // Routes will be added here
 app.use('/api/auth', authRoutes);
@@ -40,6 +41,7 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/external', externalRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
