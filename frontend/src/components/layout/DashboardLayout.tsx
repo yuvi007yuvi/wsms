@@ -153,7 +153,7 @@ export default function DashboardLayout() {
 
         <div className={cn("flex flex-col items-center justify-center p-3 border-b bg-white/40", userRole === 'recity-admin' ? "border-blue-200/60" : "border-green-200/60")}>
           <Link to="/" className="flex flex-col items-center gap-1">
-            <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className={cn("object-contain rounded shadow-sm bg-white p-1 transition-all", isCollapsed ? "h-8 w-8" : "h-12 w-12")} />
+            <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className={cn("object-contain rounded shadow-sm bg-white p-0.5 transition-all", isCollapsed ? "h-8 w-8" : "h-14 w-auto max-w-[140px]")} />
             {!isCollapsed && <span className={cn("font-bold tracking-wider text-lg mt-1 text-center", userRole === 'recity-admin' ? "text-blue-950" : "text-green-950")}>{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>}
           </Link>
 
@@ -225,16 +225,7 @@ export default function DashboardLayout() {
             {!isCollapsed && t('Logout')}
           </button>
 
-          {/* Developer Credit */}
-          {!isCollapsed && userRole !== 'recity-admin' && (
-            <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
-              <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
-              <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
-                NATURE GREEN
-              </span>
-              <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.1</span>
-            </div>
-          )}
+
         </div>
       </aside>
 
@@ -255,7 +246,7 @@ export default function DashboardLayout() {
               <SheetContent side="left" className={cn("p-0 w-64 border-r flex flex-col no-print", userRole === 'recity-admin' ? "bg-gradient-to-b from-blue-50 to-blue-100/80 border-blue-200" : "bg-gradient-to-b from-green-50 to-green-100/80 border-green-200")}>
                 <div className={cn("flex flex-col items-center justify-center p-3 border-b bg-white/40", userRole === 'recity-admin' ? "border-blue-200/60" : "border-green-200/60")}>
                   <Link to="/" className="flex flex-col items-center gap-1" onClick={() => setIsMobileOpen(false)}>
-                    <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className="object-contain rounded shadow-sm bg-white p-1 transition-all h-12 w-12" />
+                    <img src={userRole === 'recity-admin' ? "/recity-logo.jpg" : "/images.jpg"} alt={userRole === 'recity-admin' ? "Recity" : "WeighT360Pro"} className="object-contain rounded shadow-sm bg-white p-0.5 transition-all h-14 w-auto max-w-[140px]" />
                     <span className={cn("font-bold tracking-wider text-lg mt-1 text-center", userRole === 'recity-admin' ? "text-blue-950" : "text-green-950")}>{userRole === 'recity-admin' ? 'Recity' : t('WeighT360Pro')}</span>
                   </Link>
 
@@ -318,16 +309,7 @@ export default function DashboardLayout() {
                     {t('Logout')}
                   </button>
 
-                  {/* Developer Credit */}
-                  {userRole !== 'recity-admin' && (
-                    <div className="mt-2 text-[10px] text-center text-green-800 font-bold flex flex-col items-center gap-1 group cursor-default">
-                      <span className="opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-widest">{t('Designed & Developed by')}</span>
-                      <span className="font-extrabold text-xs bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent transform group-hover:scale-105 transition-all duration-300">
-                        NATURE GREEN
-                      </span>
-                      <span className="text-[9px] text-green-600/60 mt-0.5">v1.0.1</span>
-                    </div>
-                  )}
+
                 </div>
               </SheetContent>
             </Sheet>

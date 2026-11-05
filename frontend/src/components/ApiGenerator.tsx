@@ -276,7 +276,7 @@ export default function ApiGenerator() {
         </div>
 
         <div class="footer">
-          <span>Nature Green Tools & Machines — Weighment Slip Management System (WSMS)</span>
+          <span>WeighT360Pro — Smart Weighment Solution</span>
           <span>Security Notice: Keep your x-api-key confidential</span>
         </div>
       </body>
