@@ -201,8 +201,15 @@ export const deleteWeighmentSlip = async (req: Request, res: Response) => {
 export const getWeighmentSummary = async (req: Request, res: Response) => {
   try {
     const { dateFrom, dateTo, reportType } = req.query;
+    // @ts-ignore
+    const authUser = req.user;
     
     let where: any = {};
+
+    // Isolate by project if user is assigned to a project
+    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+      where.projectId = authUser.projectId;
+    }
     
     if (dateFrom || dateTo) {
       where.date = {};
