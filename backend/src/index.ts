@@ -63,6 +63,43 @@ io.on('connection', (socket) => {
 // Hardware weighbridge integration (via shared service)
 setupWeighbridge(io);
 
+// Run initial data migrations/backfills on startup
+(async () => {
+  try {
+    // Find Nature Green project to associate legacy records with
+    const natureGreenProject = await prisma.project.findFirst({
+      where: {
+        OR: [
+          { name: { contains: 'Nature', mode: 'insensitive' } },
+          { name: { contains: 'Green', mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (natureGreenProject) {
+      // 1. Backfill legacy Sources (Wards) without a projectId to Nature Green
+      const updatedSources = await prisma.source.updateMany({
+        where: { projectId: null },
+        data: { projectId: natureGreenProject.id }
+      });
+      if (updatedSources.count > 0) {
+        console.log(`Backfilled ${updatedSources.count} legacy sources (wards) to Nature Green (${natureGreenProject.name})`);
+      }
+
+      // 2. Backfill legacy Destinations (Works) without a projectId to Nature Green
+      const updatedDestinations = await prisma.destination.updateMany({
+        where: { projectId: null },
+        data: { projectId: natureGreenProject.id }
+      });
+      if (updatedDestinations.count > 0) {
+        console.log(`Backfilled ${updatedDestinations.count} legacy destinations (works) to Nature Green (${natureGreenProject.name})`);
+      }
+    }
+  } catch (migErr) {
+    console.error('Error during startup project separation backfill:', migErr);
+  }
+})();
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

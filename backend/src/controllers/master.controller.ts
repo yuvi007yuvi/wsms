@@ -10,16 +10,29 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
         const limit = parseInt(req.query.limit as string) || 10;
         const skip = (page - 1) * limit;
 
+        // @ts-ignore
+        const authUser = req.user;
+        const whereClause: any = { isActive: true };
+
+        // For Source (Ward) and Destination (Work), isolate by project
+        if (modelName === 'source' || modelName === 'destination') {
+          if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+            whereClause.projectId = authUser.projectId;
+          } else if (req.query.projectId) {
+            whereClause.projectId = req.query.projectId as string;
+          }
+        }
+
         const [data, total] = await Promise.all([
           // @ts-ignore
           prisma[modelName].findMany({
-            where: { isActive: true },
+            where: whereClause,
             skip,
             take: limit,
             orderBy: { createdAt: 'desc' }
           }),
           // @ts-ignore
-          prisma[modelName].count({ where: { isActive: true } })
+          prisma[modelName].count({ where: whereClause })
         ]);
         res.json({ data, total });
       } catch (error) {
@@ -41,9 +54,10 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
     create: async (req: Request, res: Response) => {
       try {
         const payload = { ...req.body };
-        if (modelName === 'vehicle') {
-          // @ts-ignore
-          payload.projectId = req.user?.projectId || null;
+        // @ts-ignore
+        const authUser = req.user;
+        if (modelName === 'vehicle' || modelName === 'source' || modelName === 'destination') {
+          payload.projectId = authUser?.projectId || req.body.projectId || null;
         }
 
         // @ts-ignore
@@ -62,9 +76,12 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
     update: async (req: Request, res: Response) => {
       try {
         const payload = { ...req.body };
-        if (modelName === 'vehicle') {
-          // @ts-ignore
-          payload.projectId = req.user?.projectId || null;
+        // @ts-ignore
+        const authUser = req.user;
+        if (modelName === 'vehicle' || modelName === 'source' || modelName === 'destination') {
+          if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+            payload.projectId = authUser.projectId;
+          }
         }
 
         // @ts-ignore
@@ -286,12 +303,23 @@ export const destinationController = {
   ...createCrudHandlers('destination'),
   create: async (req: Request, res: Response) => {
     try {
+      // @ts-ignore
+      const authUser = req.user;
+      const targetProjectId = authUser?.projectId || req.body.projectId || null;
       if (req.body.isDefault) {
         // @ts-ignore
-        await prisma.destination.updateMany({ data: { isDefault: false } });
+        await prisma.destination.updateMany({
+          where: targetProjectId ? { projectId: targetProjectId } : {},
+          data: { isDefault: false }
+        });
       }
       // @ts-ignore
-      const data = await prisma.destination.create({ data: req.body });
+      const data = await prisma.destination.create({
+        data: {
+          ...req.body,
+          projectId: targetProjectId
+        }
+      });
       res.status(201).json(data);
     } catch (error) {
       console.error(error);
@@ -300,14 +328,23 @@ export const destinationController = {
   },
   update: async (req: Request, res: Response) => {
     try {
+      // @ts-ignore
+      const authUser = req.user;
+      const targetProjectId = authUser?.projectId || req.body.projectId || null;
       if (req.body.isDefault) {
         // @ts-ignore
-        await prisma.destination.updateMany({ data: { isDefault: false } });
+        await prisma.destination.updateMany({
+          where: targetProjectId ? { projectId: targetProjectId } : {},
+          data: { isDefault: false }
+        });
       }
       // @ts-ignore
       const data = await prisma.destination.update({
         where: { id: req.params.id as string },
-        data: req.body
+        data: {
+          ...req.body,
+          ...(targetProjectId && authUser?.role !== 'superadmin' ? { projectId: targetProjectId } : {})
+        }
       });
       res.json(data);
     } catch (error) {

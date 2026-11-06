@@ -74,18 +74,22 @@ model Material {
 
 model Source {
   id        String   @id @default(uuid())
-  name      String   @unique
+  name      String
   location  String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   weighmentSlips WeighmentSlip[]
+  project        Project?        @relation(fields: [projectId], references: [id])
+  projectId      String?
+
+  @@index([projectId])
 }
 
 model Destination {
   id        String   @id @default(uuid())
-  name      String   @unique
+  name      String
   location  String?
   isActive  Boolean  @default(true)
   isDefault Boolean  @default(false)
@@ -93,6 +97,10 @@ model Destination {
   updatedAt DateTime @updatedAt
 
   weighmentSlips WeighmentSlip[]
+  project        Project?        @relation(fields: [projectId], references: [id])
+  projectId      String?
+
+  @@index([projectId])
 }
 
 model WeighmentSlip {
@@ -178,6 +186,8 @@ model Project {
   users              User[]
   vehicles           Vehicle[]
   weighmentSlips     WeighmentSlip[]
+  sources            Source[]
+  destinations       Destination[]
   invoices           Invoice[]
 }
 
