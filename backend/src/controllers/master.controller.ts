@@ -208,18 +208,32 @@ export const vehicleController = {
       const whereClause: any = { isActive: isActiveFilter };
 
       // Apply project isolation
+      // Vehicles belonging to the user's project OR global vehicles (projectId: null)
       if (authUser?.role !== 'superadmin' && authUser?.projectId) {
-        whereClause.projectId = authUser.projectId;
+        whereClause.OR = [
+          { projectId: authUser.projectId },
+          { projectId: null }
+        ];
       } else if (projectIdQuery && projectIdQuery !== 'all') {
         whereClause.projectId = projectIdQuery;
       }
 
       if (search) {
-        whereClause.OR = [
+        const searchCondition = [
           { vehicleNumber: { contains: search, mode: 'insensitive' as any } },
           { driverName: { contains: search, mode: 'insensitive' as any } },
           { owner: { contains: search, mode: 'insensitive' as any } }
         ];
+
+        if (whereClause.OR) {
+          whereClause.AND = [
+            { OR: whereClause.OR },
+            { OR: searchCondition }
+          ];
+          delete whereClause.OR;
+        } else {
+          whereClause.OR = searchCondition;
+        }
       }
 
       const [data, total] = await Promise.all([
