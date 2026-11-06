@@ -100,7 +100,8 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         material: { select: { id: true, name: true } },
         source: { select: { id: true, name: true } },
         destination: { select: { id: true, name: true } },
-        operator: { select: { id: true, username: true } }
+        operator: { select: { id: true, username: true } },
+        project: { select: { id: true, name: true, address: true } }
       }
     });
 
@@ -197,7 +198,8 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
           material: { select: { name: true } },
           source: { select: { name: true } },
           destination: { select: { name: true } },
-          operator: { select: { username: true } }
+          operator: { select: { username: true } },
+          project: { select: { id: true, name: true, address: true } }
         },
         orderBy: { createdAt: 'desc' }
       }),
