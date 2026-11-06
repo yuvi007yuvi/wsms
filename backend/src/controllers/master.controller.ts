@@ -313,7 +313,8 @@ export const destinationController = {
       if (req.body.isDefault) {
         // @ts-ignore
         await prisma.destination.updateMany({
-          where: targetProjectId ? { projectId: targetProjectId } : {},
+          // @ts-ignore
+          where: (targetProjectId ? { projectId: targetProjectId } : {}) as any,
           data: { isDefault: false }
         });
       }
@@ -338,7 +339,8 @@ export const destinationController = {
       if (req.body.isDefault) {
         // @ts-ignore
         await prisma.destination.updateMany({
-          where: targetProjectId ? { projectId: targetProjectId } : {},
+          // @ts-ignore
+          where: (targetProjectId ? { projectId: targetProjectId } : {}) as any,
           data: { isDefault: false }
         });
       }
