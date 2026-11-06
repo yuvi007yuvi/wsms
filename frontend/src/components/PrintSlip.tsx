@@ -5,7 +5,14 @@ interface PrintSlipProps {
 export default function PrintSlip({ slip }: PrintSlipProps) {
   if (!slip) return null;
 
-  // Format date helper: DD-MM-YYYY (day:month:year)
+  // The format prints 3 identical ticket copies
+  const copies = [1, 2, 3];
+
+  // Determine Project Context dynamically
+  const projectName = slip.project?.name || localStorage.getItem('projectName') || '';
+  const isNatureGreen = !projectName || projectName.toLowerCase().includes('nature') || projectName.toLowerCase().includes('green');
+
+  // Format date helper: DD-MM-YYYY (day:month:year) for new projects
   const formatDMY = (dateInput: any) => {
     if (!dateInput) return '-';
     const d = new Date(dateInput);
@@ -16,7 +23,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
     return `${day}-${month}-${year}`;
   };
 
-  // Format date-time helper: DD-MM-YYYY HH:mm:ss
+  // Format date-time helper: DD-MM-YYYY HH:mm:ss for new projects
   const formatDateTimeDMY = (dateInput: any) => {
     if (!dateInput) return '-';
     const d = new Date(dateInput);
@@ -30,30 +37,88 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
     return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
   };
 
-  // Determine Project Context dynamically
-  const projectName = slip.project?.name || localStorage.getItem('projectName') || '';
-  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+  // If Nature Green (original format), render the exact 100% original layout
+  if (isNatureGreen) {
+    return (
+      <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
+        {copies.map((copyIndex) => (
+          <div key={copyIndex} className="flex flex-col justify-between h-[31vh] border-b-2 border-dashed border-gray-400 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border">
+            
+            {/* Header */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                {/* Logo */}
+                <div className="w-20 h-10 flex items-center justify-start">
+                  <img src="/images.jpg" alt="Logo" className="h-full object-contain" />
+                </div>
+                <div className="text-center flex-1">
+                  <h1 className="text-xl font-bold uppercase leading-tight">Nagar Nigam Mathura Vrindavan</h1>
+                </div>
+                <div className="w-20"></div> {/* spacer for centering */}
+              </div>
 
-  // Dynamic Header Title & Party Name based on Project
-  let headerTitle = "Nagar Nigam Mathura Vrindavan";
-  let partyName = "NATURE GREEN";
-  let siteSubtitle = "";
+              <div className="border-b border-dashed border-gray-400 mb-1"></div>
+              <div className="text-center font-bold tracking-widest mb-1 text-base">TICKET</div>
+            </div>
 
-  if (isUrbanEnviro) {
-    headerTitle = "Nagar Nigam Aligarh";
-    partyName = "URBAN ENVIRO";
-    siteSubtitle = "Solid Waste Management Facility";
-  } else if (projectName) {
-    // Other dynamic projects
-    headerTitle = projectName;
-    partyName = projectName.toUpperCase();
-    if (slip.project?.address) {
-      siteSubtitle = slip.project.address;
-    }
+            {/* Details 2-Column Grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 leading-tight text-sm">
+              <div className="space-y-0.5">
+                <div className="flex"><span className="w-32 uppercase">Receipt No.</span><span>: {slip.slipNumber}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Date</span><span>: {new Date(slip.date).toLocaleDateString()}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Driver Name</span><span>: {slip.driverName || slip.vehicle?.driverName || '-'}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Location</span><span>: {slip.source?.name || '-'}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Supervisor</span><span>: -</span></div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex"><span className="w-32 uppercase">Waste Type</span><span>: {slip.material?.name || '-'}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Vehicle</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Party Name</span><span>: NATURE GREEN</span></div>
+                <div className="flex"><span className="w-32 uppercase">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || '-'}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Zone Incharge</span><span>: -</span></div>
+              </div>
+            </div>
+
+            <div className="border-b border-dashed border-gray-400"></div>
+
+            {/* Weight Section */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 leading-tight text-sm">
+              <div className="space-y-0.5">
+                <div className="flex"><span className="w-32 uppercase">Gross Weight</span><span>: {slip.grossWeight}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Tare Weight</span><span>: {slip.tareWeight}</span></div>
+                <div className="flex"><span className="w-32 uppercase font-bold">Net Weight</span><span className="font-bold">: {slip.netWeight}</span></div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex"><span className="w-32 uppercase">Date Time</span><span>: {new Date(slip.date).toLocaleString()}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Date Time</span><span>: {new Date(slip.date).toLocaleString()}</span></div>
+                <div className="flex"><span className="w-32 uppercase">Date Time</span><span>: {new Date(slip.date).toLocaleString()}</span></div>
+              </div>
+            </div>
+
+            {/* Footer Signatures */}
+            <div className="flex justify-between items-end mt-2 px-2">
+              <div className="uppercase font-semibold border-t border-black pt-1">Driver Signature</div>
+              <div className="uppercase font-bold text-xs tracking-wide">Thanks Visit Again</div>
+              <div className="uppercase font-semibold border-t border-black pt-1">Operator Signature</div>
+            </div>
+
+          </div>
+        ))}
+      </div>
+    );
   }
 
-  // The format prints 3 identical ticket copies
-  const copies = [1, 2, 3];
+  // Otherwise, render customized project format (Urban Enviro / New Projects)
+  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+  let headerTitle = "Nagar Nigam Aligarh";
+  let partyName = "URBAN ENVIRO";
+  let siteSubtitle = "Solid Waste Management Facility";
+
+  if (!isUrbanEnviro && projectName) {
+    headerTitle = projectName;
+    partyName = projectName.toUpperCase();
+    siteSubtitle = slip.project?.address || "";
+  }
 
   return (
     <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
