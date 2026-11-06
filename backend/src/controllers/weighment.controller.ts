@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
-// Helper to generate unique slip number
-const generateSlipNumber = async () => {
+// Helper to generate unique slip number scoped per project
+const generateSlipNumber = async (projectId?: string | null) => {
   const now = new Date();
   // Shift by +5:30 to get IST time for extracting YYYY, MM, DD
   const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
@@ -12,11 +12,41 @@ const generateSlipNumber = async () => {
   const dateStr = `${yyyy}${mm}${dd}`;
   const shortDate = dateStr.slice(2); // YYMMDD
 
+  // Determine prefix based on project
+  let projectPrefix = 'WS'; // Default prefix for global or unassigned projects
+  if (projectId) {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true }
+    });
+
+    if (project?.name) {
+      const lower = project.name.toLowerCase();
+      if (lower.includes('urban')) {
+        projectPrefix = 'UE';
+      } else if (lower.includes('nature') || lower.includes('green')) {
+        projectPrefix = 'NG';
+      } else {
+        // Derive clean 2-4 uppercase acronym from project name
+        const cleanName = project.name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+        const parts = cleanName.split(/\s+/).filter(Boolean);
+        if (parts.length > 1) {
+          projectPrefix = parts.map(p => p[0].toUpperCase()).slice(0, 4).join('');
+        } else if (cleanName.length >= 2) {
+          projectPrefix = cleanName.slice(0, 3).toUpperCase();
+        }
+      }
+    }
+  }
+
+  // Find the last slip for THIS specific project & date prefix
+  const searchPrefix = `${projectPrefix}${shortDate}-`;
   const lastSlip = await prisma.weighmentSlip.findFirst({
     where: {
       slipNumber: {
-        startsWith: `WS${shortDate}-`
-      }
+        startsWith: searchPrefix
+      },
+      ...(projectId ? { projectId } : {})
     },
     orderBy: {
       slipNumber: 'desc'
@@ -31,17 +61,29 @@ const generateSlipNumber = async () => {
     }
   }
 
-  const seq = String(seqNum).padStart(4, '0');
-  return `WS${shortDate}-${seq}`;
+  // Safety check: ensure unique slip number if any collision
+  let seq = String(seqNum).padStart(4, '0');
+  let candidateSlipNumber = `${projectPrefix}${shortDate}-${seq}`;
+
+  // If candidate already exists in database, keep incrementing
+  while (await prisma.weighmentSlip.findUnique({ where: { slipNumber: candidateSlipNumber }, select: { id: true } })) {
+    seqNum++;
+    seq = String(seqNum).padStart(4, '0');
+    candidateSlipNumber = `${projectPrefix}${shortDate}-${seq}`;
+  }
+
+  return candidateSlipNumber;
 };
 
 export const createWeighmentSlip = async (req: Request, res: Response) => {
   try {
     const { vehicleId, vehicleTypeId, materialId, sourceId, destinationId, grossWeight, remarks, driverName, manualTareWeight } = req.body;
+    // @ts-ignore
+    const userProjectId = req.user?.projectId || null;
     
-    // Run slip number generation and vehicle fetch IN PARALLEL
+    // Run slip number generation with projectId and vehicle fetch IN PARALLEL
     const [slipNumber, vehicle] = await Promise.all([
-      generateSlipNumber(),
+      generateSlipNumber(userProjectId),
       prisma.vehicle.findUnique({ 
         where: { id: vehicleId },
         select: { 
