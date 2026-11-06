@@ -60,18 +60,25 @@ export default function ApiGenerator() {
   }, []);
 
   const getBaseOrigin = () => {
-    return window.location.origin;
+    // If api baseURL is configured (e.g. Render backend URL), use its origin
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://wsms-1.onrender.com/api';
+    try {
+      const parsed = new URL(apiUrl);
+      return parsed.origin;
+    } catch {
+      return window.location.origin;
+    }
   };
 
   const getEndpointPath = () => {
     const targetProject = selectedProjectId || 'all';
     switch (activeTab) {
       case 'slips':
-        return `/api/external/projects/${targetProject}/slips`;
+        return `/external/projects/${targetProject}/slips`;
       case 'vehicles':
-        return `/api/external/projects/${targetProject}/vehicles`;
+        return `/external/projects/${targetProject}/vehicles`;
       case 'summary':
-        return `/api/external/projects/${targetProject}/summary`;
+        return `/external/projects/${targetProject}/summary`;
     }
   };
 
@@ -88,7 +95,8 @@ export default function ApiGenerator() {
     return qs ? `?${qs}` : '';
   };
 
-  const fullUrl = `${getBaseOrigin()}${getEndpointPath()}${getQueryString()}`;
+  // The full external public URL includes /api prefix on backend host
+  const fullUrl = `${getBaseOrigin()}/api${getEndpointPath()}${getQueryString()}`;
 
   const getCurlSnippet = () => {
     return `curl -X GET "${fullUrl}" \\\n  -H "x-api-key: ${apiKey}" \\\n  -H "Accept: application/json"`;
