@@ -14,6 +14,7 @@ import PrintSlip from './PrintSlip';
 
 export default function SummaryReports() {
   const { t } = useTranslation();
+  const userRole = localStorage.getItem('role') || 'operator';
   const [data, setData] = useState<any[]>([]);
   const [reportType, setReportType] = useState('daily');
   const [isLetterheadOpen, setIsLetterheadOpen] = useState(false);
@@ -217,15 +218,17 @@ export default function SummaryReports() {
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300 bg-green-50 hover:bg-green-100 text-green-700 border-green-200" onClick={handleExportCSV}>
               <Download className="h-3.5 w-3.5 mr-1" /> {t('Export CSV')}
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
-              onClick={() => setIsLetterheadOpen(true)}
-              disabled={data.length === 0}
-            >
-              <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> Print Recity Letterhead
-            </Button>
+            {(userRole === 'recity-admin' || !localStorage.getItem('projectName') || localStorage.getItem('projectName')?.toLowerCase().includes('nature') || localStorage.getItem('projectName')?.toLowerCase().includes('mathura')) && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
+                onClick={() => setIsLetterheadOpen(true)}
+                disabled={data.length === 0}
+              >
+                <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> Print Recity Letterhead
+              </Button>
+            )}
           </div>
         </div>
         

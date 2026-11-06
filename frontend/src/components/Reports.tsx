@@ -402,16 +402,19 @@ export default function Reports() {
               <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm border-slate-300 bg-green-50 hover:bg-green-100 text-green-700 border-green-200" onClick={handleExportCSV}>
                 <Download className="h-3.5 w-3.5 mr-1" /> {t('Export CSV')}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
-                onClick={handleOpenRecityLetterhead}
-                disabled={loadingLetterhead}
-              >
-                <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> 
-                {loadingLetterhead ? 'Loading...' : 'Print Recity Letterhead'}
-              </Button>
+              {/* Only show Recity Letterhead for Recity admin or Nature Green / Mathura */}
+              {(userRole === 'recity-admin' || !localStorage.getItem('projectName') || localStorage.getItem('projectName')?.toLowerCase().includes('nature') || localStorage.getItem('projectName')?.toLowerCase().includes('mathura')) && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 text-xs rounded-sm border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold" 
+                  onClick={handleOpenRecityLetterhead}
+                  disabled={loadingLetterhead}
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1 text-blue-700" /> 
+                  {loadingLetterhead ? 'Loading...' : 'Print Recity Letterhead'}
+                </Button>
+              )}
             </div>
           </div>
           
@@ -467,7 +470,7 @@ export default function Reports() {
             <Table>
               <TableHeader className="sticky top-0 z-10 shadow-sm">
                 <TableRow className="bg-[#92D050] hover:bg-[#92D050]">
-                  <TableHead colSpan={isGreenAssistFormat ? 8 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NATURE GREEN WASTE COLLECTION REPORT</TableHead>
+                  <TableHead colSpan={isGreenAssistFormat ? 8 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">{(localStorage.getItem("projectName") || "NATURE GREEN").toUpperCase()} WASTE COLLECTION REPORT</TableHead>
                   <TableHead colSpan={isGreenAssistFormat ? 8 : 3} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">NO. OF RECEIPTS - {summaryStats.count}</TableHead>
                   <TableHead colSpan={isGreenAssistFormat ? 9 : 4} className="h-8 py-1 px-3 text-xs font-bold text-black border border-slate-400 text-center uppercase">
                     DATED: {(() => {
