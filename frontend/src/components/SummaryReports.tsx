@@ -4,11 +4,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, RefreshCw, Calendar, FileText, Printer } from 'lucide-react';
+import { Download, RefreshCw, Calendar, FileText, Printer, ArrowUpRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 import RecitySummaryLetterheadReport from './RecitySummaryLetterheadReport';
+import PrintSlip from './PrintSlip';
 
 export default function SummaryReports() {
   const { t } = useTranslation();
@@ -29,6 +31,40 @@ export default function SummaryReports() {
 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Drilldown Modal State
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [detailSlips, setDetailSlips] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedSlipForPrint, setSelectedSlipForPrint] = useState<any>(null);
+
+  const handleRowClick = async (item: any) => {
+    setSelectedCategory(item);
+    setDetailModalOpen(true);
+    setDetailLoading(true);
+    try {
+      const params = new URLSearchParams({
+        reportType,
+        categoryKey: item.key,
+        limit: '500'
+      });
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+
+      const res = await api.get(`/weighment?${params.toString()}`);
+      if (res.data && res.data.data) {
+        setDetailSlips(res.data.data);
+      } else {
+        setDetailSlips(Array.isArray(res.data) ? res.data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch detail slips:', err);
+      toast({ title: 'Failed to load slip details', variant: 'destructive' });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -314,10 +350,20 @@ export default function SummaryReports() {
                 </TableRow>
               ) : (
                 data.map((item, index) => (
-                  <TableRow key={index} className="hover:bg-slate-50">
+                  <TableRow 
+                    key={index} 
+                    onClick={() => handleRowClick(item)}
+                    className="hover:bg-blue-50/60 cursor-pointer transition-colors group"
+                    title="Click to view all slip details"
+                  >
                     <TableCell className="border border-slate-300 font-medium text-center text-slate-500">{index + 1}</TableCell>
-                    <TableCell className="border border-slate-300 font-medium">{item.key}</TableCell>
-                    <TableCell className="border border-slate-300 text-right">{item.count}</TableCell>
+                    <TableCell className="border border-slate-300 font-semibold text-slate-800 flex items-center justify-between gap-2">
+                      <span>{item.key}</span>
+                      <span className="text-[11px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center font-medium gap-0.5">
+                        View slips <ArrowUpRight className="h-3 w-3" />
+                      </span>
+                    </TableCell>
+                    <TableCell className="border border-slate-300 text-right font-bold text-blue-700">{item.count}</TableCell>
                     <TableCell className="border border-slate-300 text-right">{item.grossWeight.toLocaleString()}</TableCell>
                     <TableCell className="border border-slate-300 text-right">{item.tareWeight.toLocaleString()}</TableCell>
                     <TableCell className="border border-slate-300 text-right font-bold text-green-700 bg-blue-50/20">{item.netWeight.toLocaleString()}</TableCell>
@@ -329,6 +375,109 @@ export default function SummaryReports() {
         </div>
       </div>
     </div>
+
+    {/* Drill-down Slip Details Dialog */}
+    <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-5">
+        <DialogHeader className="pb-3 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <span>{selectedCategory?.key}</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                  {selectedCategory?.count} Slips
+                </span>
+              </DialogTitle>
+              <p className="text-xs text-slate-500 mt-1">
+                Showing all recorded weighment slips for this category. Net Tonnage: <b>{((selectedCategory?.netWeight || 0)/1000).toFixed(2)} Tons</b>
+              </p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-auto mt-3">
+          <Table>
+            <TableHeader className="sticky top-0 bg-slate-100 shadow-sm z-10">
+              <TableRow>
+                <TableHead className="text-xs font-bold text-slate-700">Sr.</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700">Slip No</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700">Date & Time</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700">Vehicle No</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700">Vehicle Type</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700">Material</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 text-right">Gross (Kg)</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 text-right">Tare (Kg)</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 text-right">Net (Kg)</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detailLoading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="p-4">
+                    <TableSkeleton rows={4} />
+                  </TableCell>
+                </TableRow>
+              ) : detailSlips.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-slate-500">
+                    No individual slips found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                detailSlips.map((slip, i) => (
+                  <TableRow key={slip.id || i} className="hover:bg-slate-50 text-xs">
+                    <TableCell className="font-medium text-slate-500">{i + 1}</TableCell>
+                    <TableCell className="font-bold text-blue-700 font-mono">{slip.slipNumber}</TableCell>
+                    <TableCell className="text-slate-600">
+                      {new Date(slip.date).toLocaleDateString('en-GB')} {new Date(slip.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-800">{slip.vehicle?.vehicleNumber || '-'}</TableCell>
+                    <TableCell className="text-slate-600">{slip.vehicle?.vehicleType?.name || '-'}</TableCell>
+                    <TableCell className="text-slate-600">{slip.material?.name || '-'}</TableCell>
+                    <TableCell className="text-right font-medium">{slip.grossWeight?.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-slate-500">{slip.tareWeight?.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-bold text-green-700">{slip.netWeight?.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSlipForPrint(slip);
+                        }}
+                      >
+                        <Printer className="h-3.5 w-3.5 mr-1" /> Slip
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {selectedSlipForPrint && (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-4 relative max-h-[90vh] overflow-auto">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b">
+            <h3 className="font-bold text-sm text-slate-800">Print Weighment Slip Preview</h3>
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={() => window.print()}>
+                <Printer className="h-3.5 w-3.5 mr-1" /> Print
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSelectedSlipForPrint(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+          <PrintSlip slip={selectedSlipForPrint} />
+        </div>
+      </div>
+    )}
     </>
   );
 }

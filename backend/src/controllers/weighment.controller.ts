@@ -117,7 +117,7 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
     const limit = Math.max(1, Math.min(1000000, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
     
-    const { search, dateFrom, dateTo } = req.query;
+    const { search, dateFrom, dateTo, reportType, categoryKey } = req.query;
     // @ts-ignore
     const authUser = req.user;
     
@@ -132,6 +132,37 @@ export const getWeighmentSlips = async (req: Request, res: Response) => {
       where.date = {};
       if (dateFrom) where.date.gte = new Date(`${dateFrom as string}T00:00:00+05:30`);
       if (dateTo) where.date.lte = new Date(`${dateTo as string}T23:59:59.999+05:30`);
+    }
+
+    // Filter by specific summary category drill-down if provided
+    if (reportType && categoryKey) {
+      const catKey = String(categoryKey);
+      switch (reportType) {
+        case 'daily': {
+          where.date = {
+            gte: new Date(`${catKey}T00:00:00+05:30`),
+            lte: new Date(`${catKey}T23:59:59.999+05:30`)
+          };
+          break;
+        }
+        case 'source':
+        case 'ward': {
+          where.source = { name: catKey };
+          break;
+        }
+        case 'work':
+        case 'destination': {
+          where.destination = { name: catKey };
+          break;
+        }
+        case 'vehicleType': {
+          where.OR = [
+            { vehicleType: { name: catKey } },
+            { vehicle: { vehicleType: { name: catKey } } }
+          ];
+          break;
+        }
+      }
     }
     
     if (search) {
