@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Search, Filter, RefreshCw, Edit2, RotateCcw, ArchiveRestore } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, RefreshCw, Edit2, RotateCcw, ArchiveRestore, Globe } from 'lucide-react';
 import { ImportExportButtons } from '@/components/ui/ImportExportButtons';
 import api from '@/lib/api';
 
@@ -27,6 +27,12 @@ export default function Vehicles() {
   const [showDeletedModal, setShowDeletedModal] = useState(false);
   const [deletedVehicles, setDeletedVehicles] = useState<any[]>([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
+
+  // Unassigned / Global Vehicles Popup
+  const [showUnassignedModal, setShowUnassignedModal] = useState(false);
+  const [unassignedVehicles, setUnassignedVehicles] = useState<any[]>([]);
+  const [unassignedLoading, setUnassignedLoading] = useState(false);
+  const [unassignedSearch, setUnassignedSearch] = useState('');
 
   // Form
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -111,11 +117,35 @@ export default function Vehicles() {
     }
   };
 
+  const fetchUnassignedVehicles = async () => {
+    setUnassignedLoading(true);
+    try {
+      const res = await api.get('/master/vehicles', {
+        params: { limit: 1000, projectId: 'unassigned' }
+      });
+      if (res.data && res.data.data) {
+        setUnassignedVehicles(res.data.data);
+      } else {
+        setUnassignedVehicles(res.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load unassigned vehicles', error);
+    } finally {
+      setUnassignedLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (showDeletedModal) {
       fetchDeletedVehicles();
     }
   }, [showDeletedModal]);
+
+  useEffect(() => {
+    if (showUnassignedModal) {
+      fetchUnassignedVehicles();
+    }
+  }, [showUnassignedModal]);
 
   const handleRestore = async (id: string) => {
     try {
@@ -237,6 +267,9 @@ export default function Vehicles() {
             exportEndpoint="/master/vehicles"
             onImportSuccess={fetchVehicles} 
           />
+          <Button onClick={() => setShowUnassignedModal(true)} size="sm" variant="outline" className="h-8 text-xs font-bold uppercase tracking-wider border-amber-300 text-amber-700 hover:bg-amber-50">
+            <Globe className="mr-2 h-4 w-4 text-amber-600" /> Global / Unassigned
+          </Button>
           <Button onClick={() => setShowDeletedModal(true)} size="sm" variant="outline" className="h-8 text-xs font-bold uppercase tracking-wider border-slate-300">
             <ArchiveRestore className="mr-2 h-4 w-4" /> Deleted
           </Button>
@@ -356,6 +389,110 @@ export default function Vehicles() {
                       </TableCell>
                     </TableRow>
                   ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Global / Unassigned Vehicles Modal */}
+      <Dialog open={showUnassignedModal} onOpenChange={setShowUnassignedModal}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center justify-between pr-4">
+              <DialogTitle className="flex items-center text-lg font-bold text-amber-900">
+                <Globe className="h-5 w-5 mr-2 text-amber-600" />
+                Global / Unassigned Vehicles List
+              </DialogTitle>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full">
+                {unassignedVehicles.length} Vehicles
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              These vehicles are not tied to any single project and can be operated across all plants/projects or assigned to one.
+            </p>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between my-2 gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Search unassigned vehicle number, driver or owner..."
+                value={unassignedSearch}
+                onChange={(e) => setUnassignedSearch(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={fetchUnassignedVehicles}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="bg-amber-50/60 sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900">Sr.</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900">Vehicle No.</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900">Type</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900">Driver / Mobile</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900">Owner</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900 text-right">Tare (kg)</TableHead>
+                  <TableHead className="py-2 text-xs font-bold text-amber-900 text-right">Assign Project</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unassignedLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="p-4">
+                      <TableSkeleton rows={4} />
+                    </TableCell>
+                  </TableRow>
+                ) : unassignedVehicles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-slate-400 text-xs">
+                      No unassigned or global vehicles found. All vehicles are assigned to specific projects!
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  unassignedVehicles
+                    .filter((v: any) => {
+                      if (!unassignedSearch) return true;
+                      const q = unassignedSearch.toLowerCase();
+                      return (
+                        v.vehicleNumber?.toLowerCase().includes(q) ||
+                        v.driverName?.toLowerCase().includes(q) ||
+                        v.owner?.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((v: any, index: number) => (
+                      <TableRow key={v.id} className="hover:bg-slate-50 transition-colors">
+                        <TableCell className="py-2 text-xs text-slate-500">{index + 1}</TableCell>
+                        <TableCell className="py-2 text-xs font-bold text-slate-800">{v.vehicleNumber}</TableCell>
+                        <TableCell className="py-2 text-xs text-slate-600">{v.vehicleType?.name || '-'}</TableCell>
+                        <TableCell className="py-2 text-xs text-slate-600">
+                          {v.driverName ? <div>{v.driverName}</div> : null}
+                          {v.mobile ? <div className="text-[11px] text-slate-400">{v.mobile}</div> : null}
+                          {!v.driverName && !v.mobile ? '-' : null}
+                        </TableCell>
+                        <TableCell className="py-2 text-xs text-slate-600">{v.owner || '-'}</TableCell>
+                        <TableCell className="py-2 text-xs font-bold text-slate-900 text-right">{v.tareWeight || 0}</TableCell>
+                        <TableCell className="py-2 text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                            onClick={() => {
+                              setShowUnassignedModal(false);
+                              handleEdit(v);
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3 mr-1" /> Edit / Assign
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
                 )}
               </TableBody>
             </Table>

@@ -231,12 +231,20 @@ export const vehicleController = {
       // Apply project isolation
       // Vehicles belonging to the user's project OR global vehicles (projectId: null)
       if (authUser?.role !== 'superadmin' && authUser?.projectId) {
-        whereClause.OR = [
-          { projectId: authUser.projectId },
-          { projectId: null }
-        ];
+        if (projectIdQuery === 'unassigned') {
+          whereClause.projectId = null;
+        } else {
+          whereClause.OR = [
+            { projectId: authUser.projectId },
+            { projectId: null }
+          ];
+        }
       } else if (projectIdQuery && projectIdQuery !== 'all') {
-        whereClause.projectId = projectIdQuery;
+        if (projectIdQuery === 'unassigned' || projectIdQuery === 'null') {
+          whereClause.projectId = null;
+        } else {
+          whereClause.projectId = projectIdQuery;
+        }
       }
 
       if (search) {
