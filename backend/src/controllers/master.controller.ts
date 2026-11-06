@@ -15,10 +15,14 @@ const createCrudHandlers = (modelName: 'vehicleType' | 'vehicle' | 'material' | 
         const whereClause: any = { isActive: true };
 
         // For Source (Ward) and Destination (Work), isolate by project
+        // Operators/admins of a project see their project's records OR legacy/Nature Green records (projectId: null)
         if (modelName === 'source' || modelName === 'destination') {
           if (authUser?.role !== 'superadmin' && authUser?.projectId) {
-            whereClause.projectId = authUser.projectId;
-          } else if (req.query.projectId) {
+            whereClause.OR = [
+              { projectId: authUser.projectId },
+              { projectId: null }
+            ];
+          } else if (req.query.projectId && req.query.projectId !== 'all') {
             whereClause.projectId = req.query.projectId as string;
           }
         }
