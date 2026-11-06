@@ -13,7 +13,8 @@ const generateSlipNumber = async (projectId?: string | null) => {
   const shortDate = dateStr.slice(2); // YYMMDD
 
   // Determine prefix based on project
-  let projectPrefix = 'WS'; // Default prefix for global or unassigned projects
+  // Default prefix for Nature Green, global or unassigned projects is pure 'WS'
+  let projectPrefix = 'WS'; 
   if (projectId) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -22,12 +23,13 @@ const generateSlipNumber = async (projectId?: string | null) => {
 
     if (project?.name) {
       const lower = project.name.toLowerCase();
-      if (lower.includes('urban')) {
+      if (lower.includes('nature') || lower.includes('green')) {
+        // Original Nature Green project keeps pure WS{YYMMDD}-XXXX
+        projectPrefix = 'WS';
+      } else if (lower.includes('urban')) {
         projectPrefix = 'UE';
-      } else if (lower.includes('nature') || lower.includes('green')) {
-        projectPrefix = 'NG';
       } else {
-        // Derive clean 2-4 uppercase acronym from project name
+        // Derive clean 2-4 uppercase acronym from new project name
         const cleanName = project.name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
         const parts = cleanName.split(/\s+/).filter(Boolean);
         if (parts.length > 1) {
