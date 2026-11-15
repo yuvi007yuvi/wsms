@@ -63,7 +63,7 @@ const SCAN_ONLY = process.argv.includes('--scan');
 const AUTO = !config.comPort || String(config.comPort).toUpperCase() === 'AUTO';
 
 console.log('========================================================');
-console.log('       WSMS LOCAL WEIGHBRIDGE AGENT                    ');
+console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.3              ');
 console.log('========================================================');
 console.log(`Cloud Server : ${config.cloudServerUrl}`);
 console.log(`Target Port  : ${config.comPort}`);
@@ -269,7 +269,10 @@ async function scanAll() {
 // Cloud connection
 // ---------------------------------------------------------------------------
 let socket = null;
+const AGENT_VERSION = '2.3';
 const agentState = {
+  version: AGENT_VERSION,
+  pollCommand: null,
   hostname: os.hostname(),
   comPorts: [],
   activePort: null,
@@ -404,6 +407,7 @@ async function startSerialConnection() {
       }
       agentState.activePort = portPath;
       agentState.baudRate = baudRate;
+      agentState.pollCommand = pollCmd || null;
       agentState.portOpen = true;
       agentState.lastError = null;
       pushStatus();
