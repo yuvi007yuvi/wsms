@@ -155,15 +155,18 @@ function parseWeight(frame) {
 // Indicators end each reading with CR, LF, ETX (0x03) or start it with STX (0x02).
 const FRAME_SPLIT = /[\r\n\x02\x03]+/;
 
+// Request commands used by common weighbridge indicators in demand mode.
+const POLL_CANDIDATES = ['P', 'R', 'W', 'S', 'Q', '\x05', 'P\r\n', 'R\r\n', 'W\r\n', 'S\r\n', 'SI\r\n', 'READ\r\n', '$', '\x02'];
+
 // Raise DTR/RTS and start polling (if configured). Returns a stop function.
-function prepareLine(port) {
+function prepareLine(port, pollCommand = config.pollCommand) {
   if (config.setDtrRts) {
     port.set({ dtr: true, rts: true }, (err) => {
       if (err) console.error(`⚠️ [HARDWARE] Could not set DTR/RTS: ${err.message}`);
     });
   }
-  if (!config.pollCommand) return () => {};
-  const cmd = String(config.pollCommand).replace(/\\r/g, '\r').replace(/\\n/g, '\n');
+  if (!pollCommand) return () => {};
+  const cmd = String(pollCommand).replace(/\\r/g, '\r').replace(/\\n/g, '\n');
   const t = setInterval(() => { if (port.isOpen) port.write(cmd); }, config.pollIntervalMs);
   return () => clearInterval(t);
 }
@@ -171,7 +174,7 @@ function prepareLine(port) {
 // ---------------------------------------------------------------------------
 // Scan mode: try every port x baud, report which one sends data
 // ---------------------------------------------------------------------------
-function listenOnce(portPath, baudRate, ms) {
+function listenOnce(portPath, baudRate, ms, pollCommand) {
   return new Promise((resolve) => {
     const result = { portPath, baudRate, bytes: 0, raw: '', weights: [], error: null };
     const port = new SerialPort({
@@ -181,7 +184,7 @@ function listenOnce(portPath, baudRate, ms) {
     });
     port.open((err) => {
       if (err) { result.error = explainOpenError(portPath, err); return resolve(result); }
-      const stopPoll = prepareLine(port);
+      const stopPoll = prepareLine(port, pollCommand);
       let buf = '';
       port.on('data', (chunk) => {
         result.bytes += chunk.length;
@@ -211,14 +214,40 @@ async function scanAll() {
   console.log('\nListening on each port at each baud rate for 3 seconds. Keep a load (or a person) on the weighbridge if possible...\n');
 
   let best = null;
+  const silentPorts = [];
   for (const p of ports) {
+    let total = 0, failed = false;
     for (const baud of config.scanBaudRates) {
       const r = await listenOnce(p.path, baud, 3000);
-      if (r.error) { console.log(`   ${p.path} @ ${baud}: ❌ ${r.error}`); break; }
+      if (r.error) { console.log(`   ${p.path} @ ${baud}: ❌ ${r.error}`); failed = true; break; }
+      total += r.bytes;
       const printable = r.raw.replace(/[^\x20-\x7e]/g, '.').slice(0, 60);
       console.log(`   ${p.path} @ ${baud}: ${r.bytes} bytes, ${r.weights.length} readings  ${printable ? `"${printable}"` : ''}`);
       // Correct baud gives clean printable digits; wrong baud gives garbage with few parsable numbers.
       if (r.weights.length > 0 && (!best || r.weights.length > best.weights.length)) best = r;
+    }
+    if (!failed && total === 0 && !isBluetooth(p)) silentPorts.push(p.path);
+  }
+
+  // Indicators in demand/print mode stay silent until asked. Try common request commands.
+  if (!best && silentPorts.length > 0) {
+    console.log('\nNo data at all. Trying common "send weight" request commands (demand mode)...\n');
+    for (const portPath of silentPorts) {
+      for (const cmd of POLL_CANDIDATES) {
+        const baud = config.lastDetected && config.lastDetected.comPort === portPath ? config.lastDetected.baudRate : config.baudRate;
+        const r = await listenOnce(portPath, baud, 2000, cmd);
+        if (r.error) break;
+        const printable = r.raw.replace(/[^\x20-\x7e]/g, '.').slice(0, 60);
+        console.log(`   ${portPath} @ ${baud} send ${JSON.stringify(cmd)}: ${r.bytes} bytes, ${r.weights.length} readings  ${printable ? `"${printable}"` : ''}`);
+        if (r.weights.length > 0) {
+          best = r;
+          config.pollCommand = cmd;
+          console.log(`\n✅ Indicator answers to ${JSON.stringify(cmd)}. Saved as "pollCommand" in agent_config.json.`);
+          break;
+        }
+        if (r.bytes > 0) console.log('      ^ the indicator replied, but no weight was found in the reply. Send this line to support.');
+      }
+      if (best) break;
     }
   }
   console.log('');
@@ -229,8 +258,9 @@ async function scanAll() {
     console.log('   Saved to agent_config.json (lastDetected). AUTO mode will use it first.');
   } else {
     console.log('❌ No port sent readable weight data. See guide steps 3-5 (indicator output, cable wiring, baud rate).');
-    console.log('   If every line above says "0 bytes": the indicator is not transmitting. Set its serial output to CONTINUOUS,');
-    console.log('   or, if it only sends on request, set "pollCommand" in agent_config.json (check the indicator manual, e.g. "P").');
+    console.log('   If every line above says "0 bytes": the indicator is not transmitting on this port.');
+    console.log('   In the indicator setup menu set the serial/COM output to CONTINUOUS and the output port to USB (or PC),');
+    console.log('   or find its request command in the manual and put it in "pollCommand" in agent_config.json.');
   }
   return best;
 }

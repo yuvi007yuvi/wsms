@@ -152,6 +152,20 @@ Save the file, close the agent window, and start `start_agent.bat` again.
 
 ---
 
+## 4b. Indicator with its own "USB COM" port (USB printer-type cable)
+
+Many indicators have a square **USB-B socket marked "USB COM"**. You connect it to the PC with a normal
+USB-A to USB-B (printer) cable. Windows then shows **"USB Serial Device (COMx)"** with the built-in Microsoft
+driver. **No CH340/FTDI driver is needed**: the CH341SER installer only says "Pre-installed in advance" and changes nothing.
+
+If the agent shows **0 bytes** on this port, the indicator is not sending on USB:
+1. Run `start_agent.bat scan`. When a port is silent, the scan also tries common "send weight" request
+   commands (`P`, `R`, `W`, `S`, ENQ, …). If the indicator answers one, it is saved as `pollCommand` automatically.
+2. If no command works, open the indicator's setup menu and set the **serial/COM output mode = Continuous**,
+   and **output port = USB** (some indicators send only on the 9-pin port unless USB is selected).
+3. The **9-pin port marked "TABLE TOP" / "REMOTE" / "SCOREBOARD"** usually streams weight continuously all the time.
+   With a USB-to-RS232 adapter you can read weight from that port instead.
+
 ## 5. Step 4: Indicator settings (the port opens but no weight arrives)
 
 The agent shows `✅ Opened COM3` but then
