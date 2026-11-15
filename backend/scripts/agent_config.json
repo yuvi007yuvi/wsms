@@ -1,0 +1,6 @@
+{
+  "cloudServerUrl": "https://wsms-1.onrender.com",
+  "baudRate": 9600,
+  "comPort": "AUTO",
+  "reconnectIntervalMs": 3000
+}

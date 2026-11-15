@@ -55,6 +55,17 @@ app.get('/', (req, res) => {
 // Socket.io for Real-time Weight Updates
 io.on('connection', (socket) => {
   console.log('Client connected to weight stream');
+  
+  // Allow local agent running on physical machine PC to ingest weight
+  socket.on('agent-weight-feed', (data: { weight: number, status?: string }) => {
+    if (typeof data?.weight === 'number') {
+      io.emit('weight-update', { 
+        weight: data.weight, 
+        status: data.status || 'Stable' 
+      });
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
