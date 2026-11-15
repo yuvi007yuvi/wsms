@@ -5,9 +5,18 @@
   "dataBits": 8,
   "parity": "none",
   "stopBits": 1,
-  "scanBaudRates": [9600, 2400, 4800, 1200, 19200],
+  "scanBaudRates": [
+    9600,
+    2400,
+    4800,
+    1200,
+    19200
+  ],
   "noDataTimeoutMs": 10000,
   "reverseDigits": false,
+  "setDtrRts": true,
+  "pollCommand": "",
+  "pollIntervalMs": 500,
   "reconnectIntervalMs": 3000,
   "lastDetected": null
 }

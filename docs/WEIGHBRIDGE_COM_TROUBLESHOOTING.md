@@ -62,12 +62,18 @@ Weighbridge indicator ──RS232 cable──► Cabin PC (COM port)
 
    To find the chip: right-click the unknown device → **Properties → Details → Hardware Ids**.
    `VID_1A86` = CH340, `VID_0403` = FTDI, `VID_067B` = Prolific, `VID_10C4` = Silicon Labs.
-4. **Prolific "This device cannot start (Code 10)":** fake or old PL2303 chips
+4. **Port shows as "USB Serial Device (COMx)":** Windows is using its generic USB serial driver.
+   Open **Properties → Details → Hardware Ids**:
+   * `VID_1A86&PID_55D4` (CH9102) or `VID_1A86&PID_55D3` (CH343): install the **CH343SER** driver from
+     https://www.wch-ic.com/downloads/CH343SER_EXE.html (the CH341SER driver does **not** cover these chips).
+   * Any other VID: the indicator probably has its own USB port. The generic driver is fine. The agent turns on
+     DTR/RTS (`"setDtrRts": true`), which these devices usually need before they send anything.
+5. **Prolific "This device cannot start (Code 10)":** fake or old PL2303 chips
    do not work with the newest driver. Install the older Prolific driver (v3.3.2.102), or replace the
    cable with a CH340 or FTDI one.
-5. **Still nothing appears:** try another USB port (avoid USB hubs), another cable, and
+6. **Still nothing appears:** try another USB port (avoid USB hubs), another cable, and
    unplug and re-plug. The COM number can **change** when you move the cable to a different USB port.
-6. Write down the COM number (e.g. `COM3`).
+7. Write down the COM number (e.g. `COM3`).
 
 ---
 
@@ -138,6 +144,8 @@ The file sits next to the agent. The agent creates it on the first run.
 | `baudRate` | Must match the indicator's setting (often 9600 or 2400). Wrong baud = garbage characters or no weight. |
 | `parity` / `dataBits` / `stopBits` | Most indicators use 8-N-1. Some use 7-E-1: set `"dataBits": 7, "parity": "even"`. |
 | `reverseDigits` | Set `true` if the weight shows backwards (e.g. the indicator sends `=0021000` for 1200 kg). |
+| `setDtrRts` | Leave `true`. Set it to `false` only if the indicator misbehaves when DTR/RTS are raised. |
+| `pollCommand` | For indicators in **demand/print** mode that only send when asked. Put the request command from the manual here, e.g. `"P"` or `"R\\r\\n"`. The agent sends it every `pollIntervalMs`. |
 | `cloudServerUrl` | Your backend URL **without** `/api`. |
 
 Save the file, close the agent window, and start `start_agent.bat` again.
@@ -183,7 +191,8 @@ The agent shows `✅ Opened COM3` but then
 | `No COM ports found on this PC` | Cable unplugged or driver missing | Step 2 (Device Manager + driver). |
 | `COMx is in use by another program` (Access denied) | Another program has the port open | Close the old weighbridge software, PuTTY or HyperTerminal, or the second agent window. Or restart the PC. |
 | `COMx does not exist on this PC` (File not found) | Wrong COM number in the config | Check Device Manager; fix `comPort` or set it to `"AUTO"`. |
-| `No readable weight from COMx … in 10s` | Indicator not sending, wrong baud, or wrong wiring | Step 5. |
+| `0 bytes received from COMx` | Nothing is arriving: the indicator output is off or in demand mode, wrong cable or pins, or DTR/RTS is needed | Set the indicator to Continuous output, or set `pollCommand`; check the wiring (step 5). |
+| `N bytes received … but no readable weight` (shows hex bytes) | Wrong baud rate or parity | Run `start_agent.bat scan`; try 7-E-1. Send the hex bytes to support. |
 | Weight shows strange characters or wrong numbers | Wrong baud or parity | Run `start_agent.bat scan`; try 7-E-1. |
 | Weight is backwards (1200 shows as 21) | The indicator sends digits in reverse | Set `"reverseDigits": true`. |
 | `[CLOUD] Cannot reach https://…` | No internet, wrong URL, or the server is waking up | Check internet and `cloudServerUrl`. The Render free tier takes about 50 s to wake: wait and it reconnects by itself. |

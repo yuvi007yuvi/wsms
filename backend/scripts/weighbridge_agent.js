@@ -33,6 +33,9 @@ const defaultConfig = {
   scanBaudRates: [9600, 2400, 4800, 1200, 19200],
   noDataTimeoutMs: 10000,   // In AUTO mode, move to the next port/baud if silent this long
   reverseDigits: false,     // Some indicators send the digits backwards (e.g. "=0021000")
+  setDtrRts: true,          // Raise DTR/RTS after opening. USB CDC indicators/cables often send nothing without it.
+  pollCommand: '',          // For indicators in demand/print mode: text sent to request a reading, e.g. "P" or "R\r\n"
+  pollIntervalMs: 500,
   reconnectIntervalMs: 3000,
   lastDetected: null        // Filled in automatically: { comPort, baudRate }
 };
@@ -152,6 +155,19 @@ function parseWeight(frame) {
 // Indicators end each reading with CR, LF, ETX (0x03) or start it with STX (0x02).
 const FRAME_SPLIT = /[\r\n\x02\x03]+/;
 
+// Raise DTR/RTS and start polling (if configured). Returns a stop function.
+function prepareLine(port) {
+  if (config.setDtrRts) {
+    port.set({ dtr: true, rts: true }, (err) => {
+      if (err) console.error(`⚠️ [HARDWARE] Could not set DTR/RTS: ${err.message}`);
+    });
+  }
+  if (!config.pollCommand) return () => {};
+  const cmd = String(config.pollCommand).replace(/\\r/g, '\r').replace(/\\n/g, '\n');
+  const t = setInterval(() => { if (port.isOpen) port.write(cmd); }, config.pollIntervalMs);
+  return () => clearInterval(t);
+}
+
 // ---------------------------------------------------------------------------
 // Scan mode: try every port x baud, report which one sends data
 // ---------------------------------------------------------------------------
@@ -165,6 +181,7 @@ function listenOnce(portPath, baudRate, ms) {
     });
     port.open((err) => {
       if (err) { result.error = explainOpenError(portPath, err); return resolve(result); }
+      const stopPoll = prepareLine(port);
       let buf = '';
       port.on('data', (chunk) => {
         result.bytes += chunk.length;
@@ -177,7 +194,7 @@ function listenOnce(portPath, baudRate, ms) {
           if (w !== null) result.weights.push(w);
         }
       });
-      setTimeout(() => port.close(() => resolve(result)), ms);
+      setTimeout(() => { stopPoll(); port.close(() => resolve(result)); }, ms);
     });
   });
 }
@@ -212,6 +229,8 @@ async function scanAll() {
     console.log('   Saved to agent_config.json (lastDetected). AUTO mode will use it first.');
   } else {
     console.log('❌ No port sent readable weight data. See guide steps 3-5 (indicator output, cable wiring, baud rate).');
+    console.log('   If every line above says "0 bytes": the indicator is not transmitting. Set its serial output to CONTINUOUS,');
+    console.log('   or, if it only sends on request, set "pollCommand" in agent_config.json (check the indicator manual, e.g. "P").');
   }
   return best;
 }
@@ -340,7 +359,9 @@ async function startSerialConnection() {
       agentState.portOpen = true;
       agentState.lastError = null;
       pushStatus();
-      console.log(`✅ [HARDWARE] Opened ${portPath}. Waiting for weight data...`);
+      console.log(`✅ [HARDWARE] Opened ${portPath}${config.setDtrRts ? ' (DTR/RTS on)' : ''}${config.pollCommand ? ` (polling with ${JSON.stringify(config.pollCommand)})` : ''}. Waiting for weight data...`);
+      const stopPoll = prepareLine(port);
+      port.once('close', stopPoll);
       armSilenceTimer(portPath, baudRate);
     });
 
