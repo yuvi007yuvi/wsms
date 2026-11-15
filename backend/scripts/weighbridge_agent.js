@@ -458,6 +458,7 @@ async function startSerialConnection() {
     });
 
     port.on('error', (err) => {
+      if (activePort !== port) return; // e.g. a pending request write aborted because we closed the port on purpose
       agentState.lastError = explainOpenError(portPath, err);
       console.error(`\n❌ [HARDWARE] Serial error on ${portPath}: ${agentState.lastError}`);
       scheduleRetry();
