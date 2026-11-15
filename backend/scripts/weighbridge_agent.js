@@ -351,12 +351,29 @@ async function buildCandidates() {
   for (const p of ports) for (const b of bauds) {
     if (!list.some((c) => c.path === p.path && c.baudRate === b)) list.push({ path: p.path, baudRate: b });
   }
-  return list.filter((c) => ports.some((p) => p.path === c.path));
+  const result = list.filter((c) => ports.some((p) => p.path === c.path));
+  // If no request command is configured, also try common ones: some indicators only send when asked.
+  if (!config.pollCommand) {
+    for (const p of ports.filter((x) => !isBluetooth(x))) {
+      for (const cmd of POLL_CANDIDATES) result.push({ path: p.path, baudRate: config.baudRate, poll: cmd });
+    }
+  }
+  return result;
 }
 
 async function startSerialConnection() {
   try {
     if (candidates.length === 0 || candidateIdx >= candidates.length) {
+      if (AUTO && candidates.length > 0 && candidateIdx >= candidates.length) {
+        console.log('\n========================================================');
+        console.log('❌ Tried every port, baud rate and request command: the indicator sent NOTHING.');
+        console.log('   The PC side is fine. Change the INDICATOR setup menu:');
+        console.log('   - serial / COM output mode = CONTINUOUS (not Print / Demand)');
+        console.log('   - output port = USB (or PC / COM1) if the indicator has that option');
+        console.log('   Or read weight from the indicator\'s 9-pin TABLE TOP / REMOTE port with a USB-RS232 adapter.');
+        console.log('   Starting the search again...');
+        console.log('========================================================');
+      }
       candidates = await buildCandidates();
       candidateIdx = 0;
     }
@@ -367,7 +384,8 @@ async function startSerialConnection() {
       return scheduleRetry(5000);
     }
 
-    const { path: portPath, baudRate } = candidates[candidateIdx];
+    const { path: portPath, baudRate, poll } = candidates[candidateIdx];
+    const pollCmd = poll !== undefined ? poll : config.pollCommand;
     console.log(`\n🔌 [HARDWARE] Opening ${portPath} at ${baudRate} baud...`);
 
     const port = new SerialPort({
@@ -389,10 +407,10 @@ async function startSerialConnection() {
       agentState.portOpen = true;
       agentState.lastError = null;
       pushStatus();
-      console.log(`✅ [HARDWARE] Opened ${portPath}${config.setDtrRts ? ' (DTR/RTS on)' : ''}${config.pollCommand ? ` (polling with ${JSON.stringify(config.pollCommand)})` : ''}. Waiting for weight data...`);
-      const stopPoll = prepareLine(port);
+      console.log(`✅ [HARDWARE] Opened ${portPath}${config.setDtrRts ? ' (DTR/RTS on)' : ''}${pollCmd ? ` (sending request ${JSON.stringify(pollCmd)})` : ''}. Waiting for weight data...`);
+      const stopPoll = prepareLine(port, pollCmd);
       port.once('close', stopPoll);
-      armSilenceTimer(portPath, baudRate);
+      armSilenceTimer(portPath, baudRate, poll !== undefined ? 3000 : config.noDataTimeoutMs);
     });
 
     let buffer = '';
@@ -420,6 +438,11 @@ async function startSerialConnection() {
         if (!gotWeight) {
           gotWeight = true;
           clearTimeout(silenceTimer);
+          if (poll !== undefined && config.pollCommand !== poll) {
+            config.pollCommand = poll;
+            saveConfig();
+            console.log(`\n💾 Indicator answers to request ${JSON.stringify(poll)} (saved as "pollCommand" in agent_config.json).`);
+          }
           if (AUTO && (!config.lastDetected || config.lastDetected.comPort !== portPath || config.lastDetected.baudRate !== baudRate)) {
             config.lastDetected = { comPort: portPath, baudRate };
             saveConfig();
@@ -449,11 +472,11 @@ async function startSerialConnection() {
   }
 }
 
-function armSilenceTimer(portPath, baudRate) {
+function armSilenceTimer(portPath, baudRate, timeoutMs = config.noDataTimeoutMs) {
   clearTimeout(silenceTimer);
   silenceTimer = setTimeout(() => {
     const msg = rx.bytes === 0
-      ? `0 bytes received from ${portPath} @ ${baudRate} baud in ${config.noDataTimeoutMs / 1000}s (nothing is sending on this port: wrong port, cable not connected to the indicator, or indicator serial output OFF).`
+      ? `0 bytes received from ${portPath} @ ${baudRate} baud in ${timeoutMs / 1000}s (nothing is sending on this port: wrong port, cable not connected to the indicator, or indicator serial output OFF).`
       : `${rx.bytes} bytes received from ${portPath} @ ${baudRate} baud but no readable weight (likely wrong baud/parity). First bytes (hex): ${rx.hex.trim()}`;
     agentState.lastError = msg;
     if (AUTO && candidates.length > 1) {
@@ -464,7 +487,7 @@ function armSilenceTimer(portPath, baudRate) {
       console.log(`\n⚠️  ${msg} Check indicator output setting, cable wiring and baud rate (see guide). Still listening...`);
       pushStatus();
     }
-  }, config.noDataTimeoutMs);
+  }, timeoutMs);
 }
 
 function handleWeight(weight) {
