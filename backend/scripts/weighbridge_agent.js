@@ -64,7 +64,7 @@ const SCAN_ONLY = process.argv.includes('--scan');
 const AUTO = !config.comPort || String(config.comPort).toUpperCase() === 'AUTO';
 
 console.log('========================================================');
-console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.4              ');
+console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.5              ');
 console.log('========================================================');
 console.log(`Cloud Server : ${config.cloudServerUrl}`);
 console.log(`Target Port  : ${config.comPort}`);
@@ -277,7 +277,19 @@ async function scanAll() {
 // Cloud connection
 // ---------------------------------------------------------------------------
 let socket = null;
-const AGENT_VERSION = '2.4';
+const AGENT_VERSION = '2.5';
+
+// Every byte the indicator sends is written here with the settings in use,
+// so data that arrives when nobody is watching (e.g. a truck at night) is never missed.
+const RAW_LOG = path.join(__dirname, 'weighbridge_raw_log.txt');
+const RAW_LOG_MAX = 5 * 1024 * 1024;
+function logRaw(portPath, baudRate, lineState, pollCmd, chunk) {
+  try {
+    if (fs.existsSync(RAW_LOG) && fs.statSync(RAW_LOG).size > RAW_LOG_MAX) fs.renameSync(RAW_LOG, RAW_LOG + '.old');
+    const printable = chunk.toString('latin1').replace(/[^\x20-\x7e]/g, '.');
+    fs.appendFileSync(RAW_LOG, `${new Date().toISOString()} ${portPath} @${baudRate} ${linesLabel(lineState)}${pollCmd ? ` req=${JSON.stringify(pollCmd)}` : ''} | ${chunk.toString('hex')} | ${printable}\n`);
+  } catch (e) { /* logging must never stop the agent */ }
+}
 const agentState = {
   version: AGENT_VERSION,
   pollCommand: null,
@@ -289,7 +301,10 @@ const agentState = {
   lastWeight: null,
   lastDataAt: null,
   lastError: null,
-  recentSamples: []
+  recentSamples: [],
+  totalBytes: 0,           // all bytes received since the agent started
+  firstDataAt: null,
+  startedAt: new Date().toISOString()
 };
 
 function pushStatus() {
@@ -438,6 +453,12 @@ async function startSerialConnection() {
     rx = { bytes: 0, hex: '' };
     port.on('data', (chunk) => {
       rx.bytes += chunk.length;
+      if (agentState.totalBytes === 0) {
+        agentState.firstDataAt = new Date().toISOString();
+        console.log(`\n📥 FIRST DATA from the indicator on ${portPath} @ ${baudRate} baud (${linesLabel(lineState)}${pollCmd ? `, request ${JSON.stringify(pollCmd)}` : ''}). Logged to weighbridge_raw_log.txt`);
+      }
+      agentState.totalBytes += chunk.length;
+      logRaw(portPath, baudRate, lineState, pollCmd, chunk);
       if (rx.hex.length < 90) rx.hex += chunk.toString('hex').replace(/(..)/g, '$1 ');
       const text = chunk.toString('latin1');
       agentState.lastDataAt = new Date().toISOString();

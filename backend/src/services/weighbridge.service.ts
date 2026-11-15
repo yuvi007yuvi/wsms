@@ -12,6 +12,9 @@ let portPath: string | null = null;
 // The cloud server has no COM ports of its own, so this is what Diagnostics must use.
 export interface AgentState {
   version?: string;
+  totalBytes?: number;
+  firstDataAt?: string | null;
+  startedAt?: string | null;
   pollCommand?: string | null;
   hostname?: string;
   comPorts?: { path: string; manufacturer?: string | null; vendorId?: string | null }[];
@@ -144,7 +147,7 @@ export async function runDiagnostic(): Promise<{
     if (samples.length === 0) {
       return {
         dataReceived: false,
-        message: `Agent ${agent.version ? 'v' + agent.version : '(OLD version - download the new weighbridge_agent.js)'} on ${agent.hostname || 'cabin PC'} opened ${agent.activePort} @ ${agent.baudRate} baud${agent.pollCommand ? `, sending request ${JSON.stringify(agent.pollCommand)}` : ''}, but no data received. ${agent.lastError || 'Check indicator serial output and cable wiring.'}`,
+        message: `Agent ${agent.version ? 'v' + agent.version : '(OLD version - download the new weighbridge_agent.js)'} on ${agent.hostname || 'cabin PC'} opened ${agent.activePort} @ ${agent.baudRate} baud${agent.pollCommand ? `, sending request ${JSON.stringify(agent.pollCommand)}` : ''}, but no data received. Total bytes from the indicator since the agent started${agent.startedAt ? ` (${new Date(agent.startedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })})` : ''}: ${agent.totalBytes ?? 'unknown'}. ${agent.lastError || 'Check indicator serial output and cable wiring.'}`,
         samples: [], parsedWeights: [],
       };
     }
