@@ -67,6 +67,20 @@ export const getSystemHealth = async (req: Request, res: Response): Promise<void
       hardwareStatus = 'error';
     }
 
+    // On the cloud server the COM ports live on the cabin PC, reported by the local agent.
+    const { getAgentState } = require('../services/weighbridge.service');
+    const agent = getAgentState();
+    let hardwareMessage = hardwareStatus === 'connected'
+      ? `${availablePorts.length} COM port(s) detected on server`
+      : 'No weighbridge agent connected. Run start_agent.bat on the weighbridge cabin PC.';
+    if (agent.online) {
+      availablePorts = agent.comPorts || [];
+      hardwareStatus = availablePorts.length > 0 ? 'connected' : 'disconnected';
+      hardwareMessage = availablePorts.length > 0
+        ? `Agent on ${agent.hostname || 'cabin PC'}: ${availablePorts.length} COM port(s)${agent.portOpen ? `, reading ${agent.activePort} @ ${agent.baudRate}` : ''}`
+        : `Agent on ${agent.hostname || 'cabin PC'} is online but sees no COM ports. Check cable and USB-serial driver.`;
+    }
+
     // 3. System Stats
     const memoryUsage = process.memoryUsage();
     const memoryMb = Math.round((memoryUsage.heapUsed / 1024 / 1024) * 100) / 100;
@@ -102,8 +116,9 @@ export const getSystemHealth = async (req: Request, res: Response): Promise<void
         },
         hardware: {
           status: hardwareStatus,
-          message: hardwareStatus === 'connected' ? `${availablePorts.length} COM port(s) detected` : 'No serial weighbridge connections found (Mock Mode Only)',
-          ports: availablePorts.map(p => p.path)
+          message: hardwareMessage,
+          ports: availablePorts.map(p => p.path),
+          agent
         },
         system: {
           nodeVersion: process.version,

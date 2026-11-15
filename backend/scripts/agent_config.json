@@ -1,6 +1,13 @@
 {
   "cloudServerUrl": "https://wsms-1.onrender.com",
-  "baudRate": 9600,
   "comPort": "AUTO",
-  "reconnectIntervalMs": 3000
+  "baudRate": 9600,
+  "dataBits": 8,
+  "parity": "none",
+  "stopBits": 1,
+  "scanBaudRates": [9600, 2400, 4800, 1200, 19200],
+  "noDataTimeoutMs": 10000,
+  "reverseDigits": false,
+  "reconnectIntervalMs": 3000,
+  "lastDetected": null
 }

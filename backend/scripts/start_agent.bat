@@ -7,22 +7,60 @@ echo ========================================================
 echo        STARTING WSMS LOCAL WEIGHBRIDGE AGENT
 echo ========================================================
 echo.
+echo  Usage:  start_agent.bat          - stream live weight to the cloud
+echo          start_agent.bat scan     - find which COM port / baud rate has the weighbridge
+echo.
 
-echo [1/2] Checking dependencies...
-if not exist "%~dp0node_modules\serialport\" (
-    echo Installing serialport and socket.io-client...
-    echo (This only happens on the first run, please wait a moment...)
-    call npm init -y
-    call npm install serialport socket.io-client
+echo [1/3] Checking Node.js...
+where node >nul 2>nul
+if errorlevel 1 (
+    color 0C
+    echo.
+    echo  ERROR: Node.js is not installed on this PC.
+    echo  Download the LTS version from https://nodejs.org , install it,
+    echo  then close this window and double-click start_agent.bat again.
+    echo.
+    pause
+    exit /b 1
+)
+for /f "delims=" %%v in ('node -v') do echo        Node.js %%v found.
+
+echo [2/3] Checking dependencies...
+if not exist "%~dp0weighbridge_agent.js" (
+    color 0C
+    echo  ERROR: weighbridge_agent.js is missing. Put it in the same folder as this file:
+    echo  %~dp0
+    pause
+    exit /b 1
+)
+if not exist "%~dp0node_modules\serialport\" goto install
+if not exist "%~dp0node_modules\socket.io-client\" goto install
+goto run
+
+:install
+echo        Installing serialport and socket.io-client (first run only, needs internet)...
+if not exist "%~dp0package.json" call npm init -y >nul
+call npm install serialport@13 socket.io-client@4
+if errorlevel 1 (
+    color 0C
+    echo.
+    echo  ERROR: npm install failed. Check the internet connection / proxy and try again.
+    pause
+    exit /b 1
+)
+
+:run
+echo.
+echo [3/3] Running agent...
+echo.
+if /i "%~1"=="scan" (
+    node "%~dp0weighbridge_agent.js" --scan
+) else (
+    node "%~dp0weighbridge_agent.js"
 )
 
 echo.
-echo [2/2] Running agent...
-echo.
-node "%~dp0weighbridge_agent.js"
-
-echo.
 echo --------------------------------------------------------
-echo The agent has stopped. See error message above.
+echo The agent has stopped. See the message above.
 echo --------------------------------------------------------
 pause

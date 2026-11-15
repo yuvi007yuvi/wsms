@@ -1,150 +1,422 @@
 /**
  * WSMS Local Weighbridge Machine Agent
- * 
+ *
  * Runs on the cabin Windows PC connected to the weighbridge indicator.
- * Reads the COM port and streams live weight directly to the cloud / web application.
+ * Reads the COM port and streams live weight to the cloud server, and reports
+ * its own status (COM ports seen, port in use, raw samples) so the
+ * Diagnostics page in the web app can show what is happening on the cabin PC.
+ *
+ * Usage:
+ *   node weighbridge_agent.js          -> normal run (streams weight)
+ *   node weighbridge_agent.js --scan   -> try every COM port x baud rate, print
+ *                                          which one is sending data, then exit
  */
 
 const { SerialPort } = require('serialport');
 const { io } = require('socket.io-client');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
+// ---------------------------------------------------------------------------
 // Configuration
+// ---------------------------------------------------------------------------
 const CONFIG_FILE = path.join(__dirname, 'agent_config.json');
 
 const defaultConfig = {
-  cloudServerUrl: 'https://wsms-1.onrender.com', // Your deployed backend
-  baudRate: 9600,
-  comPort: 'AUTO', // e.g. "COM1", "COM3", or "AUTO" to detect automatically
-  reconnectIntervalMs: 3000
+  cloudServerUrl: 'https://wsms-1.onrender.com', // Your deployed backend (no /api)
+  comPort: 'AUTO',          // "COM1", "COM3", ... or "AUTO" to detect automatically
+  baudRate: 9600,           // Used when comPort is fixed. AUTO also tries scanBaudRates.
+  dataBits: 8,
+  parity: 'none',           // "none" | "even" | "odd"
+  stopBits: 1,
+  scanBaudRates: [9600, 2400, 4800, 1200, 19200],
+  noDataTimeoutMs: 10000,   // In AUTO mode, move to the next port/baud if silent this long
+  reverseDigits: false,     // Some indicators send the digits backwards (e.g. "=0021000")
+  reconnectIntervalMs: 3000,
+  lastDetected: null        // Filled in automatically: { comPort, baudRate }
 };
 
-// Load or create config
-let config = defaultConfig;
+let config = { ...defaultConfig };
 if (fs.existsSync(CONFIG_FILE)) {
   try {
     config = { ...defaultConfig, ...JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) };
   } catch (e) {
-    console.error('Could not parse agent_config.json, using defaults.');
+    console.error('Could not parse agent_config.json, using defaults. Fix or delete the file.');
   }
 } else {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(defaultConfig, null, 2));
+  saveConfig();
 }
+
+function saveConfig() {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+  } catch (e) {
+    console.error('Could not write agent_config.json:', e.message);
+  }
+}
+
+const SCAN_ONLY = process.argv.includes('--scan');
+const AUTO = !config.comPort || String(config.comPort).toUpperCase() === 'AUTO';
 
 console.log('========================================================');
 console.log('       WSMS LOCAL WEIGHBRIDGE AGENT                    ');
 console.log('========================================================');
 console.log(`Cloud Server : ${config.cloudServerUrl}`);
-console.log(`Baud Rate    : ${config.baudRate}`);
 console.log(`Target Port  : ${config.comPort}`);
+console.log(`Serial       : ${config.baudRate} baud, ${config.dataBits}-${config.parity[0].toUpperCase()}-${config.stopBits}`);
+console.log(`Mode         : ${SCAN_ONLY ? 'SCAN ONLY' : 'STREAM'}`);
 console.log('--------------------------------------------------------\n');
 
-// Connect to Cloud Socket.IO
-const socket = io(config.cloudServerUrl, {
-  reconnection: true,
-  reconnectionDelay: config.reconnectIntervalMs
-});
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-socket.on('connect', () => {
-  console.log('🟢 [CLOUD] Connected to WSMS Cloud Server');
-});
+// USB-serial adapters commonly used with weighbridge indicators.
+const USB_SERIAL_VENDORS = {
+  '1a86': 'CH340/CH341 (WCH)',
+  '0403': 'FTDI',
+  '067b': 'Prolific PL2303',
+  '10c4': 'Silicon Labs CP210x'
+};
 
-socket.on('disconnect', () => {
-  console.log('🔴 [CLOUD] Disconnected from WSMS Cloud Server');
-});
+function describePort(p) {
+  const vid = (p.vendorId || '').toLowerCase();
+  const chip = USB_SERIAL_VENDORS[vid];
+  return `${p.path}  ${p.manufacturer || 'Standard Serial Device'}${chip ? `  [USB adapter: ${chip}]` : ''}`;
+}
 
-socket.on('connect_error', (err) => {
-  console.error('⚠️ [CLOUD] Connection error:', err.message);
-});
+// Order ports so the most likely weighbridge port is tried first:
+// 1) last port that worked, 2) USB-serial adapters, 3) everything else.
+function rankPorts(ports) {
+  const score = (p) => {
+    if (config.lastDetected && p.path === config.lastDetected.comPort) return 0;
+    const vid = (p.vendorId || '').toLowerCase();
+    const man = (p.manufacturer || '').toLowerCase();
+    if (USB_SERIAL_VENDORS[vid] || /ch34|ftdi|prolific|silicon|usb/.test(man)) return 1;
+    return 2;
+  };
+  return [...ports].sort((a, b) => score(a) - score(b));
+}
 
-// Catch uncaught exceptions to prevent silent crashes
-process.on('uncaughtException', (err) => {
-  console.error('\n❌ [FATAL ERROR]:', err.message);
-  console.log('\nTroubleshooting tips:');
-  console.log('1. Check if another program is already using the COM port.');
-  console.log('2. Check if the USB cable is firmly plugged in.');
-  console.log('3. Press any key in the window to see details.\n');
-});
+function explainOpenError(portPath, err) {
+  const msg = String(err && err.message || err);
+  if (/access denied|resource busy|EBUSY|EACCES/i.test(msg)) {
+    return `${portPath} is in use by another program. Close any other weighbridge software, HyperTerminal, PuTTY, or a second copy of this agent, then retry.`;
+  }
+  if (/file not found|cannot find|ENOENT|no such file/i.test(msg)) {
+    return `${portPath} does not exist on this PC. Check Device Manager > Ports (COM & LPT) for the correct number and set "comPort" in agent_config.json (or use "AUTO").`;
+  }
+  return msg;
+}
 
-// Setup Serial Port Connection
+/**
+ * Turns a raw indicator frame into a weight in kg, or null if the frame has no weight.
+ * Handles common formats: "+001234", "ST,GS,  1234 kg", "   1234\r", "=0021000" (reversed).
+ */
+function parseWeight(frame) {
+  // eslint-disable-next-line no-control-regex
+  let s = frame.replace(/[\x00-\x1f]/g, ' ').trim();
+  if (!s) return null;
+  if (config.reverseDigits) {
+    const m = s.match(/\d+(\.\d+)?/);
+    if (!m) return null;
+    const n = parseFloat(m[0].split('').reverse().join(''));
+    return isNaN(n) ? null : n;
+  }
+  const m = s.match(/([-+])?\s*(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const n = parseFloat(m[2]);
+  if (isNaN(n)) return null;
+  return m[1] === '-' ? -n : n;
+}
+
+// Indicators end each reading with CR, LF, ETX (0x03) or start it with STX (0x02).
+const FRAME_SPLIT = /[\r\n\x02\x03]+/;
+
+// ---------------------------------------------------------------------------
+// Scan mode: try every port x baud, report which one sends data
+// ---------------------------------------------------------------------------
+function listenOnce(portPath, baudRate, ms) {
+  return new Promise((resolve) => {
+    const result = { portPath, baudRate, bytes: 0, raw: '', weights: [], error: null };
+    const port = new SerialPort({
+      path: portPath, baudRate,
+      dataBits: config.dataBits, parity: config.parity, stopBits: config.stopBits,
+      autoOpen: false
+    });
+    port.open((err) => {
+      if (err) { result.error = explainOpenError(portPath, err); return resolve(result); }
+      let buf = '';
+      port.on('data', (chunk) => {
+        result.bytes += chunk.length;
+        if (result.raw.length < 200) result.raw += chunk.toString('latin1');
+        buf += chunk.toString('latin1');
+        const parts = buf.split(FRAME_SPLIT);
+        buf = parts.pop();
+        for (const f of parts) {
+          const w = parseWeight(f);
+          if (w !== null) result.weights.push(w);
+        }
+      });
+      setTimeout(() => port.close(() => resolve(result)), ms);
+    });
+  });
+}
+
+async function scanAll() {
+  const ports = rankPorts(await SerialPort.list());
+  if (ports.length === 0) {
+    console.log('❌ No COM ports on this PC. See guide step 2 (cable + USB driver).');
+    return null;
+  }
+  console.log('🔍 COM ports found:');
+  ports.forEach((p) => console.log('   - ' + describePort(p)));
+  console.log('\nListening on each port at each baud rate for 3 seconds. Keep a load (or a person) on the weighbridge if possible...\n');
+
+  let best = null;
+  for (const p of ports) {
+    for (const baud of config.scanBaudRates) {
+      const r = await listenOnce(p.path, baud, 3000);
+      if (r.error) { console.log(`   ${p.path} @ ${baud}: ❌ ${r.error}`); break; }
+      const printable = r.raw.replace(/[^\x20-\x7e]/g, '.').slice(0, 60);
+      console.log(`   ${p.path} @ ${baud}: ${r.bytes} bytes, ${r.weights.length} readings  ${printable ? `"${printable}"` : ''}`);
+      // Correct baud gives clean printable digits; wrong baud gives garbage with few parsable numbers.
+      if (r.weights.length > 0 && (!best || r.weights.length > best.weights.length)) best = r;
+    }
+  }
+  console.log('');
+  if (best) {
+    console.log(`✅ Weighbridge found on ${best.portPath} at ${best.baudRate} baud. Sample weights: ${best.weights.slice(-5).join(', ')}`);
+    config.lastDetected = { comPort: best.portPath, baudRate: best.baudRate };
+    saveConfig();
+    console.log('   Saved to agent_config.json (lastDetected). AUTO mode will use it first.');
+  } else {
+    console.log('❌ No port sent readable weight data. See guide steps 3-5 (indicator output, cable wiring, baud rate).');
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------------------
+// Cloud connection
+// ---------------------------------------------------------------------------
+let socket = null;
+const agentState = {
+  hostname: os.hostname(),
+  comPorts: [],
+  activePort: null,
+  baudRate: null,
+  portOpen: false,
+  lastWeight: null,
+  lastDataAt: null,
+  lastError: null,
+  recentSamples: []
+};
+
+function pushStatus() {
+  if (socket && socket.connected) socket.emit('agent-status', agentState);
+}
+
+function connectCloud() {
+  socket = io(config.cloudServerUrl, {
+    reconnection: true,
+    reconnectionDelay: config.reconnectIntervalMs,
+    timeout: 60000 // Render free tier can take ~50s to wake up
+  });
+  socket.on('connect', () => {
+    console.log('\n🟢 [CLOUD] Connected to WSMS Cloud Server');
+    pushStatus();
+  });
+  socket.on('disconnect', (reason) => console.log(`\n🔴 [CLOUD] Disconnected (${reason}). Reconnecting...`));
+  socket.on('connect_error', (err) => {
+    console.error(`\n⚠️ [CLOUD] Cannot reach ${config.cloudServerUrl}: ${err.message}`);
+    console.error('   Check internet, the cloudServerUrl in agent_config.json, or wait ~1 min if the server is waking up.');
+  });
+  setInterval(pushStatus, 5000);
+}
+
+// ---------------------------------------------------------------------------
+// Serial streaming
+// ---------------------------------------------------------------------------
 let activePort = null;
+let retryTimer = null;
+let silenceTimer = null;
+let candidates = [];      // [{ path, baudRate }] for AUTO mode
+let candidateIdx = 0;
+let lastEmitted = { weight: null, at: 0 };
+const lastReadings = [];
+
+function scheduleRetry(delay = config.reconnectIntervalMs) {
+  if (retryTimer) return; // only one pending retry at a time
+  clearTimeout(silenceTimer);
+  const old = activePort;
+  activePort = null;
+  agentState.portOpen = false;
+  pushStatus();
+  if (old && old.isOpen) old.close(() => {});
+  console.log(`Retrying hardware connection in ${delay / 1000}s...`);
+  retryTimer = setTimeout(() => { retryTimer = null; startSerialConnection(); }, delay);
+}
+
+async function buildCandidates() {
+  let ports = [];
+  try {
+    ports = rankPorts(await SerialPort.list());
+  } catch (e) {
+    console.error('⚠️ [HARDWARE] Could not list COM ports:', e.message);
+  }
+  agentState.comPorts = ports.map((p) => ({ path: p.path, manufacturer: p.manufacturer || null, vendorId: p.vendorId || null }));
+  if (ports.length > 0) {
+    console.log('🔍 [HARDWARE] Available COM ports:');
+    ports.forEach((p) => console.log('   - ' + describePort(p)));
+  }
+
+  // A port set by hand is always tried, even if it is not in the list.
+  if (!AUTO) return [{ path: config.comPort, baudRate: config.baudRate }];
+  if (ports.length === 0) return [];
+
+  const list = [];
+  const bauds = [config.baudRate, ...config.scanBaudRates.filter((b) => b !== config.baudRate)];
+  if (config.lastDetected) list.push({ path: config.lastDetected.comPort, baudRate: config.lastDetected.baudRate });
+  for (const p of ports) for (const b of bauds) {
+    if (!list.some((c) => c.path === p.path && c.baudRate === b)) list.push({ path: p.path, baudRate: b });
+  }
+  return list.filter((c) => ports.some((p) => p.path === c.path));
+}
 
 async function startSerialConnection() {
   try {
-    const ports = await SerialPort.list();
-    if (ports.length === 0) {
-      console.log('❌ [HARDWARE] No COM ports found on this PC. Re-checking in 5s...');
-      setTimeout(startSerialConnection, 5000);
-      return;
+    if (candidates.length === 0 || candidateIdx >= candidates.length) {
+      candidates = await buildCandidates();
+      candidateIdx = 0;
+    }
+    if (candidates.length === 0) {
+      agentState.lastError = 'No COM ports found on this PC';
+      console.log('❌ [HARDWARE] No COM ports found on this PC. Check cable and USB driver. Re-checking in 5s...');
+      pushStatus();
+      return scheduleRetry(5000);
     }
 
-    console.log(`🔍 [HARDWARE] Available COM ports:`);
-    ports.forEach(p => console.log(`   - ${p.path} (${p.manufacturer || 'Standard Serial Device'})`));
+    const { path: portPath, baudRate } = candidates[candidateIdx];
+    console.log(`\n🔌 [HARDWARE] Opening ${portPath} at ${baudRate} baud...`);
 
-    let chosenPort = config.comPort;
-    if (chosenPort === 'AUTO' || !chosenPort) {
-      chosenPort = ports[0].path;
-    }
-
-    console.log(`\n🔌 [HARDWARE] Opening ${chosenPort} at ${config.baudRate} baud...`);
-
-    activePort = new SerialPort({
-      path: chosenPort,
-      baudRate: config.baudRate,
-      autoOpen: true
+    const port = new SerialPort({
+      path: portPath, baudRate,
+      dataBits: config.dataBits, parity: config.parity, stopBits: config.stopBits,
+      autoOpen: false
     });
+    activePort = port;
 
-    activePort.on('open', () => {
-      console.log(`✅ [HARDWARE] Successfully opened ${chosenPort}! Reading live weight stream...`);
+    port.open((err) => {
+      if (err) {
+        agentState.lastError = explainOpenError(portPath, err);
+        console.error(`❌ [HARDWARE] ${agentState.lastError}`);
+        candidateIdx++;
+        return scheduleRetry(AUTO ? 500 : config.reconnectIntervalMs);
+      }
+      agentState.activePort = portPath;
+      agentState.baudRate = baudRate;
+      agentState.portOpen = true;
+      agentState.lastError = null;
+      pushStatus();
+      console.log(`✅ [HARDWARE] Opened ${portPath}. Waiting for weight data...`);
+      armSilenceTimer(portPath, baudRate);
     });
 
     let buffer = '';
-    activePort.on('data', (chunk) => {
-      buffer += chunk.toString();
+    let gotWeight = false;
+    port.on('data', (chunk) => {
+      const text = chunk.toString('latin1');
+      agentState.lastDataAt = new Date().toISOString();
+      buffer += text;
+      const frames = buffer.split(FRAME_SPLIT);
+      buffer = frames.pop(); // keep the incomplete tail for the next chunk
+      if (buffer.length > 200) { frames.push(buffer); buffer = ''; } // indicator without delimiters
 
-      // Extract numeric weight sequence from buffer
-      const match = buffer.match(/(\d+)/);
-      if (match) {
-        const weight = parseInt(match[0], 10);
-        
-        // Print to console
-        process.stdout.write(`\r⚖️ Live Machine Weight: ${weight} KG  [Streaming to Cloud] `);
-
-        // Feed to cloud server socket
-        if (socket.connected) {
-          socket.emit('agent-weight-feed', { weight, status: 'Stable' });
+      for (const f of frames) {
+        // Keep complete raw readings for the Diagnostics page
+        const printable = f.replace(/[^\x20-\x7e]/g, '.').trim();
+        if (printable) {
+          agentState.recentSamples.push(printable);
+          if (agentState.recentSamples.length > 20) agentState.recentSamples.shift();
         }
-        buffer = '';
+        const weight = parseWeight(f);
+        if (weight === null) continue;
+        if (!gotWeight) {
+          gotWeight = true;
+          clearTimeout(silenceTimer);
+          if (AUTO && (!config.lastDetected || config.lastDetected.comPort !== portPath || config.lastDetected.baudRate !== baudRate)) {
+            config.lastDetected = { comPort: portPath, baudRate };
+            saveConfig();
+            console.log(`\n💾 Detected weighbridge on ${portPath} @ ${baudRate} baud (saved to agent_config.json).`);
+          }
+        }
+        handleWeight(weight);
       }
-
-      if (buffer.length > 200) buffer = '';
     });
 
-    activePort.on('error', (err) => {
-      console.error(`\n❌ [HARDWARE] Serial error on ${chosenPort}:`, err.message);
-      retryConnection();
+    port.on('error', (err) => {
+      agentState.lastError = explainOpenError(portPath, err);
+      console.error(`\n❌ [HARDWARE] Serial error on ${portPath}: ${agentState.lastError}`);
+      scheduleRetry();
     });
 
-    activePort.on('close', () => {
-      console.log(`\n⚠️ [HARDWARE] Port ${chosenPort} was closed.`);
-      retryConnection();
+    port.on('close', () => {
+      if (activePort !== port) return; // closed on purpose while switching ports
+      console.log(`\n⚠️ [HARDWARE] Port ${portPath} was closed (cable unplugged?).`);
+      candidates = []; // re-list ports, the COM number may change after re-plugging
+      scheduleRetry();
     });
-
   } catch (err) {
-    console.error('❌ [HARDWARE] Error starting serial connection:', err);
-    retryConnection();
+    agentState.lastError = err.message;
+    console.error('❌ [HARDWARE] Error starting serial connection:', err.message);
+    scheduleRetry();
   }
 }
 
-function retryConnection() {
-  if (activePort && activePort.isOpen) {
-    activePort.close();
-  }
-  activePort = null;
-  console.log(`Retrying hardware connection in ${config.reconnectIntervalMs / 1000} seconds...`);
-  setTimeout(startSerialConnection, config.reconnectIntervalMs);
+function armSilenceTimer(portPath, baudRate) {
+  clearTimeout(silenceTimer);
+  silenceTimer = setTimeout(() => {
+    const msg = `No readable weight from ${portPath} @ ${baudRate} baud in ${config.noDataTimeoutMs / 1000}s.`;
+    agentState.lastError = msg;
+    if (AUTO && candidates.length > 1) {
+      console.log(`\n⏭️  ${msg} Trying next port/baud...`);
+      candidateIdx++;
+      scheduleRetry(300);
+    } else {
+      console.log(`\n⚠️  ${msg} Check indicator output setting, cable wiring and baud rate (see guide). Still listening...`);
+      pushStatus();
+    }
+  }, config.noDataTimeoutMs);
 }
 
+function handleWeight(weight) {
+  lastReadings.push(weight);
+  if (lastReadings.length > 3) lastReadings.shift();
+  const status = lastReadings.length === 3 && lastReadings.every((w) => w === weight) ? 'Stable' : 'Reading';
+  agentState.lastWeight = weight;
+
+  process.stdout.write(`\r⚖️  Live Machine Weight: ${weight} KG  [${status}] [${socket && socket.connected ? 'Streaming to Cloud' : 'CLOUD OFFLINE'}]     `);
+
+  // Send on change, or at least once a second, so we do not flood the server.
+  const now = Date.now();
+  if (weight !== lastEmitted.weight || now - lastEmitted.at > 1000) {
+    if (socket && socket.connected) socket.emit('agent-weight-feed', { weight, status });
+    lastEmitted = { weight, at: now };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Start
-startSerialConnection();
+// ---------------------------------------------------------------------------
+process.on('uncaughtException', (err) => {
+  console.error('\n❌ [FATAL ERROR]:', err.message);
+  scheduleRetry();
+});
+
+if (SCAN_ONLY) {
+  scanAll().then(() => process.exit(0)).catch((e) => { console.error(e.message); process.exit(1); });
+} else {
+  connectCloud();
+  startSerialConnection();
+}

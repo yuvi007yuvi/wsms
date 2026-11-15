@@ -5,7 +5,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cron from 'node-cron';
 import prisma from './utils/prisma';
-import { setupWeighbridge } from './services/weighbridge.service';
+import { setupWeighbridge, updateAgentStatus, markAgentSeen } from './services/weighbridge.service';
 
 dotenv.config();
 
@@ -59,11 +59,17 @@ io.on('connection', (socket) => {
   // Allow local agent running on physical machine PC to ingest weight
   socket.on('agent-weight-feed', (data: { weight: number, status?: string }) => {
     if (typeof data?.weight === 'number') {
+      markAgentSeen(data.weight);
       io.emit('weight-update', { 
         weight: data.weight, 
         status: data.status || 'Stable' 
       });
     }
+  });
+
+  // Agent heartbeat: COM ports, open port, raw samples (used by Diagnostics)
+  socket.on('agent-status', (state: any) => {
+    if (state && typeof state === 'object') updateAgentStatus(state);
   });
 
   socket.on('disconnect', () => {

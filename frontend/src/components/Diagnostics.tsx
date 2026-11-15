@@ -67,7 +67,7 @@ export default function Diagnostics() {
         if (hwStatus?.status === 'connected' && hwStatus.ports?.length > 0) {
           updateStep('ports', { status: 'pass', message: `${hwStatus.ports.length} port(s): ${hwStatus.ports.join(', ')}` });
         } else {
-          updateStep('ports', { status: 'fail', message: 'No COM ports detected. Check USB/RS232 cable and drivers.' });
+          updateStep('ports', { status: 'fail', message: hwStatus?.message || 'No COM ports detected. Check USB/RS232 cable and drivers.' });
           updateStep('hardware', { status: 'fail', message: 'Skipped — no ports available' });
           updateStep('socket', { status: 'fail', message: 'Skipped — no hardware connection' });
           setOverallVerdict('hardware');
