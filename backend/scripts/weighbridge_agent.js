@@ -61,15 +61,16 @@ function saveConfig() {
 }
 
 const SCAN_ONLY = process.argv.includes('--scan');
+const DEEP_SCAN = process.argv.includes('--deep');
 const AUTO = !config.comPort || String(config.comPort).toUpperCase() === 'AUTO';
 
 console.log('========================================================');
-console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.5              ');
+console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.6              ');
 console.log('========================================================');
 console.log(`Cloud Server : ${config.cloudServerUrl}`);
 console.log(`Target Port  : ${config.comPort}`);
 console.log(`Serial       : ${config.baudRate} baud, ${config.dataBits}-${config.parity[0].toUpperCase()}-${config.stopBits}`);
-console.log(`Mode         : ${SCAN_ONLY ? 'SCAN ONLY' : 'STREAM'}`);
+console.log(`Mode         : ${DEEP_SCAN ? 'DEEP SCAN (try everything)' : SCAN_ONLY ? 'SCAN ONLY' : 'STREAM'}`);
 console.log('--------------------------------------------------------\n');
 
 // ---------------------------------------------------------------------------
@@ -182,21 +183,27 @@ function prepareLine(port, pollCommand = config.pollCommand, lines = defaultLine
 // ---------------------------------------------------------------------------
 // Scan mode: try every port x baud, report which one sends data
 // ---------------------------------------------------------------------------
-function listenOnce(portPath, baudRate, ms, pollCommand) {
+function listenOnce(portPath, baudRate, ms, pollCommand, opts = {}) {
   return new Promise((resolve) => {
-    const result = { portPath, baudRate, bytes: 0, raw: '', weights: [], error: null };
+    const result = { portPath, baudRate, bytes: 0, raw: '', hex: '', weights: [], error: null };
     const port = new SerialPort({
       path: portPath, baudRate,
-      dataBits: config.dataBits, parity: config.parity, stopBits: config.stopBits,
+      dataBits: opts.dataBits || config.dataBits,
+      parity: opts.parity || config.parity,
+      stopBits: opts.stopBits || config.stopBits,
+      rtscts: !!opts.rtscts,
+      xon: !!opts.xon, xoff: !!opts.xon,
       autoOpen: false
     });
     port.open((err) => {
       if (err) { result.error = explainOpenError(portPath, err); return resolve(result); }
-      const stopPoll = prepareLine(port, pollCommand);
+      const stopPoll = prepareLine(port, pollCommand, opts.lines || defaultLines());
       let buf = '';
       port.on('data', (chunk) => {
         result.bytes += chunk.length;
         if (result.raw.length < 200) result.raw += chunk.toString('latin1');
+        if (result.hex.length < 120) result.hex += chunk.toString('hex').replace(/(..)/g, '$1 ');
+        logRaw(portPath, baudRate, opts.lines || defaultLines(), pollCommand, chunk);
         buf += chunk.toString('latin1');
         const parts = buf.split(FRAME_SPLIT);
         buf = parts.pop();
@@ -208,6 +215,77 @@ function listenOnce(portPath, baudRate, ms, pollCommand) {
       setTimeout(() => { stopPoll(); port.close(() => resolve(result)); }, ms);
     });
   });
+}
+
+// ---------------------------------------------------------------------------
+// Deep scan: try every realistic combination until the indicator sends anything
+// ---------------------------------------------------------------------------
+// Commands that could ZERO, TARE, CLEAR, HOLD or change units/mode are deliberately excluded
+// (Z, T, C, H, K, U, N, M and lower case).
+const SAFE_SINGLE = 'ABDEFGIJLOPQRSVWXY0123456789?#*@$%!&+=.,:;/'.split('');
+const DEEP_COMMANDS = [...new Set([
+  ...POLL_CANDIDATES,
+  '\x11', '\x06', '\x0d', '\x0a', '\x1b', '\x07', '\x10', '\x12', '\x13',      // XON, ACK, CR, LF, ESC, BEL, DLE, DC2, DC3
+  'SI\r\n', 'S\r\n', 'IP\r\n', 'W\r', 'P\r', 'R\r', 'Q\r', '@\r\n', 'READ\r', 'PRINT\r\n',
+  'WT\r\n', 'GW\r\n', 'RW\r\n', 'XG\r\n', 'MSV?;', 'GROSS\r\n', 'WEIGHT\r\n', 'SEND\r\n',
+  ...SAFE_SINGLE
+])];
+
+async function deepScan() {
+  let ports = [];
+  try { ports = rankPorts(await SerialPort.list()).filter((p) => !isBluetooth(p)); } catch (e) { console.error(e.message); }
+  if (config.comPort && !AUTO) ports = [{ path: config.comPort }];
+  if (ports.length === 0) { console.log('❌ No COM ports found.'); return null; }
+
+  const bauds = [9600, 2400, 4800, 1200, 19200, 38400, 57600, 115200, 600, 300];
+  const formats = [
+    { dataBits: 8, parity: 'none', stopBits: 1 }, { dataBits: 7, parity: 'even', stopBits: 1 },
+    { dataBits: 7, parity: 'odd', stopBits: 1 }, { dataBits: 8, parity: 'none', stopBits: 2 },
+    { dataBits: 8, parity: 'even', stopBits: 1 }, { dataBits: 7, parity: 'none', stopBits: 2 }
+  ];
+  const lineCombos = [{ dtr: true, rts: true }, { dtr: false, rts: false }, { dtr: true, rts: false }, { dtr: false, rts: true }];
+  const flows = [{}, { rtscts: true }, { xon: true }];
+
+  // Build the plan: passive listening first (cheap), then request commands.
+  const plan = [];
+  for (const p of ports) {
+    for (const lines of lineCombos) for (const flow of flows) plan.push({ path: p.path, baud: 9600, fmt: formats[0], lines, flow, cmd: '', ms: 4000 });
+    for (const baud of bauds) for (const fmt of formats) plan.push({ path: p.path, baud, fmt, lines: lineCombos[0], flow: {}, cmd: '', ms: 1500 });
+    for (const lines of lineCombos) for (const cmd of DEEP_COMMANDS) plan.push({ path: p.path, baud: 9600, fmt: formats[0], lines, flow: {}, cmd, ms: 1200 });
+    for (const baud of [2400, 4800, 1200, 19200]) for (const cmd of POLL_CANDIDATES) plan.push({ path: p.path, baud, fmt: formats[0], lines: lineCombos[0], flow: {}, cmd, ms: 1200 });
+  }
+  const totalSec = Math.round(plan.reduce((a, t) => a + t.ms + 150, 0) / 1000);
+  console.log(`🔬 DEEP SCAN: ${plan.length} combinations on ${ports.map((p) => p.path).join(', ')} (about ${Math.ceil(totalSec / 60)} minutes).`);
+  console.log('   Safe: commands that could ZERO or TARE the scale (Z, T, C) are never sent.');
+  console.log('   Tip: if someone is on site, change the weight on the platform now and then during the scan.\n');
+
+  let i = 0;
+  for (const t of plan) {
+    i++;
+    const label = `${t.path} @${t.baud} ${t.fmt.dataBits}${t.fmt.parity[0].toUpperCase()}${t.fmt.stopBits} ${linesLabel(t.lines)}${t.flow.rtscts ? ' RTS/CTS' : ''}${t.flow.xon ? ' XON/XOFF' : ''}${t.cmd ? ` send ${JSON.stringify(t.cmd)}` : ' listen'}`;
+    process.stdout.write(`\r[${i}/${plan.length}] ${label}                    `);
+    const r = await listenOnce(t.path, t.baud, t.ms, t.cmd, { ...t.fmt, ...t.flow, lines: t.lines });
+    if (r.error) { console.log(`\n   ❌ ${r.error}`); if (/in use/.test(r.error)) return null; continue; }
+    if (r.bytes > 0) {
+      const printable = r.raw.replace(/[^\x20-\x7e]/g, '.').slice(0, 80);
+      console.log(`\n\n📥 THE INDICATOR ANSWERED!  ${label}`);
+      console.log(`   ${r.bytes} bytes. Text: "${printable}"`);
+      console.log(`   Hex : ${r.hex.trim()}`);
+      if (r.weights.length > 0) console.log(`   Weights read: ${r.weights.slice(-5).join(', ')}`);
+      Object.assign(config, {
+        comPort: 'AUTO', baudRate: t.baud, dataBits: t.fmt.dataBits, parity: t.fmt.parity, stopBits: t.fmt.stopBits,
+        pollCommand: t.cmd, lines: t.lines, lastDetected: { comPort: t.path, baudRate: t.baud }
+      });
+      saveConfig();
+      console.log('\n💾 Saved these settings to agent_config.json. Now double-click start_agent.bat (normal mode).');
+      console.log('   Please send a photo of this screen to support.');
+      return r;
+    }
+  }
+  console.log('\n\n❌ DEEP SCAN finished: the indicator did not send a single byte with ANY combination.');
+  console.log('   This proves the PC side cannot wake it up. The indicator\'s own output setting must be changed');
+  console.log('   (technician: serial output = CONTINUOUS), or use its COM1 / TABLE TOP port with a USB-RS232 adapter.');
+  return null;
 }
 
 async function scanAll() {
@@ -277,7 +355,7 @@ async function scanAll() {
 // Cloud connection
 // ---------------------------------------------------------------------------
 let socket = null;
-const AGENT_VERSION = '2.5';
+const AGENT_VERSION = '2.6';
 
 // Every byte the indicator sends is written here with the settings in use,
 // so data that arrives when nobody is watching (e.g. a truck at night) is never missed.
@@ -561,7 +639,9 @@ process.on('uncaughtException', (err) => {
   scheduleRetry();
 });
 
-if (SCAN_ONLY) {
+if (DEEP_SCAN) {
+  deepScan().then(() => process.exit(0)).catch((e) => { console.error(e.message); process.exit(1); });
+} else if (SCAN_ONLY) {
   scanAll().then(() => process.exit(0)).catch((e) => { console.error(e.message); process.exit(1); });
 } else {
   connectCloud();

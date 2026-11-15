@@ -7,8 +7,9 @@ echo ========================================================
 echo        STARTING WSMS LOCAL WEIGHBRIDGE AGENT
 echo ========================================================
 echo.
-echo  Usage:  start_agent.bat          - stream live weight to the cloud
+echo  Usage:  start_agent.bat          - menu (Normal starts automatically after 10 seconds)
 echo          start_agent.bat scan     - find which COM port / baud rate has the weighbridge
+echo          start_agent.bat deep     - try every setting and command (10-15 minutes)
 echo.
 
 echo [1/3] Checking Node.js...
@@ -51,9 +52,22 @@ if errorlevel 1 (
 
 :run
 echo.
-echo [3/3] Running agent...
+set "MODE=%~1"
+if "%MODE%"=="" (
+    echo   Choose what to run:
+    echo     1 = Normal  - stream live weight to the cloud  [default]
+    echo     2 = Scan    - quick check of COM ports and baud rates
+    echo     3 = Deep scan - try EVERY setting and command, about 10-15 minutes
+    echo.
+    choice /c 123 /t 10 /d 1 /n /m "  Press 1, 2 or 3 (Normal starts in 10 seconds): "
+    if errorlevel 3 (set "MODE=deep") else if errorlevel 2 (set "MODE=scan") else (set "MODE=normal")
+)
 echo.
-if /i "%~1"=="scan" (
+echo [3/3] Running agent (%MODE%)...
+echo.
+if /i "%MODE%"=="deep" (
+    node "%~dp0weighbridge_agent.js" --deep
+) else if /i "%MODE%"=="scan" (
     node "%~dp0weighbridge_agent.js" --scan
 ) else (
     node "%~dp0weighbridge_agent.js"

@@ -118,6 +118,17 @@ In the default `"comPort": "AUTO"` mode, a normal run also does this by itself: 
 
 ---
 
+### Deep scan: try every setting automatically
+
+Double-click `start_agent.bat` and press **3** (or run `start_agent.bat deep`). For about 10–15 minutes it tries
+every baud rate (300–115200), data format (8N1, 7E1, 7O1, 8N2, 8E1, 7N2), DTR/RTS state, flow control and
+about 80 request commands. It stops at the first byte the indicator sends, saves those settings to
+`agent_config.json`, and shows them on screen. Commands that could zero, tare, clear, hold or change units
+(`Z T C H K U N M`) are never sent. If it ends with "did not send a single byte with ANY combination", nothing
+on the PC side can wake the indicator up: its own output setting has to be changed, or use COM1 / TABLE TOP.
+
+All bytes received at any time are also written to `weighbridge_raw_log.txt` next to the agent.
+
 ## 4. Step 3: Configure `agent_config.json` (only if AUTO does not find it)
 
 The file sits next to the agent. The agent creates it on the first run.
