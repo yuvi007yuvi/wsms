@@ -101,8 +101,11 @@ export default function DashboardLayout() {
       return ['Superadmin', 'Billing', 'Diagnostics'].includes(item.name);
     }
     
-    if (item.name === 'Superadmin' || item.name === 'Billing' || item.name === 'Diagnostics') return false;
+    if (item.name === 'Superadmin' || item.name === 'Billing') return false;
     
+    // Always make Diagnostics accessible to admin role
+    if (item.name === 'Diagnostics' && userRole === 'admin') return true;
+
     if (userRole === 'admin') return true;
     
     if (allowedModules === null) return false;
