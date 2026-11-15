@@ -36,6 +36,7 @@ const defaultConfig = {
   setDtrRts: true,          // Raise DTR/RTS after opening. USB CDC indicators/cables often send nothing without it.
   pollCommand: '',          // For indicators in demand/print mode: text sent to request a reading, e.g. "P" or "R\r\n"
   pollIntervalMs: 500,
+  lines: null,              // Filled in automatically if a specific DTR/RTS state is needed, e.g. { "dtr": false, "rts": false }
   reconnectIntervalMs: 3000,
   lastDetected: null        // Filled in automatically: { comPort, baudRate }
 };
@@ -63,7 +64,7 @@ const SCAN_ONLY = process.argv.includes('--scan');
 const AUTO = !config.comPort || String(config.comPort).toUpperCase() === 'AUTO';
 
 console.log('========================================================');
-console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.3              ');
+console.log('       WSMS LOCAL WEIGHBRIDGE AGENT  v2.4              ');
 console.log('========================================================');
 console.log(`Cloud Server : ${config.cloudServerUrl}`);
 console.log(`Target Port  : ${config.comPort}`);
@@ -159,12 +160,19 @@ const FRAME_SPLIT = /[\r\n\x02\x03]+/;
 const POLL_CANDIDATES = ['P', 'R', 'W', 'S', 'Q', '\x05', 'P\r\n', 'R\r\n', 'W\r\n', 'S\r\n', 'SI\r\n', 'READ\r\n', '$', '\x02'];
 
 // Raise DTR/RTS and start polling (if configured). Returns a stop function.
-function prepareLine(port, pollCommand = config.pollCommand) {
-  if (config.setDtrRts) {
-    port.set({ dtr: true, rts: true }, (err) => {
-      if (err) console.error(`⚠️ [HARDWARE] Could not set DTR/RTS: ${err.message}`);
-    });
-  }
+function defaultLines() {
+  if (config.lines && typeof config.lines === 'object') return config.lines;
+  return config.setDtrRts ? { dtr: true, rts: true } : { dtr: false, rts: false };
+}
+
+function linesLabel(l) {
+  return `DTR ${l.dtr ? 'on' : 'off'}, RTS ${l.rts ? 'on' : 'off'}`;
+}
+
+function prepareLine(port, pollCommand = config.pollCommand, lines = defaultLines()) {
+  port.set({ dtr: !!lines.dtr, rts: !!lines.rts }, (err) => {
+    if (err) console.error(`⚠️ [HARDWARE] Could not set DTR/RTS: ${err.message}`);
+  });
   if (!pollCommand) return () => {};
   const cmd = String(pollCommand).replace(/\\r/g, '\r').replace(/\\n/g, '\n');
   const t = setInterval(() => { if (port.isOpen) port.write(cmd); }, config.pollIntervalMs);
@@ -269,7 +277,7 @@ async function scanAll() {
 // Cloud connection
 // ---------------------------------------------------------------------------
 let socket = null;
-const AGENT_VERSION = '2.3';
+const AGENT_VERSION = '2.4';
 const agentState = {
   version: AGENT_VERSION,
   pollCommand: null,
@@ -361,6 +369,13 @@ async function buildCandidates() {
       for (const cmd of POLL_CANDIDATES) result.push({ path: p.path, baudRate: config.baudRate, poll: cmd });
     }
   }
+  // Some devices only send with particular DTR/RTS control-line states (old software may have used these).
+  if (!config.lines) {
+    const combos = [{ dtr: false, rts: false }, { dtr: true, rts: false }, { dtr: false, rts: true }];
+    for (const p of ports.filter((x) => !isBluetooth(x))) {
+      for (const l of combos) result.push({ path: p.path, baudRate: config.baudRate, lines: l });
+    }
+  }
   return result;
 }
 
@@ -387,8 +402,9 @@ async function startSerialConnection() {
       return scheduleRetry(5000);
     }
 
-    const { path: portPath, baudRate, poll } = candidates[candidateIdx];
+    const { path: portPath, baudRate, poll, lines } = candidates[candidateIdx];
     const pollCmd = poll !== undefined ? poll : config.pollCommand;
+    const lineState = lines || defaultLines();
     console.log(`\n🔌 [HARDWARE] Opening ${portPath} at ${baudRate} baud...`);
 
     const port = new SerialPort({
@@ -411,10 +427,10 @@ async function startSerialConnection() {
       agentState.portOpen = true;
       agentState.lastError = null;
       pushStatus();
-      console.log(`✅ [HARDWARE] Opened ${portPath}${config.setDtrRts ? ' (DTR/RTS on)' : ''}${pollCmd ? ` (sending request ${JSON.stringify(pollCmd)})` : ''}. Waiting for weight data...`);
-      const stopPoll = prepareLine(port, pollCmd);
+      console.log(`✅ [HARDWARE] Opened ${portPath} (${linesLabel(lineState)})${pollCmd ? ` (sending request ${JSON.stringify(pollCmd)})` : ''}. Waiting for weight data...`);
+      const stopPoll = prepareLine(port, pollCmd, lineState);
       port.once('close', stopPoll);
-      armSilenceTimer(portPath, baudRate, poll !== undefined ? 3000 : config.noDataTimeoutMs);
+      armSilenceTimer(portPath, baudRate, poll !== undefined ? 3000 : lines ? 6000 : config.noDataTimeoutMs);
     });
 
     let buffer = '';
@@ -442,6 +458,11 @@ async function startSerialConnection() {
         if (!gotWeight) {
           gotWeight = true;
           clearTimeout(silenceTimer);
+          if (lines) {
+            config.lines = lines;
+            saveConfig();
+            console.log(`\n💾 Indicator sends with ${linesLabel(lines)} (saved as "lines" in agent_config.json).`);
+          }
           if (poll !== undefined && config.pollCommand !== poll) {
             config.pollCommand = poll;
             saveConfig();
