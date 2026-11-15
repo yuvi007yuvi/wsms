@@ -110,9 +110,9 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
 
   // Otherwise, render customized project format (Urban Enviro / New Projects)
   const isUrbanEnviro = projectName.toLowerCase().includes('urban');
-  let headerTitle = "Nagar Nigam Aligarh";
-  let partyName = "URBAN ENVIRO";
-  let siteSubtitle = "Solid Waste Management Facility";
+  let headerTitle = "A2z waste Mangement (Aligarh) Ltd.";
+  let siteSubtitle = "Mathura Road, Aligarh";
+  let partyName = "URBAN ENVIROTECH-ZONE=03";
 
   if (!isUrbanEnviro && projectName) {
     headerTitle = projectName;
@@ -127,63 +127,43 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
           
           {/* Header */}
           <div>
-            <div className="flex justify-between items-center mb-1">
-              {/* Logo */}
-              <div className="w-20 h-10 flex items-center justify-start">
-                <img src="/images.jpg" alt="Logo" className="h-full object-contain" />
-              </div>
-              <div className="text-center flex-1">
-                <h1 className="text-xl font-bold uppercase leading-tight">{headerTitle}</h1>
-                {siteSubtitle && (
-                  <div className="text-[11px] font-semibold text-gray-700 tracking-wide uppercase">{siteSubtitle}</div>
-                )}
-              </div>
-              <div className="w-20"></div> {/* spacer for centering */}
-            </div>
-
-            <div className="border-b border-dashed border-gray-400 mb-1"></div>
-            <div className="text-center font-bold tracking-widest mb-1 text-base">TICKET</div>
-          </div>
-
-          {/* Details 2-Column Grid */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 leading-tight text-sm">
-            <div className="space-y-0.5">
-              <div className="flex"><span className="w-32 uppercase">Receipt No.</span><span>: {slip.slipNumber}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Date</span><span>: {formatDMY(slip.date)}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Driver Name</span><span>: {slip.driverName || slip.vehicle?.driverName || '-'}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Location</span><span>: {slip.source?.name || '-'}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Supervisor</span><span>: -</span></div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="flex"><span className="w-32 uppercase">Waste Type</span><span>: {slip.material?.name || '-'}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Vehicle</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Party Name</span><span>: {partyName}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || '-'}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Operator</span><span>: {slip.operator?.username || '-'}</span></div>
+            <div className="text-center mb-2">
+              <h1 className="text-base font-bold leading-tight">{headerTitle}</h1>
+              {siteSubtitle && (
+                <div className="text-xs font-medium text-gray-800 tracking-wide">{siteSubtitle}</div>
+              )}
             </div>
           </div>
 
-          <div className="border-b border-dashed border-gray-400"></div>
-
-          {/* Weight Section */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 leading-tight text-sm">
-            <div className="space-y-0.5">
-              <div className="flex"><span className="w-32 uppercase">Gross Weight</span><span>: {slip.grossWeight} KG</span></div>
-              <div className="flex"><span className="w-32 uppercase">Tare Weight</span><span>: {slip.tareWeight} KG</span></div>
-              <div className="flex"><span className="w-32 uppercase font-bold">Net Weight</span><span className="font-bold">: {slip.netWeight} KG</span></div>
+          {/* Details 2-Column Grid matching Urban Slip */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 leading-tight text-xs">
+            <div className="space-y-1">
+              <div className="flex"><span className="w-36">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
+              <div className="flex"><span className="w-36">Vehicle no</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex"><span className="w-36">Material</span><span>: {slip.material?.name || 'SOLID WASTE'}</span></div>
             </div>
-            <div className="space-y-0.5">
-              <div className="flex"><span className="w-32 uppercase">Gross Time</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Tare Time</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
-              <div className="flex"><span className="w-32 uppercase">Print Time</span><span>: {formatDateTimeDMY(new Date())}</span></div>
+            <div className="space-y-1">
+              <div className="flex"><span className="w-36">Customer Name</span><span>: {partyName}</span></div>
+              <div className="flex"><span className="w-36">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'DUMPER'}</span></div>
+            </div>
+          </div>
+
+          {/* Weight Section matching Urban Slip */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 leading-tight text-xs my-2">
+            <div className="space-y-1">
+              <div className="flex"><span className="w-36">Weight1</span><span>: {slip.grossWeight}</span></div>
+              <div className="flex"><span className="w-36">Weight2</span><span>: {slip.tareWeight}</span></div>
+              <div className="flex font-bold"><span className="w-36">Net weight</span><span>: {slip.netWeight}</span></div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex"><span className="w-20">Date1</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
+              <div className="flex"><span className="w-20">Date2</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
             </div>
           </div>
 
           {/* Footer Signatures */}
-          <div className="flex justify-between items-end mt-2 px-2">
-            <div className="uppercase font-semibold border-t border-black pt-1">Driver Signature</div>
-            <div className="uppercase font-bold text-xs tracking-wide">Thanks Visit Again</div>
-            <div className="uppercase font-semibold border-t border-black pt-1">Operator Signature</div>
+          <div className="flex justify-end items-end mt-2 pr-4 pb-1">
+            <div className="text-xs font-medium">Operator signature</div>
           </div>
 
         </div>
