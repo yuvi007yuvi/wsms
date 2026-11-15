@@ -24,7 +24,7 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode } = req.body;
+    const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode, allowManualWeight } = req.body;
     
     const setting = await prisma.setting.update({
       where: { id: id as string },
@@ -35,7 +35,8 @@ export const updateSettings = async (req: Request, res: Response) => {
         printerConfig,
         slipFormat,
         theme,
-        mockMode: mockMode === true
+        mockMode: mockMode === true,
+        allowManualWeight: allowManualWeight !== undefined ? allowManualWeight === true : undefined
       }
     });
     

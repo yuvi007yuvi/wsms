@@ -65,6 +65,10 @@ export default function Weighment() {
     return localStorage.getItem('showManualWeight') === 'true';
   });
 
+  // Settings configuration
+  const allowManualWeightSetting = masterData?.settings?.allowManualWeight !== false;
+  const isEffectiveManualWeight = allowManualWeightSetting && showManualWeight;
+
   useEffect(() => {
     localStorage.setItem('showManualWeight', String(showManualWeight));
   }, [showManualWeight]);
@@ -318,7 +322,7 @@ export default function Weighment() {
             </Select>
           </div>
           
-          {showManualWeight && (
+          {isEffectiveManualWeight && (
             <>
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
@@ -356,6 +360,7 @@ export default function Weighment() {
               <div className="flex items-center gap-3">
                 <span className="text-slate-600 font-bold uppercase tracking-widest text-xs">{t('Live Weight Indicator')}</span>
 
+                {allowManualWeightSetting && (
                   <div className="flex items-center space-x-2 ml-4" title={t('Enable Manual Entry')}>
                     <input 
                       type="checkbox" 
@@ -364,7 +369,11 @@ export default function Weighment() {
                       checked={showManualWeight}
                       onChange={(e) => setShowManualWeight(e.target.checked)}
                     />
+                    <label htmlFor="manual-weight-toggle" className="text-[11px] font-semibold text-slate-500 cursor-pointer">
+                      {t('Manual Entry')}
+                    </label>
                   </div>
+                )}
               </div>
               <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
                 <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-green-900/50'}`}></div>{t('Conn')}</span>

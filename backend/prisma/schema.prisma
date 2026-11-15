@@ -156,15 +156,16 @@ model AuditLog {
 }
 
 model Setting {
-  id            String   @id @default(uuid())
-  companyName   String
-  address       String
-  logoUrl       String?
-  printerConfig String? // e.g., thermal, A4
-  slipFormat    String?
-  theme         String?
-  mockMode      Boolean  @default(false)
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  companyName      String
+  address          String
+  logoUrl          String?
+  printerConfig    String? // e.g., thermal, A4
+  slipFormat       String?
+  theme            String?
+  mockMode         Boolean  @default(false)
+  allowManualWeight Boolean @default(true)
+  updatedAt        DateTime @updatedAt
 }
 
 model RolePermission {

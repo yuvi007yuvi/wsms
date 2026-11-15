@@ -31,6 +31,7 @@ export default function Settings() {
   const [companyName, setCompanyName] = useState('');
   const [address, setAddress] = useState('');
   const [mockMode, setMockMode] = useState(false);
+  const [allowManualWeight, setAllowManualWeight] = useState(true);
   
   // Role Permissions state: { [role]: string[] }
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
@@ -46,6 +47,7 @@ export default function Settings() {
         setCompanyName(res.data.companyName);
         setAddress(res.data.address);
         setMockMode(res.data.mockMode || false);
+        setAllowManualWeight(res.data.allowManualWeight !== undefined ? res.data.allowManualWeight : true);
       }
     } catch (error) {
       console.error(error);
@@ -91,7 +93,12 @@ export default function Settings() {
     e.preventDefault();
     try {
       if (settingId) {
-        await api.put(`/settings/${settingId}`, { companyName, address, mockMode });
+        await api.put(`/settings/${settingId}`, { 
+          companyName, 
+          address, 
+          mockMode,
+          allowManualWeight 
+        });
         toast({ title: 'Settings updated successfully' });
       }
     } catch (error) {
@@ -170,18 +177,38 @@ export default function Settings() {
               </div>
               
               {userRole === 'admin' && (
-                <div className="flex items-center space-x-2 pt-4 border-t border-slate-100">
-                  <input 
-                    type="checkbox" 
-                    id="mock-mode-toggle"
-                    className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
-                    checked={mockMode}
-                    onChange={(e) => setMockMode(e.target.checked)}
-                  />
-                  <Label htmlFor="mock-mode-toggle" className="font-semibold cursor-pointer">
-                    Enable Weighbridge Mock Mode (Testing)
-                  </Label>
-                </div>
+                <>
+                  <div className="flex items-center space-x-2 pt-4 border-t border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      id="allow-manual-toggle"
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      checked={allowManualWeight}
+                      onChange={(e) => setAllowManualWeight(e.target.checked)}
+                    />
+                    <div>
+                      <Label htmlFor="allow-manual-toggle" className="font-semibold cursor-pointer">
+                        Allow Manual Weight Entries (Show Toggle on Weighment Screen)
+                      </Label>
+                      <p className="text-xs text-slate-500">
+                        When unchecked, the manual weight entry checkbox is completely hidden from operators to ensure only live weighbridge machine weight is used.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-4 border-t border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      id="mock-mode-toggle"
+                      className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-4 h-4 cursor-pointer"
+                      checked={mockMode}
+                      onChange={(e) => setMockMode(e.target.checked)}
+                    />
+                    <Label htmlFor="mock-mode-toggle" className="font-semibold cursor-pointer">
+                      Enable Weighbridge Mock Mode (Testing)
+                    </Label>
+                  </div>
+                </>
               )}
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
