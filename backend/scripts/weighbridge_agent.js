@@ -58,6 +58,15 @@ socket.on('connect_error', (err) => {
   console.error('⚠️ [CLOUD] Connection error:', err.message);
 });
 
+// Catch uncaught exceptions to prevent silent crashes
+process.on('uncaughtException', (err) => {
+  console.error('\n❌ [FATAL ERROR]:', err.message);
+  console.log('\nTroubleshooting tips:');
+  console.log('1. Check if another program is already using the COM port.');
+  console.log('2. Check if the USB cable is firmly plugged in.');
+  console.log('3. Press any key in the window to see details.\n');
+});
+
 // Setup Serial Port Connection
 let activePort = null;
 
