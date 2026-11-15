@@ -267,36 +267,105 @@ export default function Diagnostics() {
         </Card>
       )}
 
-      {/* Troubleshooting Guide */}
-      {overallVerdict === 'hardware' && (
-        <Card className="border-red-200">
-          <CardHeader>
-            <CardTitle className="text-sm uppercase tracking-wider text-red-600">🛠️ {t('Troubleshooting Guide')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-700">
-            <div className="flex gap-2">
-              <span className="font-bold text-red-500 shrink-0">1.</span>
-              <span><strong>{t('Check the cable')}</strong> — {t('Ensure the RS232/USB cable is securely plugged into both the weighbridge indicator and the computer.')}</span>
+      {/* Troubleshooting Guide & Direct Fixes */}
+      <Card className="border-slate-300 shadow-sm">
+        <CardHeader className="bg-slate-50 border-b border-slate-200 py-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-800 flex items-center justify-between">
+            <span className="flex items-center gap-2">🛠️ {t('Weighbridge Hardware Setup & Driver Fixes Guide')}</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Step-by-Step Fixes</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-4 text-sm text-slate-700">
+          
+          {/* Fix 1: Drivers */}
+          <div className="border border-slate-200 rounded-lg p-3 bg-white">
+            <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">1</span>
+              <span>Install USB-to-Serial Cable Driver (Yellow Exclamation Mark ⚠️ Fix)</span>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold text-red-500 shrink-0">2.</span>
-              <span><strong>{t('Indicator settings')}</strong> — {t('Make sure the weighbridge indicator is set to "Continuous Output" mode (not "On Demand" or "Print on Key Press").')}</span>
+            <p className="text-xs text-slate-600 mb-2">
+              If Windows shows an unknown device or yellow triangle in Device Manager, install the appropriate USB-to-Serial chip driver below:
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a 
+                href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+              >
+                📥 Download CH340 / CH341 Driver (CH341SER.EXE)
+              </a>
+              <a 
+                href="https://ftdichip.com/drivers/vcp-drivers/" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 transition-colors"
+              >
+                📥 Download FTDI VCP Driver Setup
+              </a>
+              <a 
+                href="https://www.prolific.com.tw/US/ShowProduct.aspx?p_id=225&pcid=41" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 transition-colors"
+              >
+                📥 Download Prolific PL2303 Driver
+              </a>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold text-red-500 shrink-0">3.</span>
-              <span><strong>{t('Baud Rate')}</strong> — {t('Verify the baud rate on the indicator matches 9600. Common alternatives: 2400, 4800, 19200.')}</span>
+          </div>
+
+          {/* Fix 2: Indicator Continuous Mode */}
+          <div className="border border-slate-200 rounded-lg p-3 bg-white">
+            <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">2</span>
+              <span>Set Weighbridge Indicator to "Continuous Output"</span>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold text-red-500 shrink-0">4.</span>
-              <span><strong>{t('TX/RX Wiring')}</strong> — {t('The transmit (TX) and receive (RX) pins on the RS232 cable may be swapped. Try a crossover adapter.')}</span>
+            <p className="text-xs text-slate-600">
+              In your weighbridge indicator's setup menu (RS232/Communication mode), change the output mode to <strong>"CONT" / "Continuous Stream"</strong>. Do <em>not</em> use "On-Demand" or "Print on Key Press", or data will only send when physical buttons are pressed.
+            </p>
+          </div>
+
+          {/* Fix 3: Baud Rate Configuration */}
+          <div className="border border-slate-200 rounded-lg p-3 bg-white">
+            <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">3</span>
+              <span>Match Baud Rate (Default: 9600)</span>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold text-red-500 shrink-0">5.</span>
-              <span><strong>{t('Driver')}</strong> — {t('Ensure the FTDI/CH340 USB-to-Serial driver is installed correctly. Check Device Manager for yellow warning icons.')}</span>
+            <p className="text-xs text-slate-600">
+              Ensure the indicator's baud rate matches <strong>9600</strong> (standard 8-N-1). If your indicator operates on <strong>2400</strong>, <strong>4800</strong>, or <strong>19200</strong>, edit the baud rate in <code>backend/scripts/agent_config.json</code>.
+            </p>
+          </div>
+
+          {/* Fix 4: Cable & COM Port */}
+          <div className="border border-slate-200 rounded-lg p-3 bg-white">
+            <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">4</span>
+              <span>Check Physical USB / RS232 Connection & Port</span>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <p className="text-xs text-slate-600">
+              Plug the USB cable directly into the computer's motherboard USB ports (back of desktop) rather than an unpowered USB hub. Ensure the 9-pin DB9 thumbscrews are firmly fastened. If no data arrives despite a working port, TX and RX pins may need a null-modem (crossover) adapter.
+            </p>
+          </div>
+
+          {/* Fix 5: Start Local Agent */}
+          <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50">
+            <div className="flex items-center gap-2 font-bold text-blue-950 mb-1">
+              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">5</span>
+              <span>Run Local Agent to Stream to Cloud</span>
+            </div>
+            <p className="text-xs text-slate-700">
+              Once the driver is installed and COM port is recognized, double-click:
+              <br />
+              <code className="inline-block mt-1 font-mono text-[11px] bg-slate-900 text-green-400 px-2.5 py-1 rounded">
+                backend\scripts\start_agent.bat
+              </code>
+              <br />
+              The agent will automatically stream the continuous live weight from your indicator directly to this web application!
+            </p>
+          </div>
+
+        </CardContent>
+      </Card>
 
       {overallVerdict === 'software' && (
         <Card className="border-amber-200">
