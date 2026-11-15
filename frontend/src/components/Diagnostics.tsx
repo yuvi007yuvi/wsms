@@ -351,16 +351,29 @@ export default function Diagnostics() {
           <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50">
             <div className="flex items-center gap-2 font-bold text-blue-950 mb-1">
               <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">5</span>
-              <span>Run Local Agent to Stream to Cloud</span>
+              <span>Download & Run Local Agent (Direct Hardware Connector)</span>
             </div>
-            <p className="text-xs text-slate-700">
-              Once the driver is installed and COM port is recognized, double-click:
-              <br />
-              <code className="inline-block mt-1 font-mono text-[11px] bg-slate-900 text-green-400 px-2.5 py-1 rounded">
-                backend\scripts\start_agent.bat
-              </code>
-              <br />
-              The agent will automatically stream the continuous live weight from your indicator directly to this web application!
+            <p className="text-xs text-slate-700 mb-2">
+              If this computer does not have the agent files yet, download them directly with one click below:
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <a
+                href="https://wsms-1.onrender.com/api/system/download-agent-bat"
+                download="start_agent.bat"
+                className="inline-flex items-center text-xs font-bold px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-sm transition-colors"
+              >
+                📥 Download start_agent.bat
+              </a>
+              <a
+                href="https://wsms-1.onrender.com/api/system/download-agent"
+                download="weighbridge_agent.js"
+                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 transition-colors"
+              >
+                📥 Download weighbridge_agent.js
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Put both files in the same folder on the weighbridge cabin computer and double-click <strong>start_agent.bat</strong>. It connects to the indicator COM port and streams weight to the cloud.
             </p>
           </div>
 

@@ -9,6 +9,16 @@ const router = Router();
 router.get('/health', getSystemHealth);
 router.post('/install-tools', installTools);
 router.get('/diagnose-weighbridge', diagnoseWeighbridge);
+router.get('/download-agent', (req, res) => {
+  const path = require('path');
+  const agentPath = path.join(__dirname, '../../scripts/weighbridge_agent.js');
+  res.download(agentPath, 'weighbridge_agent.js');
+});
+router.get('/download-agent-bat', (req, res) => {
+  const path = require('path');
+  const batPath = path.join(__dirname, '../../scripts/start_agent.bat');
+  res.download(batPath, 'start_agent.bat');
+});
 router.get('/sync-status', authenticateToken, checkSubscription, getSyncStatusInfo);
 router.post('/sync-force', authenticateToken, checkSubscription, forceSync);
 
