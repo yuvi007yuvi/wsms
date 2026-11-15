@@ -80,10 +80,27 @@ const USB_SERIAL_VENDORS = {
   '10c4': 'Silicon Labs CP210x'
 };
 
+function isBluetooth(p) {
+  return /BTHENUM|BLUETOOTH/i.test(p.pnpId || '');
+}
+
 function describePort(p) {
   const vid = (p.vendorId || '').toLowerCase();
   const chip = USB_SERIAL_VENDORS[vid];
-  return `${p.path}  ${p.manufacturer || 'Standard Serial Device'}${chip ? `  [USB adapter: ${chip}]` : ''}`;
+  let tag = '';
+  if (chip) tag = `  [USB adapter: ${chip}]`;
+  else if (isBluetooth(p)) tag = '  [BLUETOOTH virtual port - NOT the weighbridge cable]';
+  else if (/^USB\\/i.test(p.pnpId || '')) tag = `  [USB device VID ${p.vendorId || '?'} PID ${p.productId || '?'}]`;
+  else if (/^ACPI\\/i.test(p.pnpId || '')) tag = '  [Built-in motherboard serial port]';
+  return `${p.path}  ${p.manufacturer || 'Standard Serial Device'}${tag}${p.pnpId ? `\n        pnpId: ${p.pnpId}` : ''}`;
+}
+
+function warnIfNoCable(ports) {
+  const real = ports.filter((p) => !isBluetooth(p));
+  if (ports.length > 0 && real.length === 0) {
+    console.log('\n⚠️  Only Bluetooth COM ports were found. The weighbridge cable is NOT detected by Windows.');
+    console.log('   Plug in the USB-serial cable and install its driver (CH340 / FTDI / Prolific / CP210x). See guide step 2.\n');
+  }
 }
 
 // Order ports so the most likely weighbridge port is tried first:
@@ -94,6 +111,7 @@ function rankPorts(ports) {
     const vid = (p.vendorId || '').toLowerCase();
     const man = (p.manufacturer || '').toLowerCase();
     if (USB_SERIAL_VENDORS[vid] || /ch34|ftdi|prolific|silicon|usb/.test(man)) return 1;
+    if (isBluetooth(p)) return 3;
     return 2;
   };
   return [...ports].sort((a, b) => score(a) - score(b));
@@ -172,6 +190,7 @@ async function scanAll() {
   }
   console.log('🔍 COM ports found:');
   ports.forEach((p) => console.log('   - ' + describePort(p)));
+  warnIfNoCable(ports);
   console.log('\nListening on each port at each baud rate for 3 seconds. Keep a load (or a person) on the weighbridge if possible...\n');
 
   let best = null;
@@ -244,6 +263,7 @@ let silenceTimer = null;
 let candidates = [];      // [{ path, baudRate }] for AUTO mode
 let candidateIdx = 0;
 let lastEmitted = { weight: null, at: 0 };
+let rx = { bytes: 0, hex: '' }; // bytes received on the current port attempt
 const lastReadings = [];
 
 function scheduleRetry(delay = config.reconnectIntervalMs) {
@@ -265,10 +285,11 @@ async function buildCandidates() {
   } catch (e) {
     console.error('⚠️ [HARDWARE] Could not list COM ports:', e.message);
   }
-  agentState.comPorts = ports.map((p) => ({ path: p.path, manufacturer: p.manufacturer || null, vendorId: p.vendorId || null }));
+  agentState.comPorts = ports.map((p) => ({ path: p.path, manufacturer: p.manufacturer || null, vendorId: p.vendorId || null, pnpId: p.pnpId || null, bluetooth: isBluetooth(p) }));
   if (ports.length > 0) {
     console.log('🔍 [HARDWARE] Available COM ports:');
     ports.forEach((p) => console.log('   - ' + describePort(p)));
+    warnIfNoCable(ports);
   }
 
   // A port set by hand is always tried, even if it is not in the list.
@@ -325,7 +346,10 @@ async function startSerialConnection() {
 
     let buffer = '';
     let gotWeight = false;
+    rx = { bytes: 0, hex: '' };
     port.on('data', (chunk) => {
+      rx.bytes += chunk.length;
+      if (rx.hex.length < 90) rx.hex += chunk.toString('hex').replace(/(..)/g, '$1 ');
       const text = chunk.toString('latin1');
       agentState.lastDataAt = new Date().toISOString();
       buffer += text;
@@ -377,7 +401,9 @@ async function startSerialConnection() {
 function armSilenceTimer(portPath, baudRate) {
   clearTimeout(silenceTimer);
   silenceTimer = setTimeout(() => {
-    const msg = `No readable weight from ${portPath} @ ${baudRate} baud in ${config.noDataTimeoutMs / 1000}s.`;
+    const msg = rx.bytes === 0
+      ? `0 bytes received from ${portPath} @ ${baudRate} baud in ${config.noDataTimeoutMs / 1000}s (nothing is sending on this port: wrong port, cable not connected to the indicator, or indicator serial output OFF).`
+      : `${rx.bytes} bytes received from ${portPath} @ ${baudRate} baud but no readable weight (likely wrong baud/parity). First bytes (hex): ${rx.hex.trim()}`;
     agentState.lastError = msg;
     if (AUTO && candidates.length > 1) {
       console.log(`\n⏭️  ${msg} Trying next port/baud...`);
