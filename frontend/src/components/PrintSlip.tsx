@@ -110,7 +110,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
 
   // Otherwise, render customized project format (Urban Enviro / New Projects)
   const isUrbanEnviro = projectName.toLowerCase().includes('urban');
-  let headerTitle = "A2z waste Mangement (Aligarh) Ltd.";
+  let headerTitle = "ECOSTAN INFRA PVT. LTD.";
   let siteSubtitle = "Mathura Road, Aligarh";
   let partyName = "URBAN ENVIROTECH-ZONE=03";
 
