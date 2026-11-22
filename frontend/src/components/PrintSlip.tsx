@@ -9,13 +9,6 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const projectName = slip.project?.name || localStorage.getItem('projectName') || '';
   const isNatureGreen = !projectName || projectName.toLowerCase().includes('nature') || projectName.toLowerCase().includes('green');
 
-  // Determine print copies mode:
-  // '1' for continuous tractor-feed dot-matrix (LX-310) - prints 1 slip per weighment without feeding full sheet
-  // '3' for standard A4 sheet (3 copies per A4 page)
-  const savedPrintMode = localStorage.getItem('printCopiesMode') || (isNatureGreen ? '3' : '1');
-  const copiesCount = parseInt(savedPrintMode, 10) || (isNatureGreen ? 3 : 1);
-  const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
-
   // Format date helper: DD-MM-YYYY (day:month:year) for new projects
   const formatDMY = (dateInput: any) => {
     if (!dateInput) return '-';
@@ -41,11 +34,12 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
     return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
   };
 
-  // If Nature Green (original format), render the exact 100% original layout
+  // If Nature Green (original format), ALWAYS render the 3 copies on A4 sheet untouched
   if (isNatureGreen) {
+    const natureGreenCopies = [1, 2, 3];
     return (
       <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
-        {copies.map((copyIndex) => (
+        {natureGreenCopies.map((copyIndex) => (
           <div key={copyIndex} className="flex flex-col justify-between h-[31vh] border-b-2 border-dashed border-gray-400 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border">
 
             {/* Header */}
@@ -123,6 +117,11 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
     partyName = projectName.toUpperCase();
     siteSubtitle = slip.project?.address || "";
   }
+
+  // Urban project prints 1 single slip on Epson LX-310 continuous paper
+  const savedPrintMode = localStorage.getItem('printCopiesMode') || '1';
+  const copiesCount = parseInt(savedPrintMode, 10) || 1;
+  const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   return (
     <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
