@@ -385,14 +385,14 @@ export default function Weighment() {
   return (
     <>
       <PrintSlip slip={lastGeneratedSlip} />
-      <div className={`grid grid-cols-1 ${isUrbanEnviro ? 'xl:grid-cols-3' : 'lg:grid-cols-2'} gap-6 no-print`}>
+      <div className={`grid grid-cols-1 ${isUrbanEnviro ? 'lg:grid-cols-12' : 'lg:grid-cols-2'} gap-4 no-print items-start`}>
       
-      {/* Left Side: Inputs */}
-      <Card className={isUrbanEnviro ? 'xl:col-span-1' : ''}>
-        <CardHeader>
-          <CardTitle>{t('Weighment Entry')}</CardTitle>
+      {/* Left Column: Form Inputs */}
+      <Card className={isUrbanEnviro ? 'lg:col-span-5' : ''}>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-base">{t('Weighment Entry')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
+        <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
           <div className="space-y-1">
             <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
             <SearchableSelect
@@ -468,13 +468,13 @@ export default function Weighment() {
           
           {/* Tare Weight Editor for Urban */}
           {isUrbanEnviro && !isEffectiveManualWeight && (
-            <div className="space-y-1.5 col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-md">
+            <div className="space-y-1 col-span-2 p-2.5 bg-slate-50 border border-slate-200 rounded-md">
               <div className="flex justify-between items-center mb-1">
-                <Label className="text-xs uppercase text-slate-700 font-bold tracking-wider">
+                <Label className="text-[11px] uppercase text-slate-700 font-bold tracking-wider">
                   Tare Weight (KG)
                 </Label>
                 {lastSlipTare !== null && (
-                  <span className="text-[11px] text-blue-600 font-medium">
+                  <span className="text-[10px] text-blue-600 font-medium">
                     Auto-fetched from last slip ({lastSlipTare} kg)
                   </span>
                 )}
@@ -482,15 +482,15 @@ export default function Weighment() {
               <div className="flex gap-2">
                 <Input 
                   type="number"
-                  placeholder="Enter or capture tare weight..." 
+                  placeholder="Enter or capture tare..." 
                   value={manualTareWeight} 
                   onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
-                  className="bg-white font-mono font-medium"
+                  className="bg-white font-mono font-medium h-9 text-sm"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  className="whitespace-nowrap border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold text-xs"
+                  className="whitespace-nowrap border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold text-xs h-9 px-3 shrink-0"
                   onClick={() => {
                     if (liveWeight > 0) {
                       setManualTareWeight(liveWeight);
@@ -508,7 +508,7 @@ export default function Weighment() {
                   }}
                   title="Capture current live weight on the weighbridge as Tare Weight"
                 >
-                  Capture from Bridge ({liveWeight} kg)
+                  Capture Tare ({liveWeight} kg)
                 </Button>
               </div>
             </div>
@@ -542,121 +542,126 @@ export default function Weighment() {
         </CardContent>
       </Card>
 
-      {/* Right Side: Displays & Actions */}
-      <div className="space-y-6">
+      {/* Middle Column: Displays & Actions */}
+      <div className={`space-y-4 ${isUrbanEnviro ? 'lg:col-span-4' : ''}`}>
         
         {/* Live Weight Display */}
-        <Card className="bg-transparent border-4 border-slate-200 rounded-none shadow-none overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-4 border-b border-green-900/50 pb-2">
-              <div className="flex items-center gap-3">
-                <span className="text-slate-600 font-bold uppercase tracking-widest text-xs">{t('Live Weight Indicator')}</span>
+        <Card className="bg-transparent border-2 border-slate-200 rounded-sm shadow-none overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center mb-2 border-b border-green-900/40 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-700 font-bold uppercase tracking-wider text-[11px]">{t('Live Weight Indicator')}</span>
 
                 {allowManualWeightSetting && (
-                  <div className="flex items-center space-x-2 ml-4" title={t('Enable Manual Entry')}>
+                  <div className="flex items-center space-x-1.5 ml-2" title={t('Enable Manual Entry')}>
                     <input 
                       type="checkbox" 
                       id="manual-weight-toggle"
-                      className="rounded border-green-900/50 bg-[#020e06] text-emerald-500 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      className="rounded border-green-900/50 bg-[#020e06] text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
                       checked={showManualWeight}
                       onChange={(e) => setShowManualWeight(e.target.checked)}
                     />
-                    <label htmlFor="manual-weight-toggle" className="text-[11px] font-semibold text-slate-500 cursor-pointer">
-                      {t('Manual Entry')}
+                    <label htmlFor="manual-weight-toggle" className="text-[10px] font-semibold text-slate-500 cursor-pointer">
+                      {t('Manual')}
                     </label>
                   </div>
                 )}
               </div>
-              <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
-                <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-green-900/50'}`}></div>{t('Conn')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Reading' ? 'text-emerald-400' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Reading' ? 'bg-emerald-400' : 'bg-green-900/50'}`}></div>{t('Read')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Stable' ? 'text-emerald-300' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Stable' ? 'bg-emerald-300' : 'bg-green-900/50'}`}></div>{t('Stab')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Disconnected' ? 'text-red-500' : 'text-green-900/50'}`}><div className={`w-2 h-2 rounded-full ${weightStatus === 'Disconnected' ? 'bg-red-500' : 'bg-green-900/50'}`}></div>{t('Disc')}</span>
+              <div className="flex gap-2.5 text-[11px] font-bold uppercase tracking-wider">
+                <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Conn')}</span>
+                <span className={`flex items-center gap-1 ${weightStatus === 'Reading' ? 'text-emerald-400' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Reading' ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>{t('Read')}</span>
+                <span className={`flex items-center gap-1 ${weightStatus === 'Stable' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Stable' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Stab')}</span>
+                <span className={`flex items-center gap-1 ${weightStatus === 'Disconnected' ? 'text-red-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Disconnected' ? 'bg-red-500' : 'bg-slate-300'}`}></div>{t('Disc')}</span>
               </div>
             </div>
             
-            <div className="flex items-end justify-center gap-4 bg-transparent p-4 rounded-sm border-0">
-              <div className={`text-7xl font-mono tracking-widest tabular-nums ${weightStatus === 'Stable' ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.6)]' : weightStatus === 'Reading' ? 'text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]' : weightStatus === 'Disconnected' ? 'text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'text-emerald-600'}`}>
+            <div className="flex items-end justify-center gap-3 bg-transparent py-2 rounded-sm border-0">
+              <div className={`text-6xl font-mono tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
                 {String(liveWeight).padStart(5, '0')}
               </div>
-              <div className="text-3xl text-slate-600 font-bold mb-1">KG</div>
+              <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
             </div>
           </CardContent>
         </Card>
 
         {/* Details Summary */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <Card>
-            <CardHeader className="py-3"><CardTitle className="text-sm text-muted-foreground">{t('Vehicle Info')}</CardTitle></CardHeader>
-            <CardContent className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Number')}</span> <span className="font-medium text-right">{selectedVehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Type')}</span> <span className="font-medium text-right">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Driver')}</span> <span className="font-medium text-right">{selectedVehicle?.driverName || '-'}</span></div>
-
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare Weight')}</span> <span className="font-medium text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
+            <CardHeader className="py-2 px-3"><CardTitle className="text-xs text-muted-foreground">{t('Vehicle Info')}</CardTitle></CardHeader>
+            <CardContent className="space-y-1 text-xs p-3 pt-0">
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Number')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Type')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Driver')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.driverName || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare')}</span> <span className="font-medium text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardHeader className="py-3"><CardTitle className="text-sm text-muted-foreground">{t('Weight Summary')}</CardTitle></CardHeader>
-            <CardContent className="space-y-1">
+            <CardHeader className="py-2 px-3"><CardTitle className="text-xs text-muted-foreground">{t('Weight Summary')}</CardTitle></CardHeader>
+            <CardContent className="space-y-1 text-xs p-3 pt-0">
               <div className="flex justify-between"><span className="text-muted-foreground">{t('Gross:')}</span> <span className="font-mono font-medium">{liveWeight} kg</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare:')}</span> <span className="font-mono font-medium text-red-500">- {tareWeight} kg</span></div>
-              <div className="flex justify-between border-t pt-1 mt-1"><span className="font-semibold">{t('Net:')}</span> <span className="font-mono font-bold text-green-600">{netWeight} kg</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare:')}</span> <span className="font-mono font-medium text-red-500">-{tareWeight} kg</span></div>
+              <div className="flex justify-between border-t pt-1 mt-0.5"><span className="font-semibold">{t('Net:')}</span> <span className="font-mono font-bold text-green-600">{netWeight} kg</span></div>
             </CardContent>
           </Card>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-4 border-t pt-4">
+        <div className="flex flex-col gap-2 border-t pt-3">
           {isUrbanEnviro ? (
-            <>
+            <div className="grid grid-cols-2 gap-2">
               <Button 
-                size="lg" 
-                className="h-12 text-xs uppercase tracking-wider font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-sm" 
+                size="sm" 
+                className="h-10 text-xs uppercase tracking-wider font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-sm px-2 truncate" 
                 onClick={handleHoldGrossWeight}
                 disabled={isSubmitting}
-                title="Hold Gross Weight and add to Pending Tare list"
+                title="Save Step 1 (Hold Gross Weight in Pending List)"
               >
-                <Clock className="mr-1.5 h-4 w-4" /> Save Step 1 (Gross)
+                <Clock className="mr-1 h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Step 1: Gross</span>
               </Button>
               <Button 
-                size="lg" 
-                className="h-12 text-xs uppercase tracking-wider font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
+                size="sm" 
+                className="h-10 text-xs uppercase tracking-wider font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white rounded-sm px-2 truncate" 
                 onClick={generateSlip}
                 disabled={isSubmitting}
+                title="Generate and Print Final Slip (Step 2)"
               >
-                <Save className="mr-1.5 h-4 w-4" /> {isSubmitting ? t('Saving...') : 'Final Slip (Step 2)'}
+                <Save className="mr-1 h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{isSubmitting ? 'Saving...' : 'Final Slip (Step 2)'}</span>
               </Button>
-            </>
+            </div>
           ) : (
             <Button 
               size="lg" 
-              className="col-span-2 h-12 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
+              className="w-full h-11 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
               onClick={generateSlip}
               disabled={isSubmitting}
             >
               <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
             </Button>
           )}
-          <Button size="lg" variant="outline" className="h-12 rounded-sm text-sm uppercase tracking-widest font-bold border-slate-300" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" /> {t('Print Last')}
-          </Button>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button size="sm" variant="outline" className="h-9 rounded-sm text-xs uppercase tracking-wider font-bold border-slate-300" onClick={handlePrint}>
+              <Printer className="mr-1.5 h-3.5 w-3.5" /> {t('Print Last')}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-9 text-xs text-muted-foreground" onClick={() => {
+              setVehicleTypeId('all'); setVehicleId(''); setMaterialId(''); setSourceId(''); 
+              const defaultDest = destinations.find((d: any) => d.isDefault);
+              setDestinationId(defaultDest ? defaultDest.id : '');
+              setRemarks('');
+              setManualTareWeight('');
+            }}>
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> {t('Reset Form')}
+            </Button>
+          </div>
         </div>
-        <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => {
-          setVehicleTypeId('all'); setVehicleId(''); setMaterialId(''); setSourceId(''); 
-          const defaultDest = destinations.find((d: any) => d.isDefault);
-          setDestinationId(defaultDest ? defaultDest.id : '');
-          setRemarks('');
-          setManualTareWeight('');
-        }}>
-          <RefreshCw className="mr-2 h-4 w-4" /> {t('Reset Form')}
-        </Button>
       </div>
 
-      {/* Urban Pending Tare Weight Side Section */}
+      {/* Right Column: Urban Pending Tare Weight Side Section */}
       {isUrbanEnviro && (
-        <Card className="xl:col-span-1 border-amber-200 bg-gradient-to-b from-amber-50/40 to-white flex flex-col h-full">
+        <Card className="lg:col-span-3 border-amber-200 bg-gradient-to-b from-amber-50/40 to-white flex flex-col h-full shadow-sm">
           <CardHeader className="py-3 px-4 border-b border-amber-200/60 bg-amber-100/40">
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm font-bold text-amber-950 flex items-center gap-2">
