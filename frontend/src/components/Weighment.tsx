@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Clock, Trash2, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,21 @@ export default function Weighment() {
   const [showStepDialog, setShowStepDialog] = useState(false);
   const [weighStep, setWeighStep] = useState<'gross' | 'tare'>('gross');
   const [lastSlipTare, setLastSlipTare] = useState<number | null>(null);
+
+  // Pending Urban vehicles waiting for tare weight
+  const [pendingTareVehicles, setPendingTareVehicles] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('urban_pending_tare_vehicles');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const savePendingTareVehicles = (list: any[]) => {
+    setPendingTareVehicles(list);
+    localStorage.setItem('urban_pending_tare_vehicles', JSON.stringify(list));
+  };
 
   // Auto-fill driver name and fetch last slip tare for Urban when vehicle changes
   useEffect(() => {
@@ -239,6 +254,11 @@ export default function Weighment() {
       
       setLastGeneratedSlip(res.data);
 
+      // If this vehicle was in the Urban pending tare list, remove it
+      if (isUrbanEnviro) {
+        savePendingTareVehicles(pendingTareVehicles.filter(p => p.vehicleId !== vehicleId));
+      }
+
       toast({
         title: 'Slip Generated',
         description: 'Weighment slip has been saved successfully. Preparing to print...',
@@ -272,6 +292,84 @@ export default function Weighment() {
     }
   };
 
+  const handleHoldGrossWeight = () => {
+    if (!vehicleId) {
+      toast({
+        title: 'Select Vehicle',
+        description: 'Please select a vehicle first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (liveWeight <= 0) {
+      toast({
+        title: 'Invalid Weight',
+        description: 'Live weight must be greater than 0 to record Gross Weight.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const newPending = {
+      id: Date.now().toString(),
+      vehicleId,
+      vehicleNumber: selectedVehicle?.vehicleNumber,
+      driverName,
+      materialId,
+      materialName: materials.find(m => m.id === materialId)?.name || 'SOLID WASTE',
+      sourceId,
+      sourceName: sources.find(s => s.id === sourceId)?.name || 'Customer',
+      destinationId,
+      grossWeight: liveWeight,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toISOString()
+    };
+
+    // Filter out if same vehicle already exists, replace with new
+    const updated = [newPending, ...pendingTareVehicles.filter(p => p.vehicleId !== vehicleId)];
+    savePendingTareVehicles(updated);
+
+    toast({
+      title: 'Vehicle Added to Pending Tare',
+      description: `${selectedVehicle?.vehicleNumber} held with Gross Weight ${liveWeight} kg. Awaiting Tare weighment.`,
+    });
+
+    // Reset inputs
+    setVehicleTypeId('all');
+    setVehicleId('');
+    setMaterialId('');
+    setSourceId('');
+    const defaultDest = destinations.find((d: any) => d.isDefault);
+    setDestinationId(defaultDest ? defaultDest.id : '');
+    setRemarks('');
+    setDriverName('');
+    setManualTareWeight('');
+  };
+
+  const handleSelectPendingVehicle = (item: any) => {
+    setVehicleId(item.vehicleId);
+    if (item.driverName) setDriverName(item.driverName);
+    if (item.materialId) setMaterialId(item.materialId);
+    if (item.sourceId) setSourceId(item.sourceId);
+    if (item.destinationId) setDestinationId(item.destinationId);
+
+    // If there is live weight on bridge, suggest capturing it as tare
+    if (liveWeight > 0) {
+      setManualTareWeight(liveWeight);
+    }
+
+    toast({
+      title: 'Pending Vehicle Selected',
+      description: `${item.vehicleNumber} loaded. Gross Weight: ${item.grossWeight} kg. Now ready for Tare weighment!`,
+    });
+  };
+
+  const handleRemovePending = (vehicleIdToRemove: string) => {
+    const updated = pendingTareVehicles.filter(p => p.vehicleId !== vehicleIdToRemove);
+    savePendingTareVehicles(updated);
+    toast({ title: 'Removed from pending list' });
+  };
+
   const handlePrint = () => {
     if (!lastGeneratedSlip) {
       toast({
@@ -287,10 +385,10 @@ export default function Weighment() {
   return (
     <>
       <PrintSlip slip={lastGeneratedSlip} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
+      <div className={`grid grid-cols-1 ${isUrbanEnviro ? 'xl:grid-cols-3' : 'lg:grid-cols-2'} gap-6 no-print`}>
       
       {/* Left Side: Inputs */}
-      <Card>
+      <Card className={isUrbanEnviro ? 'xl:col-span-1' : ''}>
         <CardHeader>
           <CardTitle>{t('Weighment Entry')}</CardTitle>
         </CardHeader>
@@ -511,14 +609,36 @@ export default function Weighment() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-4 border-t pt-4">
-          <Button 
-            size="lg" 
-            className="col-span-2 h-12 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
-            onClick={generateSlip}
-            disabled={isSubmitting}
-          >
-            <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
-          </Button>
+          {isUrbanEnviro ? (
+            <>
+              <Button 
+                size="lg" 
+                className="h-12 text-xs uppercase tracking-wider font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-sm" 
+                onClick={handleHoldGrossWeight}
+                disabled={isSubmitting}
+                title="Hold Gross Weight and add to Pending Tare list"
+              >
+                <Clock className="mr-1.5 h-4 w-4" /> Save Step 1 (Gross)
+              </Button>
+              <Button 
+                size="lg" 
+                className="h-12 text-xs uppercase tracking-wider font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
+                onClick={generateSlip}
+                disabled={isSubmitting}
+              >
+                <Save className="mr-1.5 h-4 w-4" /> {isSubmitting ? t('Saving...') : 'Final Slip (Step 2)'}
+              </Button>
+            </>
+          ) : (
+            <Button 
+              size="lg" 
+              className="col-span-2 h-12 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
+              onClick={generateSlip}
+              disabled={isSubmitting}
+            >
+              <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
+            </Button>
+          )}
           <Button size="lg" variant="outline" className="h-12 rounded-sm text-sm uppercase tracking-widest font-bold border-slate-300" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> {t('Print Last')}
           </Button>
@@ -533,6 +653,73 @@ export default function Weighment() {
           <RefreshCw className="mr-2 h-4 w-4" /> {t('Reset Form')}
         </Button>
       </div>
+
+      {/* Urban Pending Tare Weight Side Section */}
+      {isUrbanEnviro && (
+        <Card className="xl:col-span-1 border-amber-200 bg-gradient-to-b from-amber-50/40 to-white flex flex-col h-full">
+          <CardHeader className="py-3 px-4 border-b border-amber-200/60 bg-amber-100/40">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                Pending Tare Vehicles
+              </CardTitle>
+              <span className="bg-amber-200 text-amber-900 text-xs px-2 py-0.5 rounded-full font-bold">
+                {pendingTareVehicles.length}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 flex-1 overflow-auto max-h-[560px] space-y-2.5">
+            {pendingTareVehicles.length === 0 ? (
+              <div className="text-center py-10 text-xs text-slate-400">
+                <Clock className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-600" />
+                No vehicles pending for tare weighment.
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Save a loaded vehicle with "Save Step 1 (Gross)" to hold it here until it unloads.
+                </p>
+              </div>
+            ) : (
+              pendingTareVehicles.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-md border border-amber-200 bg-white hover:border-amber-400 transition-all shadow-sm space-y-1.5"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-mono font-bold text-slate-900 text-sm">
+                        {item.vehicleNumber}
+                      </span>
+                      {item.time && (
+                        <span className="text-[10px] text-slate-500 ml-2">({item.time})</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemovePending(item.vehicleId)}
+                      className="text-slate-400 hover:text-red-600 transition-colors p-0.5"
+                      title="Remove from pending"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 text-xs text-slate-600">
+                    <div>Gross: <span className="font-semibold text-slate-900">{item.grossWeight} kg</span></div>
+                    <div className="truncate">Cust: <span className="font-semibold text-slate-900 truncate">{item.sourceName}</span></div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    className="w-full h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white mt-1"
+                    onClick={() => handleSelectPendingVehicle(item)}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Weigh Tare & Print
+                  </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       </div>
 
