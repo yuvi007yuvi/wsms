@@ -49,8 +49,11 @@ export default function DashboardLayout() {
   const [weighbridgeStatus, setWeighbridgeStatus] = useState<'Connected' | 'Disconnected'>('Disconnected');
 
   useEffect(() => {
-    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
-    const socket = io(backendUrl);
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://wsms-1.onrender.com/api';
+    const backendUrl = apiUrl.replace(/\/api\/?$/, '');
+    const socket = io(backendUrl, {
+      transports: ['websocket', 'polling']
+    });
 
     socket.on('connect', () => {
       // Socket connected to backend

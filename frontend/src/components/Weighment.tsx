@@ -102,13 +102,18 @@ export default function Weighment() {
   }, [masterData]);
 
   useEffect(() => {
-    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
-    const socket = io(backendUrl);
+    // Connect to WebSocket using configured API host or current window origin
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://wsms-1.onrender.com/api';
+    const backendUrl = apiUrl.replace(/\/api\/?$/, '');
+    const socket = io(backendUrl, {
+      transports: ['websocket', 'polling']
+    });
     
     socket.on('connect', () => _setWeightStatus('Reading'));
     socket.on('disconnect', () => _setWeightStatus('Disconnected'));
     
     socket.on('weight-update', (data: { weight: number, status: string }) => {
+      // Only block socket update if manual entry is currently checked
       const isManual = localStorage.getItem('showManualWeight') === 'true';
       if (!isManual) {
         _setLiveWeight(data.weight);
