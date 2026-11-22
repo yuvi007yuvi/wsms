@@ -346,24 +346,6 @@ export default function Weighment() {
     setManualTareWeight('');
   };
 
-  const handleSelectPendingVehicle = (item: any) => {
-    setVehicleId(item.vehicleId);
-    if (item.driverName) setDriverName(item.driverName);
-    if (item.materialId) setMaterialId(item.materialId);
-    if (item.sourceId) setSourceId(item.sourceId);
-    if (item.destinationId) setDestinationId(item.destinationId);
-
-    // If there is live weight on bridge, suggest capturing it as tare
-    if (liveWeight > 0) {
-      setManualTareWeight(liveWeight);
-    }
-
-    toast({
-      title: 'Pending Vehicle Selected',
-      description: `${item.vehicleNumber} loaded. Gross Weight: ${item.grossWeight} kg. Now ready for Tare weighment!`,
-    });
-  };
-
   const handleRemovePending = (vehicleIdToRemove: string) => {
     const updated = pendingTareVehicles.filter(p => p.vehicleId !== vehicleIdToRemove);
     savePendingTareVehicles(updated);
@@ -547,7 +529,7 @@ export default function Weighment() {
                     placeholder="Enter or capture tare..."
                     value={manualTareWeight}
                     onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                    className="bg-white font-mono font-medium h-9 text-sm"
+                    className="bg-white font-medium h-9 text-sm"
                   />
                   <Button
                     type="button"
@@ -638,7 +620,7 @@ export default function Weighment() {
               </div>
 
               <div className="flex items-end justify-center gap-3 bg-transparent py-2 rounded-sm border-0">
-                <div className={`text-6xl font-mono tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
+                <div className={`text-6xl tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
                   {String(liveWeight).padStart(5, '0')}
                 </div>
                 <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
@@ -665,9 +647,9 @@ export default function Weighment() {
                 <CardTitle className="text-xs font-bold text-slate-700">{t('Weight Summary')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5 text-xs p-3 pt-0">
-                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-mono font-bold text-slate-900">{liveWeight} kg</span></div>
-                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-mono font-bold text-red-600">-{tareWeight} kg</span></div>
-                <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-mono font-black text-green-600 text-sm">{netWeight} kg</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-bold text-slate-900">{liveWeight} kg</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-bold text-red-600">-{tareWeight} kg</span></div>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-black text-green-600 text-sm">{netWeight} kg</span></div>
               </CardContent>
             </Card>
           </div>
@@ -756,7 +738,7 @@ export default function Weighment() {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="font-mono font-bold text-slate-900 text-sm">
+                        <span className="font-bold text-slate-900 text-sm">
                           {item.vehicleNumber}
                         </span>
                         {item.time && (

@@ -124,7 +124,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   return (
-    <div className="print-only w-full bg-white text-black pt-5 pb-0 px-12 m-0 font-mono text-base font-normal">
+    <div className="print-only w-full bg-white text-black pt-5 pb-0 px-12 m-0 text-base font-normal">
       {copies.map((copyIndex) => (
         <div 
           key={copyIndex} 
@@ -141,7 +141,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
             </div>
           </div>
 
-          {/* Details 2-Column Grid matching Urban Slip (NOT BOLD, LARGER FONT) */}
+          {/* Details 2-Column Grid matching Urban Slip (NOT BOLD, LARGER FONT, NORMAL FONT) */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-base font-normal">
             <div className="space-y-1">
               <div className="flex"><span className="w-44">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
