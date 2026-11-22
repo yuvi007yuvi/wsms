@@ -346,28 +346,65 @@ export default function Weighment() {
     setManualTareWeight('');
   };
 
-  const handleSelectPendingVehicle = (item: any) => {
-    setVehicleId(item.vehicleId);
-    if (item.driverName) setDriverName(item.driverName);
-    if (item.materialId) setMaterialId(item.materialId);
-    if (item.sourceId) setSourceId(item.sourceId);
-    if (item.destinationId) setDestinationId(item.destinationId);
-
-    // If there is live weight on bridge, suggest capturing it as tare
-    if (liveWeight > 0) {
-      setManualTareWeight(liveWeight);
-    }
-
-    toast({
-      title: 'Pending Vehicle Selected',
-      description: `${item.vehicleNumber} loaded. Gross Weight: ${item.grossWeight} kg. Now ready for Tare weighment!`,
-    });
-  };
-
   const handleRemovePending = (vehicleIdToRemove: string) => {
     const updated = pendingTareVehicles.filter(p => p.vehicleId !== vehicleIdToRemove);
     savePendingTareVehicles(updated);
     toast({ title: 'Removed from pending list' });
+  };
+
+  const handleDirectSaveFromPending = async (item: any) => {
+    if (liveWeight <= 0) {
+      toast({
+        title: 'Empty Weighbridge',
+        description: 'Weighbridge currently reads 0 KG. Please ensure empty vehicle is on the platform to capture Tare Weight.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (item.grossWeight <= liveWeight) {
+      toast({
+        title: 'Invalid Tare Weight',
+        description: `Gross weight (${item.grossWeight} kg) must be greater than tare weight (${liveWeight} kg).`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/weighment', {
+        vehicleId: item.vehicleId,
+        materialId: item.materialId,
+        sourceId: item.sourceId,
+        destinationId: item.destinationId || destinations.find((d: any) => d.isDefault)?.id,
+        grossWeight: item.grossWeight,
+        manualTareWeight: liveWeight,
+        driverName: item.driverName,
+        remarks: 'Direct 2-step weighment'
+      });
+
+      setLastGeneratedSlip(res.data);
+      savePendingTareVehicles(pendingTareVehicles.filter(p => p.vehicleId !== item.vehicleId));
+
+      toast({
+        title: 'Slip Generated Directly',
+        description: `${item.vehicleNumber} tare captured as ${liveWeight} kg. Final slip is printing...`,
+      });
+
+      setTimeout(() => {
+        window.print();
+      }, 50);
+
+    } catch (error: any) {
+      toast({
+        title: 'Error generating slip',
+        description: error.response?.data?.error || 'Failed to save slip.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePrint = () => {
@@ -717,11 +754,13 @@ export default function Weighment() {
 
                   <Button
                     size="sm"
-                    className="w-full h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white mt-1"
-                    onClick={() => handleSelectPendingVehicle(item)}
+                    className="w-full h-8 text-xs font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white mt-1 shadow-sm"
+                    onClick={() => handleDirectSaveFromPending(item)}
+                    disabled={isSubmitting}
+                    title="Directly capture live weighbridge tare and print slip without opening any forms"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Weigh Tare & Print
+                    Save Tare ({liveWeight} kg) & Print
                   </Button>
                 </div>
               ))
