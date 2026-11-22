@@ -124,52 +124,52 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   return (
-    <div className="print-only w-full bg-white text-black pt-5 pb-0 px-12 m-0 font-mono text-base font-semibold">
+    <div className="print-only w-full bg-white text-black pt-5 pb-0 px-12 m-0 font-mono text-base font-normal">
       {copies.map((copyIndex) => (
         <div 
           key={copyIndex} 
           className={`flex flex-col justify-between ${copiesCount > 1 ? 'h-[31vh]' : 'min-h-[85mm] max-h-[92mm]'} border-b-2 border-dashed border-gray-400 pt-3 pb-2 px-4 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border`}
         >
 
-          {/* Header */}
+          {/* Header (BOLD) */}
           <div className="pt-2">
             <div className="text-center mb-2">
-              <h1 className="text-xl font-extrabold leading-tight tracking-wider">{headerTitle}</h1>
+              <h1 className="text-2xl font-bold leading-tight tracking-wider">{headerTitle}</h1>
               {siteSubtitle && (
-                <div className="text-sm font-bold text-gray-900 tracking-wide">{siteSubtitle}</div>
+                <div className="text-base font-bold text-gray-900 tracking-wide">{siteSubtitle}</div>
               )}
             </div>
           </div>
 
-          {/* Details 2-Column Grid matching Urban Slip */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-sm font-bold">
+          {/* Details 2-Column Grid matching Urban Slip (NOT BOLD, LARGER FONT) */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-base font-normal">
             <div className="space-y-1">
-              <div className="flex"><span className="w-40 font-bold">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
-              <div className="flex"><span className="w-40 font-bold">Vehicle no</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex"><span className="w-40 font-bold">Material</span><span>: {slip.material?.name || 'SOLID WASTE'}</span></div>
+              <div className="flex"><span className="w-44">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
+              <div className="flex"><span className="w-44">Vehicle no</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex"><span className="w-44">Material</span><span>: {slip.material?.name || 'SOLID WASTE'}</span></div>
             </div>
             <div className="space-y-1">
-              <div className="flex"><span className="w-40 font-bold">Customer Name</span><span>: {partyName}</span></div>
-              <div className="flex"><span className="w-40 font-bold">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'DUMPER'}</span></div>
+              <div className="flex"><span className="w-44">Customer Name</span><span>: {partyName}</span></div>
+              <div className="flex"><span className="w-44">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'DUMPER'}</span></div>
             </div>
           </div>
 
-          {/* Weight Section matching Urban Slip */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-sm font-bold my-2">
+          {/* Weight Section matching Urban Slip (ONLY NET WEIGHT IS BOLD) */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-base my-2">
             <div className="space-y-1">
-              <div className="flex"><span className="w-40">Weight1</span><span>: {slip.grossWeight}</span></div>
-              <div className="flex"><span className="w-40">Weight2</span><span>: {slip.tareWeight}</span></div>
-              <div className="flex text-base font-black"><span className="w-40">Net weight</span><span>: {slip.netWeight}</span></div>
+              <div className="flex font-normal"><span className="w-44">Weight1</span><span>: {slip.grossWeight}</span></div>
+              <div className="flex font-normal"><span className="w-44">Weight2</span><span>: {slip.tareWeight}</span></div>
+              <div className="flex text-lg font-bold"><span className="w-44">Net weight</span><span>: {slip.netWeight}</span></div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 font-normal">
               <div className="flex"><span className="w-24">Date1</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
               <div className="flex"><span className="w-24">Date2</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
             </div>
           </div>
 
-          {/* Footer Signatures */}
+          {/* Footer Signatures (NOT BOLD) */}
           <div className="flex justify-end items-end mt-2 pr-4 pb-1">
-            <div className="text-sm font-bold">Operator signature</div>
+            <div className="text-base font-normal">Operator signature</div>
           </div>
 
         </div>
