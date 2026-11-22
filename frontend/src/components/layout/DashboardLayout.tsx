@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
+import { io } from 'socket.io-client';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: FileText },
@@ -45,6 +46,32 @@ export default function DashboardLayout() {
   const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
 
   const [syncStatus, setSyncStatus] = useState({ isOnline: true, lastSyncTime: new Date().toISOString(), pendingCount: 0 });
+  const [weighbridgeStatus, setWeighbridgeStatus] = useState<'Connected' | 'Disconnected'>('Disconnected');
+
+  useEffect(() => {
+    const backendUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+    const socket = io(backendUrl);
+
+    socket.on('connect', () => {
+      // Socket connected to backend
+    });
+
+    socket.on('weight-update', (data: { weight: number, status: string }) => {
+      if (data && data.status && data.status !== 'Disconnected') {
+        setWeighbridgeStatus('Connected');
+      } else {
+        setWeighbridgeStatus('Disconnected');
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setWeighbridgeStatus('Disconnected');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSyncStatus = async () => {
@@ -366,12 +393,21 @@ export default function DashboardLayout() {
           </div>
 
           {/* Right Status: Weighbridge */}
-          <div className="flex items-center gap-1.5 text-red-600 font-medium">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-            </span>
-            {t('Weighbridge Disconnected')}
-          </div>
+          {weighbridgeStatus === 'Connected' ? (
+            <div className="flex items-center gap-1.5 text-green-600 font-medium">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
+              </span>
+              {t('Weighbridge Connected')}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-red-600 font-medium">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+              </span>
+              {t('Weighbridge Disconnected')}
+            </div>
+          )}
         </div>
       </div>
     </div>
