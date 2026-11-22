@@ -162,8 +162,8 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
               <div className="flex text-lg font-bold"><span className="w-44">Net weight</span><span>: {slip.netWeight}</span></div>
             </div>
             <div className="space-y-1 font-normal">
-              <div className="flex"><span className="w-24">Date1</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
-              <div className="flex"><span className="w-24">Date2</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
+              <div className="flex"><span className="w-24">Date1</span><span>: {formatDateTimeDMY(slip.grossTime || slip.date || slip.createdAt)}</span></div>
+              <div className="flex"><span className="w-24">Date2</span><span>: {formatDateTimeDMY(slip.tareTime || slip.updatedAt || slip.date)}</span></div>
             </div>
           </div>
 

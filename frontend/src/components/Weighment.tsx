@@ -160,10 +160,10 @@ export default function Weighment() {
     const socket = io(backendUrl, {
       transports: ['websocket', 'polling']
     });
-    
+
     socket.on('connect', () => _setWeightStatus('Reading'));
     socket.on('disconnect', () => _setWeightStatus('Disconnected'));
-    
+
     socket.on('weight-update', (data: { weight: number, status: string }) => {
       // Only block socket update if manual entry is currently checked
       const isManual = localStorage.getItem('showManualWeight') === 'true';
@@ -181,27 +181,27 @@ export default function Weighment() {
   // Mock Mode Simulation
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    
+
     if (isMockMode) {
       _setWeightStatus('Connected');
       let currentWeight = 0;
       let targetWeight = Math.floor(Math.random() * 40000) + 10000;
-      
+
       interval = setInterval(() => {
         _setWeightStatus('Reading');
-        
+
         if (Math.abs(targetWeight - currentWeight) < 50) {
           currentWeight = targetWeight;
           _setWeightStatus('Stable');
-          
+
           if (Math.random() > 0.95) { // rarely change target when stable
-             targetWeight = Math.floor(Math.random() * 40000) + 10000;
+            targetWeight = Math.floor(Math.random() * 40000) + 10000;
           }
         } else {
           currentWeight += (targetWeight - currentWeight) * 0.15;
           currentWeight += (Math.random() * 40 - 20); // Add jitter
         }
-        
+
         _setLiveWeight(Math.max(0, Math.round(currentWeight)));
       }, 300);
     } else {
@@ -229,7 +229,7 @@ export default function Weighment() {
       });
       return;
     }
-    
+
     if (netWeight <= 0) {
       toast({
         title: 'Invalid Weight',
@@ -251,7 +251,7 @@ export default function Weighment() {
         driverName,
         manualTareWeight: manualTareWeight !== '' ? manualTareWeight : undefined
       });
-      
+
       setLastGeneratedSlip(res.data);
 
       // If this vehicle was in the Urban pending tare list, remove it
@@ -263,7 +263,7 @@ export default function Weighment() {
         title: 'Slip Generated',
         description: 'Weighment slip has been saved successfully. Preparing to print...',
       });
-      
+
       setTimeout(() => {
         window.print();
       }, 50);
@@ -273,14 +273,14 @@ export default function Weighment() {
       setVehicleId('');
       setMaterialId('');
       setSourceId('');
-      
+
       const defaultDest = destinations.find((d: any) => d.isDefault);
       setDestinationId(defaultDest ? defaultDest.id : '');
-      
+
       setRemarks('');
       setDriverName('');
       setManualTareWeight('');
-      
+
     } catch (error: any) {
       toast({
         title: 'Error generating slip',
@@ -346,6 +346,24 @@ export default function Weighment() {
     setManualTareWeight('');
   };
 
+  const handleSelectPendingVehicle = (item: any) => {
+    setVehicleId(item.vehicleId);
+    if (item.driverName) setDriverName(item.driverName);
+    if (item.materialId) setMaterialId(item.materialId);
+    if (item.sourceId) setSourceId(item.sourceId);
+    if (item.destinationId) setDestinationId(item.destinationId);
+
+    // If there is live weight on bridge, suggest capturing it as tare
+    if (liveWeight > 0) {
+      setManualTareWeight(liveWeight);
+    }
+
+    toast({
+      title: 'Pending Vehicle Selected',
+      description: `${item.vehicleNumber} loaded. Gross Weight: ${item.grossWeight} kg. Now ready for Tare weighment!`,
+    });
+  };
+
   const handleRemovePending = (vehicleIdToRemove: string) => {
     const updated = pendingTareVehicles.filter(p => p.vehicleId !== vehicleIdToRemove);
     savePendingTareVehicles(updated);
@@ -384,7 +402,14 @@ export default function Weighment() {
         remarks: 'Direct 2-step weighment'
       });
 
-      setLastGeneratedSlip(res.data);
+      // Attach Step 1 gross weight timestamp so slip shows both distinct entry and exit date-times
+      const slipWithTimestamps = {
+        ...res.data,
+        grossTime: item.date || item.createdAt || new Date(Date.now() - 600000).toISOString(),
+        tareTime: new Date().toISOString()
+      };
+
+      setLastGeneratedSlip(slipWithTimestamps);
       savePendingTareVehicles(pendingTareVehicles.filter(p => p.vehicleId !== item.vehicleId));
 
       toast({
@@ -423,351 +448,351 @@ export default function Weighment() {
     <>
       <PrintSlip slip={lastGeneratedSlip} />
       <div className={`grid grid-cols-1 ${isUrbanEnviro ? 'lg:grid-cols-12' : 'lg:grid-cols-2'} gap-4 no-print items-start`}>
-      
-      {/* Left Column: Form Inputs */}
-      <Card className={isUrbanEnviro ? 'lg:col-span-5' : ''}>
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-base">{t('Weighment Entry')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
-            <SearchableSelect
-              value={vehicleTypeId}
-              onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
-              options={[
-                { label: t('All Types'), value: 'all' },
-                ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
-              ]}
-              placeholder={t('Search Vehicle Type...')}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
-            <SearchableSelect 
-              value={vehicleId} 
-              onValueChange={setVehicleId} 
-              options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))} 
-              placeholder={t('Search Vehicle...')} 
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Driver Name')}</Label>
-            <Input 
-              placeholder={t("Enter Driver Name...")} 
-              value={driverName} 
-              onChange={(e) => setDriverName(e.target.value)} 
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Material')}</Label>
-            <Select onValueChange={setMaterialId} value={materialId}>
-              <SelectTrigger><SelectValue placeholder={t('Select Material')} /></SelectTrigger>
-              <SelectContent>
-                {materials.map((m: any) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">
-              {isUrbanEnviro ? t('Customer Name') : t('Source')}
-            </Label>
-            <Select onValueChange={setSourceId} value={sourceId}>
-              <SelectTrigger>
-                <SelectValue placeholder={isUrbanEnviro ? t('Select Customer Name') : t('Select Source')} />
-              </SelectTrigger>
-              <SelectContent>
-                {sources.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Destination')}</Label>
-            <Select onValueChange={setDestinationId} value={destinationId}>
-              <SelectTrigger><SelectValue placeholder={t('Select Destination')} /></SelectTrigger>
-              <SelectContent>
-                {destinations.map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Tare Weight Editor for Urban */}
-          {isUrbanEnviro && !isEffectiveManualWeight && (
-            <div className="space-y-1 col-span-2 p-2.5 bg-slate-50 border border-slate-200 rounded-md">
-              <div className="flex justify-between items-center mb-1">
-                <Label className="text-[11px] uppercase text-slate-700 font-bold tracking-wider">
-                  Tare Weight (KG)
-                </Label>
-                {lastSlipTare !== null && (
-                  <span className="text-[10px] text-blue-600 font-medium">
-                    Auto-fetched from last slip ({lastSlipTare} kg)
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Input 
-                  type="number"
-                  placeholder="Enter or capture tare..." 
-                  value={manualTareWeight} 
-                  onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
-                  className="bg-white font-mono font-medium h-9 text-sm"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="whitespace-nowrap border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold text-xs h-9 px-3 shrink-0"
-                  onClick={() => {
-                    if (liveWeight > 0) {
-                      setManualTareWeight(liveWeight);
-                      toast({
-                        title: 'Tare Captured',
-                        description: `Captured ${liveWeight} kg from weighbridge as Tare Weight.`,
-                      });
-                    } else {
-                      toast({
-                        title: 'No Weight on Bridge',
-                        description: 'Weighbridge currently reads 0 KG. Please ensure vehicle is on the platform.',
-                        variant: 'destructive',
-                      });
-                    }
-                  }}
-                  title="Capture current live weight on the weighbridge as Tare Weight"
-                >
-                  Capture Tare ({liveWeight} kg)
-                </Button>
-              </div>
-            </div>
-          )}
 
-          {isEffectiveManualWeight && (
-            <>
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
-                <Input 
-                  type="number"
-                  placeholder={t("Enter manual gross weight...")} 
-                  value={liveWeight || ''} 
-                  onChange={(e) => _setLiveWeight(parseInt(e.target.value) || 0)} 
-                />
-              </div>
-
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Tare Weight (KG)')}</Label>
-                <Input 
-                  type="number"
-                  placeholder={t("Enter manual tare weight (overrides vehicle default)...")} 
-                  value={manualTareWeight} 
-                  onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
-                />
-              </div>
-            </>
-          )}
-
-
-        </CardContent>
-      </Card>
-
-      {/* Middle Column: Displays & Actions */}
-      <div className={`space-y-4 ${isUrbanEnviro ? 'lg:col-span-4' : ''}`}>
-        
-        {/* Live Weight Display */}
-        <Card className="bg-transparent border-2 border-slate-200 rounded-sm shadow-none overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center mb-2 border-b border-green-900/40 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-700 font-bold uppercase tracking-wider text-[11px]">{t('Live Weight Indicator')}</span>
-
-                {allowManualWeightSetting && (
-                  <div className="flex items-center space-x-1.5 ml-2" title={t('Enable Manual Entry')}>
-                    <input 
-                      type="checkbox" 
-                      id="manual-weight-toggle"
-                      className="rounded border-green-900/50 bg-[#020e06] text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
-                      checked={showManualWeight}
-                      onChange={(e) => setShowManualWeight(e.target.checked)}
-                    />
-                    <label htmlFor="manual-weight-toggle" className="text-[10px] font-semibold text-slate-500 cursor-pointer">
-                      {t('Manual')}
-                    </label>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2.5 text-[11px] font-bold uppercase tracking-wider">
-                <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Conn')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Reading' ? 'text-emerald-400' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Reading' ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>{t('Read')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Stable' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Stable' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Stab')}</span>
-                <span className={`flex items-center gap-1 ${weightStatus === 'Disconnected' ? 'text-red-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Disconnected' ? 'bg-red-500' : 'bg-slate-300'}`}></div>{t('Disc')}</span>
-              </div>
-            </div>
-            
-            <div className="flex items-end justify-center gap-3 bg-transparent py-2 rounded-sm border-0">
-              <div className={`text-6xl font-mono tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
-                {String(liveWeight).padStart(5, '0')}
-              </div>
-              <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Details Summary */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-bold text-slate-700">{t('Vehicle Info')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5 text-xs p-3 pt-0">
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Number:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Type:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Driver:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.driverName || '-'}</span></div>
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-semibold text-slate-900 text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-bold text-slate-700">{t('Weight Summary')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5 text-xs p-3 pt-0">
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-mono font-bold text-slate-900">{liveWeight} kg</span></div>
-              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-mono font-bold text-red-600">-{tareWeight} kg</span></div>
-              <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-mono font-black text-green-600 text-sm">{netWeight} kg</span></div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-2 border-t pt-3">
-          {isUrbanEnviro ? (
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                size="sm" 
-                className="h-10 text-xs uppercase tracking-wider font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-sm px-2 truncate" 
-                onClick={handleHoldGrossWeight}
-                disabled={isSubmitting}
-                title="Save Step 1 (Hold Gross Weight in Pending List)"
-              >
-                <Clock className="mr-1 h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Step 1: Gross</span>
-              </Button>
-              <Button 
-                size="sm" 
-                className="h-10 text-xs uppercase tracking-wider font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white rounded-sm px-2 truncate" 
-                onClick={generateSlip}
-                disabled={isSubmitting}
-                title="Generate and Print Final Slip (Step 2)"
-              >
-                <Save className="mr-1 h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{isSubmitting ? 'Saving...' : 'Final Slip (Step 2)'}</span>
-              </Button>
-            </div>
-          ) : (
-            <Button 
-              size="lg" 
-              className="w-full h-11 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm" 
-              onClick={generateSlip}
-              disabled={isSubmitting}
-            >
-              <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
-            </Button>
-          )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button size="sm" variant="outline" className="h-9 rounded-sm text-xs uppercase tracking-wider font-bold border-slate-300" onClick={handlePrint}>
-              <Printer className="mr-1.5 h-3.5 w-3.5" /> {t('Print Last')}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-9 text-xs text-muted-foreground" onClick={() => {
-              setVehicleTypeId('all'); setVehicleId(''); setMaterialId(''); setSourceId(''); 
-              const defaultDest = destinations.find((d: any) => d.isDefault);
-              setDestinationId(defaultDest ? defaultDest.id : '');
-              setRemarks('');
-              setManualTareWeight('');
-            }}>
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> {t('Reset Form')}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column: Urban Pending Tare Weight Side Section */}
-      {isUrbanEnviro && (
-        <Card className="lg:col-span-3 border-amber-200 bg-gradient-to-b from-amber-50/40 to-white flex flex-col h-full shadow-sm">
-          <CardHeader className="py-3 px-4 border-b border-amber-200/60 bg-amber-100/40">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm font-bold text-amber-950 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" />
-                Pending Tare Vehicles
-              </CardTitle>
-              <span className="bg-amber-200 text-amber-900 text-xs px-2 py-0.5 rounded-full font-bold">
-                {pendingTareVehicles.length}
-              </span>
-            </div>
+        {/* Left Column: Form Inputs */}
+        <Card className={isUrbanEnviro ? 'lg:col-span-5' : ''}>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-base">{t('Weighment Entry')}</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 flex-1 overflow-auto max-h-[560px] space-y-2.5">
-            {pendingTareVehicles.length === 0 ? (
-              <div className="text-center py-10 text-xs text-slate-400">
-                <Clock className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-600" />
-                No vehicles pending for tare weighment.
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Save a loaded vehicle with "Save Step 1 (Gross)" to hold it here until it unloads.
-                </p>
-              </div>
-            ) : (
-              pendingTareVehicles.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-md border border-amber-200 bg-white hover:border-amber-400 transition-all shadow-sm space-y-1.5"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="font-mono font-bold text-slate-900 text-sm">
-                        {item.vehicleNumber}
-                      </span>
-                      {item.time && (
-                        <span className="text-[10px] text-slate-500 ml-2">({item.time})</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleRemovePending(item.vehicleId)}
-                      className="text-slate-400 hover:text-red-600 transition-colors p-0.5"
-                      title="Remove from pending"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+          <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
+              <SearchableSelect
+                value={vehicleTypeId}
+                onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
+                options={[
+                  { label: t('All Types'), value: 'all' },
+                  ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
+                ]}
+                placeholder={t('Search Vehicle Type...')}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
+              <SearchableSelect
+                value={vehicleId}
+                onValueChange={setVehicleId}
+                options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))}
+                placeholder={t('Search Vehicle...')}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Driver Name')}</Label>
+              <Input
+                placeholder={t("Enter Driver Name...")}
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Material')}</Label>
+              <Select onValueChange={setMaterialId} value={materialId}>
+                <SelectTrigger><SelectValue placeholder={t('Select Material')} /></SelectTrigger>
+                <SelectContent>
+                  {materials.map((m: any) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">
+                {isUrbanEnviro ? t('Customer Name') : t('Source')}
+              </Label>
+              <Select onValueChange={setSourceId} value={sourceId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isUrbanEnviro ? t('Select Customer Name') : t('Select Source')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sources.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Destination')}</Label>
+              <Select onValueChange={setDestinationId} value={destinationId}>
+                <SelectTrigger><SelectValue placeholder={t('Select Destination')} /></SelectTrigger>
+                <SelectContent>
+                  {destinations.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                  <div className="grid grid-cols-2 text-xs text-slate-600">
-                    <div>Gross: <span className="font-semibold text-slate-900">{item.grossWeight} kg</span></div>
-                    <div className="truncate">Cust: <span className="font-semibold text-slate-900 truncate">{item.sourceName}</span></div>
-                  </div>
-
+            {/* Tare Weight Editor for Urban */}
+            {isUrbanEnviro && !isEffectiveManualWeight && (
+              <div className="space-y-1 col-span-2 p-2.5 bg-slate-50 border border-slate-200 rounded-md">
+                <div className="flex justify-between items-center mb-1">
+                  <Label className="text-[11px] uppercase text-slate-700 font-bold tracking-wider">
+                    Tare Weight (KG)
+                  </Label>
+                  {lastSlipTare !== null && (
+                    <span className="text-[10px] text-blue-600 font-medium">
+                      Auto-fetched from last slip ({lastSlipTare} kg)
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Enter or capture tare..."
+                    value={manualTareWeight}
+                    onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                    className="bg-white font-mono font-medium h-9 text-sm"
+                  />
                   <Button
-                    size="sm"
-                    className="w-full h-8 text-xs font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white mt-1 shadow-sm"
-                    onClick={() => handleDirectSaveFromPending(item)}
-                    disabled={isSubmitting}
-                    title="Directly capture live weighbridge tare and print slip without opening any forms"
+                    type="button"
+                    variant="outline"
+                    className="whitespace-nowrap border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold text-xs h-9 px-3 shrink-0"
+                    onClick={() => {
+                      if (liveWeight > 0) {
+                        setManualTareWeight(liveWeight);
+                        toast({
+                          title: 'Tare Captured',
+                          description: `Captured ${liveWeight} kg from weighbridge as Tare Weight.`,
+                        });
+                      } else {
+                        toast({
+                          title: 'No Weight on Bridge',
+                          description: 'Weighbridge currently reads 0 KG. Please ensure vehicle is on the platform.',
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
+                    title="Capture current live weight on the weighbridge as Tare Weight"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Save Tare ({liveWeight} kg) & Print
+                    Capture Tare ({liveWeight} kg)
                   </Button>
                 </div>
-              ))
+              </div>
             )}
+
+            {isEffectiveManualWeight && (
+              <>
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Gross Weight (KG)')}</Label>
+                  <Input
+                    type="number"
+                    placeholder={t("Enter manual gross weight...")}
+                    value={liveWeight || ''}
+                    onChange={(e) => _setLiveWeight(parseInt(e.target.value) || 0)}
+                  />
+                </div>
+
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Manual Tare Weight (KG)')}</Label>
+                  <Input
+                    type="number"
+                    placeholder={t("Enter manual tare weight (overrides vehicle default)...")}
+                    value={manualTareWeight}
+                    onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                  />
+                </div>
+              </>
+            )}
+
+
           </CardContent>
         </Card>
-      )}
+
+        {/* Middle Column: Displays & Actions */}
+        <div className={`space-y-4 ${isUrbanEnviro ? 'lg:col-span-4' : ''}`}>
+
+          {/* Live Weight Display */}
+          <Card className="bg-transparent border-2 border-slate-200 rounded-sm shadow-none overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-2 border-b border-green-900/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-700 font-bold uppercase tracking-wider text-[11px]">{t('Live Weight Indicator')}</span>
+
+                  {allowManualWeightSetting && (
+                    <div className="flex items-center space-x-1.5 ml-2" title={t('Enable Manual Entry')}>
+                      <input
+                        type="checkbox"
+                        id="manual-weight-toggle"
+                        className="rounded border-green-900/50 bg-[#020e06] text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                        checked={showManualWeight}
+                        onChange={(e) => setShowManualWeight(e.target.checked)}
+                      />
+                      <label htmlFor="manual-weight-toggle" className="text-[10px] font-semibold text-slate-500 cursor-pointer">
+                        {t('Manual')}
+                      </label>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2.5 text-[11px] font-bold uppercase tracking-wider">
+                  <span className={`flex items-center gap-1 ${weightStatus === 'Connected' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Connected' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Conn')}</span>
+                  <span className={`flex items-center gap-1 ${weightStatus === 'Reading' ? 'text-emerald-400' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Reading' ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>{t('Read')}</span>
+                  <span className={`flex items-center gap-1 ${weightStatus === 'Stable' ? 'text-emerald-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Stable' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>{t('Stab')}</span>
+                  <span className={`flex items-center gap-1 ${weightStatus === 'Disconnected' ? 'text-red-500' : 'text-slate-400'}`}><div className={`w-1.5 h-1.5 rounded-full ${weightStatus === 'Disconnected' ? 'bg-red-500' : 'bg-slate-300'}`}></div>{t('Disc')}</span>
+                </div>
+              </div>
+
+              <div className="flex items-end justify-center gap-3 bg-transparent py-2 rounded-sm border-0">
+                <div className={`text-6xl font-mono tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
+                  {String(liveWeight).padStart(5, '0')}
+                </div>
+                <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Details Summary */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs font-bold text-slate-700">{t('Vehicle Info')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5 text-xs p-3 pt-0">
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Number:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleNumber || '-'}</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Type:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Driver:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.driverName || '-'}</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-semibold text-slate-900 text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs font-bold text-slate-700">{t('Weight Summary')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5 text-xs p-3 pt-0">
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-mono font-bold text-slate-900">{liveWeight} kg</span></div>
+                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-mono font-bold text-red-600">-{tareWeight} kg</span></div>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-mono font-black text-green-600 text-sm">{netWeight} kg</span></div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2 border-t pt-3">
+            {isUrbanEnviro ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  className="h-10 text-xs uppercase tracking-wider font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-sm px-2 truncate"
+                  onClick={handleHoldGrossWeight}
+                  disabled={isSubmitting}
+                  title="Save Step 1 (Hold Gross Weight in Pending List)"
+                >
+                  <Clock className="mr-1 h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Step 1: Gross</span>
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-10 text-xs uppercase tracking-wider font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white rounded-sm px-2 truncate"
+                  onClick={generateSlip}
+                  disabled={isSubmitting}
+                  title="Generate and Print Final Slip (Step 2)"
+                >
+                  <Save className="mr-1 h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{isSubmitting ? 'Saving...' : 'Final Slip (Step 2)'}</span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="lg"
+                className="w-full h-11 text-sm uppercase tracking-widest font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 rounded-sm"
+                onClick={generateSlip}
+                disabled={isSubmitting}
+              >
+                <Save className="mr-2 h-4 w-4" /> {isSubmitting ? t('Saving...') : t('Generate Slip')}
+              </Button>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" className="h-9 rounded-sm text-xs uppercase tracking-wider font-bold border-slate-300" onClick={handlePrint}>
+                <Printer className="mr-1.5 h-3.5 w-3.5" /> {t('Print Last')}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-9 text-xs text-muted-foreground" onClick={() => {
+                setVehicleTypeId('all'); setVehicleId(''); setMaterialId(''); setSourceId('');
+                const defaultDest = destinations.find((d: any) => d.isDefault);
+                setDestinationId(defaultDest ? defaultDest.id : '');
+                setRemarks('');
+                setManualTareWeight('');
+              }}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> {t('Reset Form')}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Urban Pending Tare Weight Side Section */}
+        {isUrbanEnviro && (
+          <Card className="lg:col-span-3 border-amber-200 bg-gradient-to-b from-amber-50/40 to-white flex flex-col h-full shadow-sm">
+            <CardHeader className="py-3 px-4 border-b border-amber-200/60 bg-amber-100/40">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  Pending Tare Vehicles
+                </CardTitle>
+                <span className="bg-amber-200 text-amber-900 text-xs px-2 py-0.5 rounded-full font-bold">
+                  {pendingTareVehicles.length}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 flex-1 overflow-auto max-h-[560px] space-y-2.5">
+              {pendingTareVehicles.length === 0 ? (
+                <div className="text-center py-10 text-xs text-slate-400">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-600" />
+                  No vehicles pending for tare weighment.
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Save a loaded vehicle with "Save Step 1 (Gross)" to hold it here until it unloads.
+                  </p>
+                </div>
+              ) : (
+                pendingTareVehicles.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-md border border-amber-200 bg-white hover:border-amber-400 transition-all shadow-sm space-y-1.5"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-mono font-bold text-slate-900 text-sm">
+                          {item.vehicleNumber}
+                        </span>
+                        {item.time && (
+                          <span className="text-[10px] text-slate-500 ml-2">({item.time})</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemovePending(item.vehicleId)}
+                        className="text-slate-400 hover:text-red-600 transition-colors p-0.5"
+                        title="Remove from pending"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 text-xs text-slate-600">
+                      <div>Gross: <span className="font-semibold text-slate-900">{item.grossWeight} kg</span></div>
+                      <div className="truncate">Cust: <span className="font-semibold text-slate-900 truncate">{item.sourceName}</span></div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full h-8 text-xs font-bold bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white mt-1 shadow-sm"
+                      onClick={() => handleDirectSaveFromPending(item)}
+                      disabled={isSubmitting}
+                      title="Directly capture live weighbridge tare and print slip without opening any forms"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Save Tare ({liveWeight} kg) & Print
+                    </Button>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       </div>
 
@@ -796,11 +821,10 @@ export default function Weighment() {
                     setWeighStep('gross');
                     setShowStepDialog(false);
                   }}
-                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
-                    weighStep === 'gross'
-                      ? 'border-blue-600 bg-blue-50/70'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${weighStep === 'gross'
+                    ? 'border-blue-600 bg-blue-50/70'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <ArrowDownCircle className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
                   <div>
@@ -824,11 +848,10 @@ export default function Weighment() {
                     }
                     setShowStepDialog(false);
                   }}
-                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
-                    weighStep === 'tare'
-                      ? 'border-emerald-600 bg-emerald-50/70'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${weighStep === 'tare'
+                    ? 'border-emerald-600 bg-emerald-50/70'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                 >
                   <ArrowUpCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
@@ -847,8 +870,8 @@ export default function Weighment() {
                 </div>
               )}
 
-              <Button 
-                className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" 
+              <Button
+                className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                 onClick={() => setShowStepDialog(false)}
               >
                 Proceed with Selected Step
