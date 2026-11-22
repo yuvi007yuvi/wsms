@@ -587,21 +587,25 @@ export default function Weighment() {
         {/* Details Summary */}
         <div className="grid grid-cols-2 gap-3">
           <Card>
-            <CardHeader className="py-2 px-3"><CardTitle className="text-xs text-muted-foreground">{t('Vehicle Info')}</CardTitle></CardHeader>
-            <CardContent className="space-y-1 text-xs p-3 pt-0">
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Number')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Type')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Driver')}</span> <span className="font-medium text-right truncate max-w-[90px]">{selectedVehicle?.driverName || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare')}</span> <span className="font-medium text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-xs font-bold text-slate-700">{t('Vehicle Info')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5 text-xs p-3 pt-0">
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Number:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Type:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.vehicleType?.name || '-'}</span></div>
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Driver:</span> <span className="font-semibold text-slate-900 text-right truncate max-w-[90px]">{selectedVehicle?.driverName || '-'}</span></div>
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-semibold text-slate-900 text-right">{tareWeight > 0 ? `${tareWeight} kg` : '-'}</span></div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardHeader className="py-2 px-3"><CardTitle className="text-xs text-muted-foreground">{t('Weight Summary')}</CardTitle></CardHeader>
-            <CardContent className="space-y-1 text-xs p-3 pt-0">
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Gross:')}</span> <span className="font-mono font-medium">{liveWeight} kg</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('Tare:')}</span> <span className="font-mono font-medium text-red-500">-{tareWeight} kg</span></div>
-              <div className="flex justify-between border-t pt-1 mt-0.5"><span className="font-semibold">{t('Net:')}</span> <span className="font-mono font-bold text-green-600">{netWeight} kg</span></div>
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-xs font-bold text-slate-700">{t('Weight Summary')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5 text-xs p-3 pt-0">
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-mono font-bold text-slate-900">{liveWeight} kg</span></div>
+              <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-mono font-bold text-red-600">-{tareWeight} kg</span></div>
+              <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-mono font-black text-green-600 text-sm">{netWeight} kg</span></div>
             </CardContent>
           </Card>
         </div>
