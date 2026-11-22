@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ArrowDownCircle, ArrowUpCircle, Clock, Trash2, CheckCircle2 } from 'lucide-react';
 import { ArrowDownCircle, ArrowUpCircle, Clock, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -540,7 +539,6 @@ export default function Weighment() {
                     }}
                     title="Capture current live weight on the weighbridge as Tare Weight"
                   >
-                    Capture Tare ({liveWeight} kg)
                     Capture Tare ({liveWeight > 0 ? `${liveWeight} kg` : '0 kg'})
                   </Button>
                 </div>
@@ -608,31 +606,26 @@ export default function Weighment() {
                 </div>
               </div>
 
-              <div className="flex items-end justify-center gap-3 bg-transparent py-2 rounded-sm border-0">
-                <div className={`text-6xl tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
-                  {String(liveWeight).padStart(5, '0')}
-                </div>
-                <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
-                <div className="flex flex-col items-center justify-center py-2">
-                  {liveWeight < 0 ? (
-                    <div className="flex flex-col items-center justify-center text-red-600 bg-red-50/80 border border-red-200 rounded-md p-3 w-full animate-pulse">
-                      <div className="flex items-center gap-1.5 font-bold text-sm uppercase tracking-wide">
-                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                        Scale Under-Zero / Negative Weight!
-                      </div>
-                      <div className="text-xs text-red-500 font-medium mt-0.5">
-                        Indicator reads ({liveWeight} KG). Please zero / re-tare the weighbridge indicator.
-                      </div>
+              <div className="flex flex-col items-center justify-center py-2">
+                {liveWeight < 0 ? (
+                  <div className="flex flex-col items-center justify-center text-red-600 bg-red-50/80 border border-red-200 rounded-md p-3 w-full animate-pulse">
+                    <div className="flex items-center gap-1.5 font-bold text-sm uppercase tracking-wide">
+                      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                      Scale Under-Zero / Negative Weight!
                     </div>
-                  ) : (
-                    <div className="flex items-end justify-center gap-3 bg-transparent rounded-sm border-0">
-                      <div className={`text-6xl tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
-                        {String(Math.max(0, liveWeight)).padStart(5, '0')}
-                      </div>
-                      <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
+                    <div className="text-xs text-red-500 font-medium mt-0.5">
+                      Indicator reads ({liveWeight} KG). Please zero / re-tare the weighbridge indicator.
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex items-end justify-center gap-3 bg-transparent rounded-sm border-0">
+                    <div className={`text-6xl tracking-widest tabular-nums font-bold ${weightStatus === 'Stable' ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : weightStatus === 'Reading' ? 'text-emerald-600' : weightStatus === 'Disconnected' ? 'text-red-500' : 'text-emerald-600'}`}>
+                      {String(Math.max(0, liveWeight)).padStart(5, '0')}
+                    </div>
+                    <div className="text-2xl text-slate-600 font-bold mb-1">KG</div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -655,9 +648,6 @@ export default function Weighment() {
                 <CardTitle className="text-xs font-bold text-slate-700">{t('Weight Summary')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5 text-xs p-3 pt-0">
-                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-bold text-slate-900">{liveWeight} kg</span></div>
-                <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-bold text-red-600">-{tareWeight} kg</span></div>
-                <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-black text-green-600 text-sm">{netWeight} kg</span></div>
                 <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Gross:</span> <span className="font-bold text-slate-900">{liveWeight > 0 ? `${liveWeight} kg` : liveWeight < 0 ? <span className="text-red-500 font-semibold text-[11px] uppercase">Under Zero ({liveWeight})</span> : '0 kg'}</span></div>
                 <div className="flex justify-between items-center"><span className="text-slate-600 font-medium">Tare:</span> <span className="font-bold text-red-600">{tareWeight > 0 ? `-${tareWeight} kg` : '0 kg'}</span></div>
                 <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5"><span className="font-bold text-slate-900">Net:</span> <span className="font-black text-green-600 text-sm">{Math.max(0, netWeight)} kg</span></div>

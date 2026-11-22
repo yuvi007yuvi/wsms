@@ -7,7 +7,9 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
 
   // Determine Project Context dynamically
   const projectName = slip.project?.name || localStorage.getItem('projectName') || '';
-  const isNatureGreen = !projectName || projectName.toLowerCase().includes('nature') || projectName.toLowerCase().includes('green');
+  // Only Nature Green Mathura Vrindavan uses the 3-copy ticket layout.
+  // Urban Enviro, Aligarh, and Ecostan projects use the single continuous paper format.
+  const isNatureGreen = (projectName.toLowerCase().includes('nature') || projectName.toLowerCase().includes('mathura')) && !projectName.toLowerCase().includes('aligarh') && !projectName.toLowerCase().includes('urban');
 
   // Format date helper: DD-MM-YYYY (day:month:year) for new projects
   const formatDMY = (dateInput: any) => {
@@ -107,15 +109,15 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   }
 
   // Otherwise, render customized project format (Urban Enviro / New Projects)
-  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+  const isUrbanEnviro = projectName.toLowerCase().includes('urban') || projectName.toLowerCase().includes('aligarh') || projectName.toLowerCase().includes('ecostan');
   let headerTitle = "ECOSTAN INFRA PVT. LTD.";
-  let siteSubtitle = "Mathura Road, Aligarh";
+  let siteSubtitle = "Sasni Gate Mathura Road Aligarh";
   let partyName = slip.source?.name || "URBAN ENVIROTECH-ZONE=03";
 
   if (!isUrbanEnviro && projectName) {
-    headerTitle = projectName;
+    headerTitle = "ECOSTAN INFRA PVT. LTD.";
     partyName = slip.source?.name || projectName.toUpperCase();
-    siteSubtitle = slip.project?.address || "";
+    siteSubtitle = slip.project?.address || "Sasni Gate Mathura Road Aligarh";
   }
 
   // Urban project prints 1 single slip on Epson LX-310 continuous paper
