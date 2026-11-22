@@ -32,6 +32,7 @@ export default function Settings() {
   const [address, setAddress] = useState('');
   const [mockMode, setMockMode] = useState(false);
   const [allowManualWeight, setAllowManualWeight] = useState(true);
+  const [printCopiesMode, setPrintCopiesMode] = useState('1');
   
   // Role Permissions state: { [role]: string[] }
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
@@ -48,6 +49,10 @@ export default function Settings() {
         setAddress(res.data.address);
         setMockMode(res.data.mockMode || false);
         setAllowManualWeight(res.data.allowManualWeight !== undefined ? res.data.allowManualWeight : true);
+      }
+      const savedCopies = localStorage.getItem('printCopiesMode');
+      if (savedCopies) {
+        setPrintCopiesMode(savedCopies);
       }
     } catch (error) {
       console.error(error);
@@ -92,6 +97,7 @@ export default function Settings() {
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      localStorage.setItem('printCopiesMode', printCopiesMode);
       if (settingId) {
         await api.put(`/settings/${settingId}`, { 
           companyName, 
@@ -174,6 +180,21 @@ export default function Settings() {
                   onChange={e => setAddress(e.target.value)} 
                   required 
                 />
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <Label className="font-semibold">Printer & Slip Format</Label>
+                <select
+                  value={printCopiesMode}
+                  onChange={e => setPrintCopiesMode(e.target.value)}
+                  className="w-full h-10 px-3 py-2 text-sm bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="1">Epson LX-310 Dot Matrix (Continuous 1 Slip per Weighment)</option>
+                  <option value="3">A4 Sheet (3 Copies per Page - Laser/DeskJet)</option>
+                </select>
+                <p className="text-xs text-slate-500">
+                  Select "Epson LX-310 Dot Matrix" so each weighment prints only 1 slip (~3.5 inch height) and stops on the same continuous tractor-feed paper roll without feeding an entire page.
+                </p>
               </div>
               
               {userRole === 'admin' && (

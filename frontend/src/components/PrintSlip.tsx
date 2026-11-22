@@ -5,12 +5,16 @@ interface PrintSlipProps {
 export default function PrintSlip({ slip }: PrintSlipProps) {
   if (!slip) return null;
 
-  // The format prints 3 identical ticket copies
-  const copies = [1, 2, 3];
-
   // Determine Project Context dynamically
   const projectName = slip.project?.name || localStorage.getItem('projectName') || '';
   const isNatureGreen = !projectName || projectName.toLowerCase().includes('nature') || projectName.toLowerCase().includes('green');
+
+  // Determine print copies mode:
+  // '1' for continuous tractor-feed dot-matrix (LX-310) - prints 1 slip per weighment without feeding full sheet
+  // '3' for standard A4 sheet (3 copies per A4 page)
+  const savedPrintMode = localStorage.getItem('printCopiesMode') || (isNatureGreen ? '3' : '1');
+  const copiesCount = parseInt(savedPrintMode, 10) || (isNatureGreen ? 3 : 1);
+  const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   // Format date helper: DD-MM-YYYY (day:month:year) for new projects
   const formatDMY = (dateInput: any) => {
@@ -43,7 +47,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
       <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
         {copies.map((copyIndex) => (
           <div key={copyIndex} className="flex flex-col justify-between h-[31vh] border-b-2 border-dashed border-gray-400 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border">
-            
+
             {/* Header */}
             <div>
               <div className="flex justify-between items-center mb-1">
@@ -123,8 +127,11 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   return (
     <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
       {copies.map((copyIndex) => (
-        <div key={copyIndex} className="flex flex-col justify-between h-[31vh] border-b-2 border-dashed border-gray-400 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border">
-          
+        <div 
+          key={copyIndex} 
+          className={`flex flex-col justify-between ${copiesCount > 1 ? 'h-[31vh]' : 'min-h-[85mm] max-h-[92mm]'} border-b-2 border-dashed border-gray-400 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border`}
+        >
+
           {/* Header */}
           <div>
             <div className="text-center mb-2">
