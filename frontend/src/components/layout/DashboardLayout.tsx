@@ -211,6 +211,8 @@ export default function DashboardLayout() {
           <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
             {filteredNavItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
+              const isUrban = (projectName || '').toLowerCase().includes('urban');
+              const itemLabel = (isUrban && item.name === 'Sources') ? 'Customer Master' : t(item.name);
               return (
                 <Link
                   key={item.path}
@@ -222,10 +224,10 @@ export default function DashboardLayout() {
                       : (userRole === 'recity-admin' ? "text-blue-800 hover:text-blue-950 hover:bg-white/60" : "text-green-800 hover:text-green-950 hover:bg-white/60"),
                     isCollapsed && "justify-center px-0"
                   )}
-                  title={isCollapsed ? t(item.name) : undefined}
+                  title={isCollapsed ? itemLabel : undefined}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!isCollapsed && <span className="truncate">{t(item.name)}</span>}
+                  {!isCollapsed && <span className="truncate">{itemLabel}</span>}
                 </Link>
               );
             })}
@@ -304,6 +306,8 @@ export default function DashboardLayout() {
                   <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
                     {filteredNavItems.map((item) => {
                       const isActive = location.pathname.startsWith(item.path);
+                      const isUrban = (projectName || '').toLowerCase().includes('urban');
+                      const itemLabel = (isUrban && item.name === 'Sources') ? 'Customer Master' : t(item.name);
                       return (
                         <Link
                           key={item.path}
@@ -317,7 +321,7 @@ export default function DashboardLayout() {
                           )}
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{t(item.name)}</span>
+                          <span className="truncate">{itemLabel}</span>
                         </Link>
                       );
                     })}

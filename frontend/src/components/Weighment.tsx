@@ -80,6 +80,9 @@ export default function Weighment() {
   // Derived State
   const selectedVehicle = vehicles.find((v: any) => v.id === vehicleId);
 
+  const projectName = localStorage.getItem('projectName') || '';
+  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+
   // Auto-fill driver name when vehicle changes
   useEffect(() => {
     if (selectedVehicle?.driverName) {
@@ -301,9 +304,13 @@ export default function Weighment() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Source')}</Label>
+            <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">
+              {isUrbanEnviro ? t('Customer Name') : t('Source')}
+            </Label>
             <Select onValueChange={setSourceId} value={sourceId}>
-              <SelectTrigger><SelectValue placeholder={t('Select Source')} /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder={isUrbanEnviro ? t('Select Customer Name') : t('Select Source')} />
+              </SelectTrigger>
               <SelectContent>
                 {sources.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>

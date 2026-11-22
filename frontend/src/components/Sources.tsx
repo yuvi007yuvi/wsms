@@ -24,6 +24,9 @@ export default function Sources() {
   const [location, setLocation] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const projectName = localStorage.getItem('projectName') || '';
+  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+
   const fetchSources = async () => {
     setLoading(true);
     try {
@@ -104,33 +107,50 @@ export default function Sources() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold tracking-tight">Ward and Work Master</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          {isUrbanEnviro ? 'Customer Master' : 'Ward and Work Master'}
+        </h2>
         <div className="flex gap-2">
           <ImportExportButtons 
             data={sources} 
-            exportFilename="ward_work_master" 
+            exportFilename={isUrbanEnviro ? "customer_master" : "ward_work_master"} 
             importEndpoint="/master/sources/bulk" 
             exportEndpoint="/master/sources"
             onImportSuccess={fetchSources} 
           />
           <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm}><Plus className="mr-2 h-4 w-4" /> Add Ward/Work</Button>
+              <Button onClick={resetForm}>
+                <Plus className="mr-2 h-4 w-4" /> {isUrbanEnviro ? 'Add Customer' : 'Add Ward/Work'}
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingId ? 'Edit Ward/Work' : 'Add New Ward/Work'}</DialogTitle>
+                <DialogTitle>
+                  {editingId 
+                    ? (isUrbanEnviro ? 'Edit Customer' : 'Edit Ward/Work') 
+                    : (isUrbanEnviro ? 'Add New Customer' : 'Add New Ward/Work')}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Ward/Work Name</Label>
-                  <Input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., Zone 1" />
+                  <Label>{isUrbanEnviro ? 'Customer Name' : 'Ward/Work Name'}</Label>
+                  <Input 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    required 
+                    placeholder={isUrbanEnviro ? "e.g., URBAN ENVIROTECH-ZONE=03" : "e.g., Zone 1"} 
+                  />
                 </div>
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label>Location / Remarks</Label>
                 <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g., North District" />
               </div>
-              <Button type="submit" className="w-full">{editingId ? 'Update Ward/Work' : 'Save Ward/Work'}</Button>
+              <Button type="submit" className="w-full">
+                {editingId 
+                  ? (isUrbanEnviro ? 'Update Customer' : 'Update Ward/Work') 
+                  : (isUrbanEnviro ? 'Save Customer' : 'Save Ward/Work')}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -139,14 +159,16 @@ export default function Sources() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Registered Wards and Works</CardTitle>
+          <CardTitle>{isUrbanEnviro ? 'Registered Customers' : 'Registered Wards and Works'}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader className="bg-slate-100/80 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider w-16">Sr. No.</TableHead>
-                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Ward/Work Name</TableHead>
+                <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  {isUrbanEnviro ? 'Customer Name' : 'Ward/Work Name'}
+                </TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Location</TableHead>
                 <TableHead className="h-10 px-4 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>

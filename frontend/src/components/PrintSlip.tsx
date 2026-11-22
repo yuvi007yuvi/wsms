@@ -110,11 +110,11 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const isUrbanEnviro = projectName.toLowerCase().includes('urban');
   let headerTitle = "ECOSTAN INFRA PVT. LTD.";
   let siteSubtitle = "Mathura Road, Aligarh";
-  let partyName = "URBAN ENVIROTECH-ZONE=03";
+  let partyName = slip.source?.name || "URBAN ENVIROTECH-ZONE=03";
 
   if (!isUrbanEnviro && projectName) {
     headerTitle = projectName;
-    partyName = projectName.toUpperCase();
+    partyName = slip.source?.name || projectName.toUpperCase();
     siteSubtitle = slip.project?.address || "";
   }
 
