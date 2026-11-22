@@ -154,16 +154,16 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
             </div>
           </div>
 
-          {/* Weight Section matching Urban Slip (ONLY NET WEIGHT IS BOLD) */}
+          {/* Weight Section matching Urban Slip (Gross Weight / Tare Weight, Gross Date & Time / Tare Date & Time) */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-base my-2">
             <div className="space-y-1">
-              <div className="flex font-normal"><span className="w-44">Weight1</span><span>: {slip.grossWeight}</span></div>
-              <div className="flex font-normal"><span className="w-44">Weight2</span><span>: {slip.tareWeight}</span></div>
+              <div className="flex font-normal"><span className="w-44">Gross Weight</span><span>: {slip.grossWeight}</span></div>
+              <div className="flex font-normal"><span className="w-44">Tare Weight</span><span>: {slip.tareWeight}</span></div>
               <div className="flex text-lg font-bold"><span className="w-44">Net weight</span><span>: {slip.netWeight}</span></div>
             </div>
             <div className="space-y-1 font-normal">
-              <div className="flex"><span className="w-24">Date1</span><span>: {formatDateTimeDMY(slip.grossTime || slip.date || slip.createdAt)}</span></div>
-              <div className="flex"><span className="w-24">Date2</span><span>: {formatDateTimeDMY(slip.tareTime || slip.updatedAt || slip.date)}</span></div>
+              <div className="flex"><span className="w-32">Gross Date & Time</span><span>: {formatDateTimeDMY(slip.grossTime || slip.date || slip.createdAt)}</span></div>
+              <div className="flex"><span className="w-32">Tare Date & Time</span><span>: {formatDateTimeDMY(slip.tareTime || slip.updatedAt || slip.date)}</span></div>
             </div>
           </div>
 
