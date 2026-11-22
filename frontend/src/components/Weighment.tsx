@@ -83,7 +83,7 @@ export default function Weighment() {
   const selectedVehicle = vehicles.find((v: any) => v.id === vehicleId);
 
   const projectName = localStorage.getItem('projectName') || '';
-  const isUrbanEnviro = projectName.toLowerCase().includes('urban');
+  const isUrbanEnviro = projectName.toLowerCase().includes('urban') || projectName.toLowerCase().includes('aligarh') || projectName.toLowerCase().includes('ecostan');
 
   // Urban 2-step weighment states
   const [showStepDialog, setShowStepDialog] = useState(false);

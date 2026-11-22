@@ -211,7 +211,7 @@ export default function DashboardLayout() {
           <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
             {filteredNavItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
-              const isUrban = (projectName || '').toLowerCase().includes('urban');
+              const isUrban = (projectName || '').toLowerCase().includes('urban') || (projectName || '').toLowerCase().includes('aligarh') || (projectName || '').toLowerCase().includes('ecostan');
               const itemLabel = (isUrban && item.name === 'Sources') ? 'Customer Master' : t(item.name);
               return (
                 <Link
@@ -306,7 +306,7 @@ export default function DashboardLayout() {
                   <nav className="grid items-start px-2 text-sm font-medium gap-0.5">
                     {filteredNavItems.map((item) => {
                       const isActive = location.pathname.startsWith(item.path);
-                      const isUrban = (projectName || '').toLowerCase().includes('urban');
+                      const isUrban = (projectName || '').toLowerCase().includes('urban') || (projectName || '').toLowerCase().includes('aligarh') || (projectName || '').toLowerCase().includes('ecostan');
                       const itemLabel = (isUrban && item.name === 'Sources') ? 'Customer Master' : t(item.name);
                       return (
                         <Link
