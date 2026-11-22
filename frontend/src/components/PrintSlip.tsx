@@ -124,11 +124,11 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   return (
-    <div className="print-only w-full bg-white text-black pt-4 pb-0 px-6 m-0 font-mono text-base font-semibold">
+    <div className="print-only w-full bg-white text-black pt-5 pb-0 px-12 m-0 font-mono text-base font-semibold">
       {copies.map((copyIndex) => (
         <div 
           key={copyIndex} 
-          className={`flex flex-col justify-between ${copiesCount > 1 ? 'h-[31vh]' : 'min-h-[85mm] max-h-[92mm]'} border-b-2 border-dashed border-gray-400 pt-3 pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border`}
+          className={`flex flex-col justify-between ${copiesCount > 1 ? 'h-[31vh]' : 'min-h-[85mm] max-h-[92mm]'} border-b-2 border-dashed border-gray-400 pt-3 pb-2 px-4 mb-2 last:border-b-0 last:mb-0 last:pb-0 box-border`}
         >
 
           {/* Header */}
