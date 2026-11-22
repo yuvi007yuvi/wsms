@@ -124,7 +124,7 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
   const copies = Array.from({ length: copiesCount }, (_, i) => i + 1);
 
   return (
-    <div className="print-only w-full bg-white text-black py-0 px-8 m-0 font-mono text-sm">
+    <div className="print-only w-full bg-white text-black py-0 px-6 m-0 font-mono text-base font-semibold">
       {copies.map((copyIndex) => (
         <div 
           key={copyIndex} 
@@ -134,42 +134,42 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
           {/* Header */}
           <div>
             <div className="text-center mb-2">
-              <h1 className="text-base font-bold leading-tight">{headerTitle}</h1>
+              <h1 className="text-xl font-extrabold leading-tight tracking-wider">{headerTitle}</h1>
               {siteSubtitle && (
-                <div className="text-xs font-medium text-gray-800 tracking-wide">{siteSubtitle}</div>
+                <div className="text-sm font-bold text-gray-900 tracking-wide">{siteSubtitle}</div>
               )}
             </div>
           </div>
 
           {/* Details 2-Column Grid matching Urban Slip */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 leading-tight text-xs">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-sm font-bold">
             <div className="space-y-1">
-              <div className="flex"><span className="w-36">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
-              <div className="flex"><span className="w-36">Vehicle no</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
-              <div className="flex"><span className="w-36">Material</span><span>: {slip.material?.name || 'SOLID WASTE'}</span></div>
+              <div className="flex"><span className="w-40 font-bold">Weigh slip no</span><span>: {slip.slipNumber}</span></div>
+              <div className="flex"><span className="w-40 font-bold">Vehicle no</span><span>: {slip.vehicle?.vehicleNumber || '-'}</span></div>
+              <div className="flex"><span className="w-40 font-bold">Material</span><span>: {slip.material?.name || 'SOLID WASTE'}</span></div>
             </div>
             <div className="space-y-1">
-              <div className="flex"><span className="w-36">Customer Name</span><span>: {partyName}</span></div>
-              <div className="flex"><span className="w-36">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'DUMPER'}</span></div>
+              <div className="flex"><span className="w-40 font-bold">Customer Name</span><span>: {partyName}</span></div>
+              <div className="flex"><span className="w-40 font-bold">Vehicle Type</span><span>: {slip.vehicleType?.name || slip.vehicle?.vehicleType?.name || 'DUMPER'}</span></div>
             </div>
           </div>
 
           {/* Weight Section matching Urban Slip */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 leading-tight text-xs my-2">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 leading-normal text-sm font-bold my-2">
             <div className="space-y-1">
-              <div className="flex"><span className="w-36">Weight1</span><span>: {slip.grossWeight}</span></div>
-              <div className="flex"><span className="w-36">Weight2</span><span>: {slip.tareWeight}</span></div>
-              <div className="flex font-bold"><span className="w-36">Net weight</span><span>: {slip.netWeight}</span></div>
+              <div className="flex"><span className="w-40">Weight1</span><span>: {slip.grossWeight}</span></div>
+              <div className="flex"><span className="w-40">Weight2</span><span>: {slip.tareWeight}</span></div>
+              <div className="flex text-base font-black"><span className="w-40">Net weight</span><span>: {slip.netWeight}</span></div>
             </div>
             <div className="space-y-1">
-              <div className="flex"><span className="w-20">Date1</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
-              <div className="flex"><span className="w-20">Date2</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
+              <div className="flex"><span className="w-24">Date1</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
+              <div className="flex"><span className="w-24">Date2</span><span>: {formatDateTimeDMY(slip.date)}</span></div>
             </div>
           </div>
 
           {/* Footer Signatures */}
           <div className="flex justify-end items-end mt-2 pr-4 pb-1">
-            <div className="text-xs font-medium">Operator signature</div>
+            <div className="text-sm font-bold">Operator signature</div>
           </div>
 
         </div>
