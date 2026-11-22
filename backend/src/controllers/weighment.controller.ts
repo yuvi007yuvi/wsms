@@ -371,3 +371,38 @@ export const getWeighmentSummary = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch summary reports' });
   }
 };
+
+export const getVehicleLatestSlip = async (req: Request, res: Response) => {
+  try {
+    const { vehicleId } = req.params;
+    // @ts-ignore
+    const userProjectId = req.user?.projectId || null;
+
+    let where: any = { vehicleId };
+    if (userProjectId) {
+      where.projectId = userProjectId;
+    }
+
+    const latestSlip = await prisma.weighmentSlip.findFirst({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        slipNumber: true,
+        grossWeight: true,
+        tareWeight: true,
+        netWeight: true,
+        createdAt: true,
+        materialId: true,
+        sourceId: true,
+        destinationId: true,
+        driverName: true
+      }
+    });
+
+    res.json({ slip: latestSlip });
+  } catch (error) {
+    console.error('Error fetching vehicle latest slip:', error);
+    res.status(500).json({ error: 'Failed to fetch vehicle latest slip' });
+  }
+};

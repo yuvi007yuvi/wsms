@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,14 +85,46 @@ export default function Weighment() {
   const projectName = localStorage.getItem('projectName') || '';
   const isUrbanEnviro = projectName.toLowerCase().includes('urban');
 
-  // Auto-fill driver name when vehicle changes
+  // Urban 2-step weighment states
+  const [showStepDialog, setShowStepDialog] = useState(false);
+  const [weighStep, setWeighStep] = useState<'gross' | 'tare'>('gross');
+  const [lastSlipTare, setLastSlipTare] = useState<number | null>(null);
+
+  // Auto-fill driver name and fetch last slip tare for Urban when vehicle changes
   useEffect(() => {
     if (selectedVehicle?.driverName) {
       setDriverName(selectedVehicle.driverName);
     } else {
       setDriverName('');
     }
-  }, [selectedVehicle]);
+
+    if (isUrbanEnviro && vehicleId) {
+      setShowStepDialog(true);
+      // Fetch latest slip for this vehicle to prefill tare
+      api.get(`/weighment/vehicle-latest/${vehicleId}`)
+        .then(res => {
+          if (res.data?.slip) {
+            const prevTare = res.data.slip.tareWeight;
+            setLastSlipTare(prevTare);
+            setManualTareWeight(prevTare);
+            if (res.data.slip.sourceId && !sourceId) {
+              setSourceId(res.data.slip.sourceId);
+            }
+            if (res.data.slip.materialId && !materialId) {
+              setMaterialId(res.data.slip.materialId);
+            }
+          } else {
+            setLastSlipTare(null);
+            const defTare = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || '';
+            setManualTareWeight(defTare);
+          }
+        })
+        .catch(() => {
+          const defTare = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || '';
+          setManualTareWeight(defTare);
+        });
+    }
+  }, [selectedVehicle, isUrbanEnviro, vehicleId]);
 
   const derivedTareWeight = selectedVehicle?.tareWeight || selectedVehicle?.vehicleType?.tareWeight || 0;
   const tareWeight = manualTareWeight !== '' ? Number(manualTareWeight) : derivedTareWeight;
@@ -334,6 +368,28 @@ export default function Weighment() {
             </Select>
           </div>
           
+          {/* Tare Weight Editor for Urban */}
+          {isUrbanEnviro && !isEffectiveManualWeight && (
+            <div className="space-y-1 col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-md">
+              <div className="flex justify-between items-center mb-1">
+                <Label className="text-xs uppercase text-slate-700 font-bold tracking-wider">
+                  Tare Weight (KG) - Editable
+                </Label>
+                {lastSlipTare !== null && (
+                  <span className="text-[11px] text-blue-600 font-medium">
+                    Auto-fetched from last slip ({lastSlipTare} kg)
+                  </span>
+                )}
+              </div>
+              <Input 
+                type="number"
+                placeholder="Enter or edit tare weight..." 
+                value={manualTareWeight} 
+                onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
+              />
+            </div>
+          )}
+
           {isEffectiveManualWeight && (
             <>
               <div className="space-y-1 col-span-2">
@@ -453,6 +509,86 @@ export default function Weighment() {
       </div>
 
       </div>
+
+      {/* Urban 2-Step Weighment Selection Popup */}
+      {isUrbanEnviro && (
+        <Dialog open={showStepDialog} onOpenChange={setShowStepDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                Urban Weighment Step Selection
+              </DialogTitle>
+              <DialogDescription className="text-sm text-slate-600">
+                Vehicle: <span className="font-semibold text-slate-900">{selectedVehicle?.vehicleNumber}</span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <p className="text-xs text-slate-500">
+                Please select the current weighing stage for this vehicle:
+              </p>
+
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWeighStep('gross');
+                    setShowStepDialog(false);
+                  }}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
+                    weighStep === 'gross'
+                      ? 'border-blue-600 bg-blue-50/70'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <ArrowDownCircle className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Step 1: Loaded Vehicle (Gross Weight)</div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Vehicle entered fully loaded. Weighs gross on bridge; tare weight will be fetched from last slip ({manualTareWeight ? `${manualTareWeight} kg` : 'Default'} - editable).
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWeighStep('tare');
+                    setShowStepDialog(false);
+                  }}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
+                    weighStep === 'tare'
+                      ? 'border-emerald-600 bg-emerald-50/70'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <ArrowUpCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Step 2: Empty Vehicle (Tare Weighment)</div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Vehicle unloaded and weighing tare. Live weight will record the tare for this trip.
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {lastSlipTare !== null && (
+                <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-xs text-slate-600 flex justify-between">
+                  <span>Previous Trip Tare:</span>
+                  <span className="font-mono font-bold text-blue-700">{lastSlipTare} KG</span>
+                </div>
+              )}
+
+              <Button 
+                className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" 
+                onClick={() => setShowStepDialog(false)}
+              >
+                Proceed with Selected Step
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
