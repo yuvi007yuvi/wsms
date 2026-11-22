@@ -108,16 +108,17 @@ export default function PrintSlip({ slip }: PrintSlipProps) {
     );
   }
 
-  // Otherwise, render customized project format (Urban Enviro / New Projects)
-  const isUrbanEnviro = projectName.toLowerCase().includes('urban') || projectName.toLowerCase().includes('aligarh') || projectName.toLowerCase().includes('ecostan');
+  // Otherwise, render customized project format (Urban Enviro Aligarh / Ecostan)
+  const isAligarhUrban = projectName.toLowerCase().includes('urban') || projectName.toLowerCase().includes('aligarh') || projectName.toLowerCase().includes('ecostan');
   let headerTitle = "ECOSTAN INFRA PVT. LTD.";
   let siteSubtitle = "Sasni Gate Mathura Road Aligarh";
   let partyName = slip.source?.name || "URBAN ENVIROTECH-ZONE=03";
 
-  if (!isUrbanEnviro && projectName) {
-    headerTitle = "ECOSTAN INFRA PVT. LTD.";
+  // For any other distinct future project, use that project's own header and address
+  if (!isAligarhUrban && projectName) {
+    headerTitle = projectName;
     partyName = slip.source?.name || projectName.toUpperCase();
-    siteSubtitle = slip.project?.address || "Sasni Gate Mathura Road Aligarh";
+    siteSubtitle = slip.project?.address || "";
   }
 
   // Urban project prints 1 single slip on Epson LX-310 continuous paper
