@@ -370,10 +370,10 @@ export default function Weighment() {
           
           {/* Tare Weight Editor for Urban */}
           {isUrbanEnviro && !isEffectiveManualWeight && (
-            <div className="space-y-1 col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-md">
+            <div className="space-y-1.5 col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-md">
               <div className="flex justify-between items-center mb-1">
                 <Label className="text-xs uppercase text-slate-700 font-bold tracking-wider">
-                  Tare Weight (KG) - Editable
+                  Tare Weight (KG)
                 </Label>
                 {lastSlipTare !== null && (
                   <span className="text-[11px] text-blue-600 font-medium">
@@ -381,12 +381,38 @@ export default function Weighment() {
                   </span>
                 )}
               </div>
-              <Input 
-                type="number"
-                placeholder="Enter or edit tare weight..." 
-                value={manualTareWeight} 
-                onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
-              />
+              <div className="flex gap-2">
+                <Input 
+                  type="number"
+                  placeholder="Enter or capture tare weight..." 
+                  value={manualTareWeight} 
+                  onChange={(e) => setManualTareWeight(e.target.value === '' ? '' : parseInt(e.target.value) || 0)} 
+                  className="bg-white font-mono font-medium"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="whitespace-nowrap border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold text-xs"
+                  onClick={() => {
+                    if (liveWeight > 0) {
+                      setManualTareWeight(liveWeight);
+                      toast({
+                        title: 'Tare Captured',
+                        description: `Captured ${liveWeight} kg from weighbridge as Tare Weight.`,
+                      });
+                    } else {
+                      toast({
+                        title: 'No Weight on Bridge',
+                        description: 'Weighbridge currently reads 0 KG. Please ensure vehicle is on the platform.',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                  title="Capture current live weight on the weighbridge as Tare Weight"
+                >
+                  Capture from Bridge ({liveWeight} kg)
+                </Button>
+              </div>
             </div>
           )}
 
@@ -554,6 +580,13 @@ export default function Weighment() {
                   type="button"
                   onClick={() => {
                     setWeighStep('tare');
+                    if (liveWeight > 0) {
+                      setManualTareWeight(liveWeight);
+                      toast({
+                        title: 'Tare Captured from Weighbridge',
+                        description: `Set tare weight to live machine weight: ${liveWeight} kg.`,
+                      });
+                    }
                     setShowStepDialog(false);
                   }}
                   className={`flex items-start gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
@@ -564,9 +597,9 @@ export default function Weighment() {
                 >
                   <ArrowUpCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">Step 2: Empty Vehicle (Tare Weighment)</div>
+                    <div className="font-bold text-slate-900 text-sm">Step 2: Empty Vehicle (Get Tare from Weighbridge)</div>
                     <div className="text-xs text-slate-500 mt-0.5">
-                      Vehicle unloaded and weighing tare. Live weight will record the tare for this trip.
+                      Vehicle is on the bridge empty. Captures live weighbridge weight ({liveWeight} kg) directly as Tare Weight.
                     </div>
                   </div>
                 </button>
