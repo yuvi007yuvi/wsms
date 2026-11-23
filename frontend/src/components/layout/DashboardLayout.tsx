@@ -133,8 +133,8 @@ export default function DashboardLayout() {
     
     if (item.name === 'Superadmin' || item.name === 'Billing') return false;
     
-    // Always make Diagnostics accessible to admin role
-    if (item.name === 'Diagnostics' && userRole === 'admin') return true;
+    // Always make Diagnostics accessible to admin and operators
+    if (item.name === 'Diagnostics') return true;
 
     if (userRole === 'admin') return true;
     

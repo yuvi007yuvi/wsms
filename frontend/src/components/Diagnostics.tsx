@@ -314,26 +314,34 @@ export default function Diagnostics() {
             </div>
           </div>
 
-          {/* Fix 2: Indicator Continuous Mode */}
-          <div className="border border-slate-200 rounded-lg p-3 bg-white">
-            <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
-              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">2</span>
-              <span>Set Weighbridge Indicator to "Continuous Output"</span>
+          {/* Fix 2: "0 Bytes Received" / Indicator Continuous Mode */}
+          <div className="border border-amber-300 rounded-lg p-3 bg-amber-50/60">
+            <div className="flex items-center gap-2 font-bold text-amber-950 mb-1">
+              <span className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">2</span>
+              <span>Fixing "0 bytes received from COMx": Turn ON Indicator Continuous Output</span>
             </div>
-            <p className="text-xs text-slate-600">
-              In your weighbridge indicator's setup menu (RS232/Communication mode), change the output mode to <strong>"CONT" / "Continuous Stream"</strong>. Do <em>not</em> use "On-Demand" or "Print on Key Press", or data will only send when physical buttons are pressed.
+            <p className="text-xs text-amber-900 leading-relaxed mb-2">
+              If the agent opens the COM port but shows <strong>"0 bytes received (nothing is sending on this port)"</strong>:
             </p>
+            <ul className="text-xs text-amber-950 space-y-1 list-disc pl-5">
+              <li><strong>Continuous Mode:</strong> On the indicator box (e.g. Avery, Eagle, Essae), long press <strong>SET / FUNC / MODE</strong> and set Serial Mode to <strong>"CONT" / "STREAM"</strong>. If it is set to "PRINT" or "DEMAND", it will never stream live weight.</li>
+              <li><strong>Try Pressing PRINT:</strong> Press the physical <strong>PRINT</strong> button on the indicator while looking at the agent terminal. If text flashes, the indicator is working but set to manual demand mode instead of continuous.</li>
+              <li><strong>Wiring (TX/RX):</strong> RS232 Pin 2 and Pin 3 may be reversed. Indicators transmitting on Pin 2 require a crossed (Null-Modem) cable/adapter.</li>
+            </ul>
           </div>
 
-          {/* Fix 3: Baud Rate Configuration */}
+          {/* Fix 3: Baud Rate Configuration (2400 vs 9600) */}
           <div className="border border-slate-200 rounded-lg p-3 bg-white">
             <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
               <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">3</span>
-              <span>Match Baud Rate (Default: 9600)</span>
+              <span>Match Baud Rate (Try 2400 or 9600) or Run Auto-Scan</span>
             </div>
-            <p className="text-xs text-slate-600">
-              Ensure the indicator's baud rate matches <strong>9600</strong> (standard 8-N-1). If your indicator operates on <strong>2400</strong>, <strong>4800</strong>, or <strong>19200</strong>, edit the baud rate in <code>backend/scripts/agent_config.json</code>.
+            <p className="text-xs text-slate-600 mb-2">
+              Many weighbridges use <strong>2400 baud</strong> by default, while the agent starts at <strong>9600</strong>. When the baud rate does not match, either 0 bytes or random garbage arrives.
             </p>
+            <div className="bg-slate-100 p-2 rounded border border-slate-200 text-xs font-mono text-slate-800">
+              Run in agent folder: <strong>start_agent.bat scan</strong> (automatically checks 2400, 4800, 9600)
+            </div>
           </div>
 
           {/* Fix 4: Cable & COM Port */}
