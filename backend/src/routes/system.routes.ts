@@ -21,8 +21,23 @@ router.get('/download-agent-bat', (req, res) => {
 });
 router.get('/download-desktop-launcher', (req, res) => {
   const path = require('path');
-  const launcherPath = path.join(__dirname, '../../../LAUNCH_WINDOWS_APP.bat');
-  res.download(launcherPath, 'LAUNCH_WINDOWS_APP.bat');
+  const fs = require('fs');
+  // Check multiple possible relative paths depending on deployment environment
+  const candidates = [
+    path.join(__dirname, '../../../LAUNCH_WINDOWS_APP.bat'),
+    path.join(__dirname, '../../LAUNCH_WINDOWS_APP.bat'),
+    path.join(process.cwd(), 'LAUNCH_WINDOWS_APP.bat'),
+    path.join(process.cwd(), '../LAUNCH_WINDOWS_APP.bat')
+  ];
+  const found = candidates.find(p => fs.existsSync(p));
+  if (found) {
+    res.download(found, 'LAUNCH_WINDOWS_APP.bat');
+  } else {
+    // Generate the launcher batch file dynamically if file not present on Linux server root
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename="LAUNCH_WINDOWS_APP.bat"');
+    res.send(`@echo off\ntitle WeightT360Pro Desktop Application\ncolor 0B\necho Starting WeightT360Pro Windows App...\ncd /d "%~dp0"\ncall npx electron .\n`);
+  }
 });
 router.get('/download-offline-package', (req, res) => {
   const path = require('path');
