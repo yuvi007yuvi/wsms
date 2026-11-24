@@ -39,9 +39,26 @@ if not exist "node_modules\" (
 )
 
 echo [3/4] Initializing local database and services...
+:: Replace schema.prisma with sqlite schema for local offline node
+if exist "prisma\schema.sqlite.prisma" (
+    copy /y "prisma\schema.sqlite.prisma" "prisma\schema.prisma" >nul
+)
+
+echo Generating local offline database client...
+call npx prisma generate --schema=prisma/schema.prisma
+
 if not exist "prisma\dev.db" (
     echo Creating fresh local SQLite database...
-    call npx prisma db push --schema=prisma/schema.sqlite.prisma --accept-data-loss
+    call npx prisma db push --schema=prisma/schema.prisma --accept-data-loss
+    if exist "dist\seed-offline.js" (
+        node dist\seed-offline.js
+    )
+) else (
+    echo Updating local SQLite database...
+    call npx prisma db push --schema=prisma/schema.prisma --accept-data-loss
+    if exist "dist\seed-offline.js" (
+        node dist\seed-offline.js
+    )
 )
 
 echo [4/4] Starting Local WSMS Server on port 5000...

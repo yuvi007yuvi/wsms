@@ -104,8 +104,8 @@ setupWeighbridge(io);
     const natureGreenProject = await prisma.project.findFirst({
       where: {
         OR: [
-          { name: { contains: 'Nature', mode: 'insensitive' } },
-          { name: { contains: 'Green', mode: 'insensitive' } }
+          { name: { contains: 'Nature' } },
+          { name: { contains: 'Green' } }
         ]
       }
     });

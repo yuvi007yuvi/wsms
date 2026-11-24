@@ -297,7 +297,7 @@ export const vehicleController = {
       if (!req.body.vehicles || !Array.isArray(req.body.vehicles)) {
         return res.status(400).json({ error: 'Invalid data format. Expected { vehicles: [] }' });
       }
-      const result = await prisma.vehicle.createMany({
+      const result = await (prisma.vehicle.createMany as any)({
         data: req.body.vehicles,
         skipDuplicates: true
       });
