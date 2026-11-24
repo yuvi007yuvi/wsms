@@ -32,7 +32,22 @@ function buildZip() {
   if (fs.existsSync(path.join(rootDir, 'LAUNCH_WINDOWS_APP.bat'))) {
     fs.copyFileSync(path.join(rootDir, 'LAUNCH_WINDOWS_APP.bat'), path.join(tempDir, 'LAUNCH_WINDOWS_APP.bat'));
   }
-  fs.copyFileSync(path.join(rootDir, 'backend/package.json'), path.join(tempDir, 'package.json'));
+  // Merge root electron package metadata with backend dependencies so `electron .` finds electron/main.js
+  const rootPkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+  const backendPkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'backend/package.json'), 'utf8'));
+  const mergedPkg = {
+    ...backendPkg,
+    main: "electron/main.js",
+    scripts: {
+      ...backendPkg.scripts,
+      start: "electron ."
+    },
+    devDependencies: {
+      ...(backendPkg.devDependencies || {}),
+      electron: "^28.3.3"
+    }
+  };
+  fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify(mergedPkg, null, 2));
 
   // Ensure public directory exists
   if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });

@@ -9,8 +9,14 @@ const PORT = 5000;
 const SERVER_URL = `http://localhost:${PORT}`;
 
 function startBackendServer() {
-  const backendEntry = path.join(__dirname, '../backend/dist/index.js');
-  const backendCwd = path.join(__dirname, '../backend');
+  const fs = require('fs');
+  // Support both repository layout (../backend/dist/index.js) and extracted package layout (../dist/index.js)
+  const candidateEntries = [
+    path.join(__dirname, '../dist/index.js'),
+    path.join(__dirname, '../backend/dist/index.js')
+  ];
+  const backendEntry = candidateEntries.find(p => fs.existsSync(p)) || candidateEntries[0];
+  const backendCwd = path.dirname(path.dirname(backendEntry));
 
   const env = {
     ...process.env,
