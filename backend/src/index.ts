@@ -25,7 +25,13 @@ app.use(cors({
 app.use(express.json());
 
 // Serve built frontend assets if running offline on local machine
-const frontendDist = path.join(__dirname, '../../frontend/dist');
+import fs from 'fs';
+const candidateFrontendPaths = [
+  path.join(__dirname, '../../frontend/dist'),
+  path.join(__dirname, '../public/frontend_dist'),
+  path.join(__dirname, 'public/frontend_dist')
+];
+const frontendDist = candidateFrontendPaths.find(p => fs.existsSync(p)) || candidateFrontendPaths[0];
 app.use(express.static(frontendDist));
 
 import authRoutes from './routes/auth.routes';

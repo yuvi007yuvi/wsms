@@ -8,7 +8,12 @@ echo      (100%% Operational Without Internet)
 echo ========================================================
 echo.
 
-cd /d "%~dp0\backend"
+:: Detect if we are inside repository root or extracted package root
+if exist "%~dp0\backend" (
+    cd /d "%~dp0\backend"
+) else (
+    cd /d "%~dp0"
+)
 
 :: Set Offline Mode Environment Variables
 set NODE_ENV=production
@@ -17,7 +22,7 @@ set IS_OFFLINE_NODE=true
 set DATABASE_URL=file:./dev.db
 set CLOUD_SERVER_URL=https://wsms-1.onrender.com/api
 
-echo [1/3] Checking Node.js environment...
+echo [1/4] Checking Node.js environment...
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     color 0C
@@ -27,16 +32,30 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [2/3] Initializing local database and services...
+echo [2/4] Checking dependencies...
+if not exist "node_modules\" (
+    echo Installing production dependencies...
+    call npm install --omit=dev
+)
+
+echo [3/4] Initializing local database and services...
 if not exist "prisma\dev.db" (
     echo Creating fresh local SQLite database...
     call npx prisma db push --schema=prisma/schema.sqlite.prisma --accept-data-loss
 )
 
-echo [3/3] Starting Local WSMS Server on port 5000...
+echo [4/4] Starting Local WSMS Server on port 5000...
 start "" "http://localhost:5000"
 
 :: Start Node.js server
-node dist/index.js
+if exist "dist\index.js" (
+    node dist\index.js
+) else if exist "src\index.ts" (
+    call npx tsx src\index.ts
+) else (
+    color 0C
+    echo [ERROR] Cannot find server build files! Make sure the offline package was extracted completely.
+    pause
+)
 
 pause

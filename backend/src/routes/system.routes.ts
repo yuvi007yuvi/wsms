@@ -27,9 +27,13 @@ router.get('/download-offline-launcher', (req, res) => {
 router.get('/download-offline-package', (req, res) => {
   const path = require('path');
   const fs = require('fs');
-  // Send the launcher script with quick instructions
-  const launcherPath = path.join(__dirname, '../../../START_OFFLINE_WSMS.bat');
-  res.download(launcherPath, 'START_OFFLINE_WSMS.bat');
+  const zipPath = path.join(__dirname, '../../public/WSMS_Offline_Package.zip');
+  if (fs.existsSync(zipPath)) {
+    res.download(zipPath, 'WSMS_Offline_Package.zip');
+  } else {
+    const launcherPath = path.join(__dirname, '../../../START_OFFLINE_WSMS.bat');
+    res.download(launcherPath, 'START_OFFLINE_WSMS.bat');
+  }
 });
 router.get('/sync-status', authenticateToken, checkSubscription, getSyncStatusInfo);
 router.post('/sync-force', authenticateToken, checkSubscription, forceSync);

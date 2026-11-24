@@ -5,7 +5,7 @@ import { Download, Laptop, WifiOff, HardDrive, CheckCircle2, ArrowRight } from '
 export default function OfflineApp() {
   const handleDownload = () => {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://wsms-1.onrender.com/api';
-    window.location.href = `${apiUrl}/system/download-offline-launcher`;
+    window.location.href = `${apiUrl}/system/download-offline-package`;
   };
 
   return (
