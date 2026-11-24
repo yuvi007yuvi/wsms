@@ -168,18 +168,28 @@ async function pullCloudData() {
         }
         // 2. Fetch Vehicle Types
         const vtRes = await fetch(`${CLOUD_URL}/master/vehicle-types?limit=1000`, { headers }).catch(() => null);
+        let defaultVehicleType = await prisma_1.default.vehicleType.findFirst();
         if (vtRes && vtRes.ok) {
             const vtData = await vtRes.json();
             const list = vtData?.data || vtData || [];
             if (Array.isArray(list)) {
                 for (const vt of list) {
-                    await prisma_1.default.vehicleType.upsert({
+                    const savedVt = await prisma_1.default.vehicleType.upsert({
                         where: { name: vt.name },
                         update: { tareWeight: vt.tareWeight || 0 },
                         create: { id: vt.id, name: vt.name, tareWeight: vt.tareWeight || 0 }
-                    }).catch(() => { });
+                    }).catch(() => null);
+                    if (savedVt && !defaultVehicleType)
+                        defaultVehicleType = savedVt;
                 }
             }
+        }
+        if (!defaultVehicleType) {
+            defaultVehicleType = await prisma_1.default.vehicleType.upsert({
+                where: { name: 'General / Truck' },
+                update: {},
+                create: { name: 'General / Truck', tareWeight: 0 }
+            });
         }
         // 3. Fetch Vehicles
         const vRes = await fetch(`${CLOUD_URL}/master/vehicles?limit=5000`, { headers }).catch(() => null);
@@ -188,24 +198,39 @@ async function pullCloudData() {
             const list = vData?.data || vData || [];
             if (Array.isArray(list)) {
                 for (const v of list) {
+                    // Resolve a valid vehicleTypeId
+                    let vTypeId = v.vehicleTypeId || v.vehicleType?.id;
+                    if (!vTypeId && v.vehicleType?.name) {
+                        const foundType = await prisma_1.default.vehicleType.findUnique({ where: { name: v.vehicleType.name } });
+                        vTypeId = foundType?.id;
+                    }
+                    if (!vTypeId) {
+                        vTypeId = defaultVehicleType.id;
+                    }
                     await prisma_1.default.vehicle.upsert({
                         where: { vehicleNumber: v.vehicleNumber },
-                        update: { driverName: v.driverName, tareWeight: v.tareWeight || 0, isActive: v.isActive },
+                        update: { driverName: v.driverName, tareWeight: v.tareWeight || 0, isActive: v.isActive, vehicleTypeId: vTypeId },
                         create: {
                             id: v.id,
                             vehicleNumber: v.vehicleNumber,
-                            vehicleTypeId: v.vehicleTypeId,
+                            vehicleTypeId: vTypeId,
                             driverName: v.driverName,
                             tareWeight: v.tareWeight || 0,
                             isActive: v.isActive ?? true,
                             projectId: v.projectId || null
                         }
-                    }).catch(() => { });
+                    }).catch((err) => console.error(`[SYNC] Failed to upsert vehicle ${v.vehicleNumber}:`, err.message));
                 }
             }
         }
-        // 4. Fetch Slips (Last 200 slips)
-        const sRes = await fetch(`${CLOUD_URL}/weighment?limit=200`, { headers }).catch(() => null);
+        // Ensure ALIGARH and NATURE GREEN projects exist locally
+        const aligarhProj = await prisma_1.default.project.upsert({
+            where: { name: 'ALIGARH' },
+            update: {},
+            create: { name: 'ALIGARH', address: 'Ecostan Infra Aligarh' }
+        });
+        // 4. Fetch Slips (Last 300 slips)
+        const sRes = await fetch(`${CLOUD_URL}/weighment?limit=300`, { headers }).catch(() => null);
         if (sRes && sRes.ok) {
             const sData = await sRes.json();
             const list = sData?.data || sData || [];
@@ -223,13 +248,24 @@ async function pullCloudData() {
                         const mat = s.material?.name ? await prisma_1.default.material.findUnique({ where: { name: s.material.name } }) : null;
                         const op = await prisma_1.default.user.findFirst();
                         if (veh && mat && op) {
-                            let src = await prisma_1.default.source.findFirst();
+                            const slipProjectId = s.project?.id || (s.slipNumber.startsWith('UE') ? aligarhProj.id : null);
+                            let src = await prisma_1.default.source.findFirst({ where: { name: s.source?.name || 'Default Source' } });
                             if (!src) {
-                                src = await prisma_1.default.source.create({ data: { name: s.source?.name || 'Default Source' } });
+                                src = await prisma_1.default.source.create({
+                                    data: {
+                                        name: s.source?.name || 'Default Source',
+                                        projectId: slipProjectId
+                                    }
+                                });
                             }
-                            let dest = await prisma_1.default.destination.findFirst();
+                            let dest = await prisma_1.default.destination.findFirst({ where: { name: s.destination?.name || 'Default Destination' } });
                             if (!dest) {
-                                dest = await prisma_1.default.destination.create({ data: { name: s.destination?.name || 'Default Destination' } });
+                                dest = await prisma_1.default.destination.create({
+                                    data: {
+                                        name: s.destination?.name || 'Default Destination',
+                                        projectId: slipProjectId
+                                    }
+                                });
                             }
                             await prisma_1.default.weighmentSlip.create({
                                 data: {
@@ -245,7 +281,7 @@ async function pullCloudData() {
                                     sourceId: src.id,
                                     destinationId: dest.id,
                                     operatorId: op.id,
-                                    projectId: s.project?.id || null
+                                    projectId: slipProjectId
                                 }
                             }).catch(() => { });
                         }
