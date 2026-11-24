@@ -56,11 +56,8 @@ app.use('/api/external', external_routes_1.default);
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
-// SPA Catch-All: Any route not handled by /api serves index.html for client-side routing
-app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
-        return next();
-    }
+// Root ping endpoint
+app.get('/', (req, res) => {
     const indexPath = path_1.default.join(frontendDist, 'index.html');
     if (fs_1.default.existsSync(indexPath)) {
         res.sendFile(indexPath);
@@ -68,6 +65,16 @@ app.get('*', (req, res, next) => {
     else {
         res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
     }
+});
+// SPA Catch-All for Express 5: Fallback middleware for non-API GET requests
+app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/socket.io')) {
+        const indexPath = path_1.default.join(frontendDist, 'index.html');
+        if (fs_1.default.existsSync(indexPath)) {
+            return res.sendFile(indexPath);
+        }
+    }
+    next();
 });
 // Protect against unhandled promise rejections or server crashes
 process.on('uncaughtException', (err) => {
