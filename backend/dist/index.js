@@ -56,14 +56,25 @@ app.use('/api/external', external_routes_1.default);
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
-// Root route for ping services like cron-job.org
-app.get('/', (req, res, next) => {
+// SPA Catch-All: Any route not handled by /api serves index.html for client-side routing
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+        return next();
+    }
     const indexPath = path_1.default.join(frontendDist, 'index.html');
-    res.sendFile(indexPath, (err) => {
-        if (err) {
-            res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
-        }
-    });
+    if (fs_1.default.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    }
+    else {
+        res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
+    }
+});
+// Protect against unhandled promise rejections or server crashes
+process.on('uncaughtException', (err) => {
+    console.error('[SERVER CRASH PREVENTED] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[SERVER CRASH PREVENTED] Unhandled Rejection:', reason);
 });
 // Socket.io for Real-time Weight Updates
 io.on('connection', (socket) => {
