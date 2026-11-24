@@ -4,12 +4,21 @@ import prisma from '../utils/prisma';
 export const getSettings = async (req: Request, res: Response) => {
   try {
     // @ts-ignore
-    const userProjectId = req.user?.projectId || null;
+    const user = req.user;
+    const userProjectHeader = req.headers['x-project-name'] as string;
+    
+    // Resolve project identifier
+    let projectKey = user?.projectId ? `proj_${user.projectId}` : null;
+    if (!projectKey && userProjectHeader) {
+      const clean = userProjectHeader.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      projectKey = `proj_${clean}`;
+    }
+
     let setting: any = null;
 
-    if (userProjectId) {
+    if (projectKey) {
       setting = await prisma.setting.findFirst({
-        where: { id: `proj_${userProjectId}` }
+        where: { id: projectKey }
       });
     }
 
@@ -23,7 +32,7 @@ export const getSettings = async (req: Request, res: Response) => {
     if (!setting) {
       setting = await prisma.setting.create({
         data: {
-          id: userProjectId ? `proj_${userProjectId}` : undefined,
+          id: projectKey || undefined,
           companyName: '',
           address: '',
           allowManualWeight: false
@@ -41,10 +50,19 @@ export const updateSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     // @ts-ignore
-    const userProjectId = req.user?.projectId || null;
+    const user = req.user;
+    const userProjectHeader = req.headers['x-project-name'] as string;
     const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode, allowManualWeight } = req.body;
     
-    const targetId = String(userProjectId ? `proj_${userProjectId}` : id);
+    // Resolve project identifier
+    let targetId = user?.projectId ? `proj_${user.projectId}` : null;
+    if (!targetId && userProjectHeader) {
+      const clean = userProjectHeader.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      targetId = `proj_${clean}`;
+    }
+    if (!targetId) {
+      targetId = String(id || 'default_setting');
+    }
 
     const setting = await prisma.setting.upsert({
       where: { id: targetId },

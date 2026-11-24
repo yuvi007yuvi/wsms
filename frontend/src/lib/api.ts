@@ -10,6 +10,10 @@ api.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const projectName = localStorage.getItem('projectName');
+  if (projectName && config.headers) {
+    config.headers['x-project-name'] = projectName;
+  }
   return config;
 });
 
