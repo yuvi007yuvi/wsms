@@ -207,19 +207,41 @@ async function pullCloudData() {
                     if (!vTypeId) {
                         vTypeId = defaultVehicleType.id;
                     }
-                    await prisma_1.default.vehicle.upsert({
-                        where: { vehicleNumber: v.vehicleNumber },
-                        update: { driverName: v.driverName, tareWeight: v.tareWeight || 0, isActive: v.isActive, vehicleTypeId: vTypeId },
-                        create: {
-                            id: v.id,
-                            vehicleNumber: v.vehicleNumber,
-                            vehicleTypeId: vTypeId,
-                            driverName: v.driverName,
-                            tareWeight: v.tareWeight || 0,
-                            isActive: v.isActive ?? true,
-                            projectId: v.projectId || null
+                    // Check if vehicle exists either by vehicleNumber or by id
+                    const existingVeh = await prisma_1.default.vehicle.findFirst({
+                        where: {
+                            OR: [
+                                { vehicleNumber: v.vehicleNumber },
+                                ...(v.id ? [{ id: v.id }] : [])
+                            ]
                         }
-                    }).catch((err) => console.error(`[SYNC] Failed to upsert vehicle ${v.vehicleNumber}:`, err.message));
+                    });
+                    if (existingVeh) {
+                        await prisma_1.default.vehicle.update({
+                            where: { id: existingVeh.id },
+                            data: {
+                                vehicleNumber: v.vehicleNumber,
+                                driverName: v.driverName,
+                                tareWeight: v.tareWeight || 0,
+                                isActive: v.isActive ?? true,
+                                vehicleTypeId: vTypeId,
+                                projectId: v.projectId || existingVeh.projectId
+                            }
+                        }).catch(() => { });
+                    }
+                    else {
+                        await prisma_1.default.vehicle.create({
+                            data: {
+                                ...(v.id ? { id: v.id } : {}),
+                                vehicleNumber: v.vehicleNumber,
+                                vehicleTypeId: vTypeId,
+                                driverName: v.driverName,
+                                tareWeight: v.tareWeight || 0,
+                                isActive: v.isActive ?? true,
+                                projectId: v.projectId || null
+                            }
+                        }).catch((err) => console.error(`[SYNC] Failed to create vehicle ${v.vehicleNumber}:`, err.message));
+                    }
                 }
             }
         }
