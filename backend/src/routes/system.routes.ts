@@ -19,10 +19,10 @@ router.get('/download-agent-bat', (req, res) => {
   const batPath = path.join(__dirname, '../../scripts/start_agent.bat');
   res.download(batPath, 'start_agent.bat');
 });
-router.get('/download-offline-launcher', (req, res) => {
+router.get('/download-desktop-launcher', (req, res) => {
   const path = require('path');
-  const launcherPath = path.join(__dirname, '../../../START_OFFLINE_WSMS.bat');
-  res.download(launcherPath, 'START_OFFLINE_WSMS.bat');
+  const launcherPath = path.join(__dirname, '../../../LAUNCH_WINDOWS_APP.bat');
+  res.download(launcherPath, 'LAUNCH_WINDOWS_APP.bat');
 });
 router.get('/download-offline-package', (req, res) => {
   const path = require('path');

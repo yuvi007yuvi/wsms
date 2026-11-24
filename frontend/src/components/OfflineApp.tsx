@@ -31,6 +31,18 @@ export default function OfflineApp() {
               <Download className="w-4 h-4 text-emerald-700" />
               Download Offline Package
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                const apiUrl = import.meta.env.VITE_API_URL || 'https://wsms-1.onrender.com/api';
+                window.location.href = `${apiUrl}/system/download-desktop-launcher`;
+              }}
+              className="border-emerald-300 text-white hover:bg-emerald-800/50 font-bold px-4 h-12 gap-2 text-xs uppercase tracking-wider"
+            >
+              <AppWindow className="w-4 h-4 text-emerald-300" />
+              Download Launcher (.bat)
+            </Button>
           </div>
         </div>
       </div>
