@@ -19,6 +19,18 @@ router.get('/download-agent-bat', (req, res) => {
   const batPath = path.join(__dirname, '../../scripts/start_agent.bat');
   res.download(batPath, 'start_agent.bat');
 });
+router.get('/download-offline-launcher', (req, res) => {
+  const path = require('path');
+  const launcherPath = path.join(__dirname, '../../../START_OFFLINE_WSMS.bat');
+  res.download(launcherPath, 'START_OFFLINE_WSMS.bat');
+});
+router.get('/download-offline-package', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  // Send the launcher script with quick instructions
+  const launcherPath = path.join(__dirname, '../../../START_OFFLINE_WSMS.bat');
+  res.download(launcherPath, 'START_OFFLINE_WSMS.bat');
+});
 router.get('/sync-status', authenticateToken, checkSubscription, getSyncStatusInfo);
 router.post('/sync-force', authenticateToken, checkSubscription, forceSync);
 

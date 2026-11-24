@@ -34,6 +34,7 @@ import Diagnostics from './components/Diagnostics';
 import TripAnalysis from './components/TripAnalysis';
 import SummaryReports from './components/SummaryReports';
 import ApiGenerator from './components/ApiGenerator';
+import OfflineApp from './components/OfflineApp';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="weighment" element={<Weighment />} />
+            <Route path="offline-app" element={<OfflineApp />} />
             <Route path="vehicles" element={<Vehicles />} />
             <Route path="vehicle-types" element={<VehicleTypes />} />
             <Route path="materials" element={<Materials />} />

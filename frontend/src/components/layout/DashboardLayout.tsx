@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope, Menu, Share2 } from 'lucide-react';
+import { Truck, Scale, FileText, Settings, Users, Box, MapPin, Anchor, LogOut, ChevronLeft, CreditCard, Shield, Stethoscope, Menu, Share2, WifiOff } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { io } from 'socket.io-client';
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: FileText },
   { name: 'Weighment', path: '/weighment', icon: Scale },
+  { name: 'Offline App', path: '/offline-app', icon: WifiOff },
   { name: 'Vehicles', path: '/vehicles', icon: Truck },
   { name: 'Vehicle Types', path: '/vehicle-types', icon: Settings },
   { name: 'Materials', path: '/materials', icon: Box },
@@ -133,8 +134,8 @@ export default function DashboardLayout() {
     
     if (item.name === 'Superadmin' || item.name === 'Billing') return false;
     
-    // Always make Diagnostics accessible to admin and operators
-    if (item.name === 'Diagnostics') return true;
+    // Always make Diagnostics and Offline App accessible to all users
+    if (item.name === 'Diagnostics' || item.name === 'Offline App') return true;
 
     if (userRole === 'admin') return true;
     
