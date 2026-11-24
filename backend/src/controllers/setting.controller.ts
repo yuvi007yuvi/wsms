@@ -3,14 +3,30 @@ import prisma from '../utils/prisma';
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
-    let setting = await prisma.setting.findFirst();
+    // @ts-ignore
+    const userProjectId = req.user?.projectId || null;
+    let setting: any = null;
+
+    if (userProjectId) {
+      setting = await prisma.setting.findFirst({
+        where: { id: `proj_${userProjectId}` }
+      });
+    }
+
+    if (!setting) {
+      setting = await prisma.setting.findFirst({
+        where: { id: { not: { startsWith: 'proj_' } } }
+      });
+    }
     
     // Create default setting if it doesn't exist
     if (!setting) {
       setting = await prisma.setting.create({
         data: {
-          companyName: 'Default Company Ltd',
-          address: '123 Main Street',
+          id: userProjectId ? `proj_${userProjectId}` : undefined,
+          companyName: '',
+          address: '',
+          allowManualWeight: false
         }
       });
     }
@@ -24,13 +40,28 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    // @ts-ignore
+    const userProjectId = req.user?.projectId || null;
     const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode, allowManualWeight } = req.body;
     
-    const setting = await prisma.setting.update({
-      where: { id: id as string },
-      data: {
-        companyName,
-        address,
+    const targetId = String(userProjectId ? `proj_${userProjectId}` : id);
+
+    const setting = await prisma.setting.upsert({
+      where: { id: targetId },
+      update: {
+        companyName: companyName !== undefined ? companyName : '',
+        address: address !== undefined ? address : '',
+        logoUrl,
+        printerConfig,
+        slipFormat,
+        theme,
+        mockMode: mockMode === true,
+        allowManualWeight: allowManualWeight !== undefined ? allowManualWeight === true : undefined
+      },
+      create: {
+        id: targetId,
+        companyName: companyName !== undefined ? companyName : '',
+        address: address !== undefined ? address : '',
         logoUrl,
         printerConfig,
         slipFormat,
@@ -42,6 +73,7 @@ export const updateSettings = async (req: Request, res: Response) => {
     
     res.json(setting);
   } catch (error) {
+    console.error('Error updating settings:', error);
     res.status(400).json({ error: 'Failed to update settings' });
   }
 };

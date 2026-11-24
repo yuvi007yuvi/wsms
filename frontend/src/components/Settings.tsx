@@ -45,10 +45,10 @@ export default function Settings() {
       const res = await api.get('/settings');
       if (res.data) {
         setSettingId(res.data.id);
-        setCompanyName(res.data.companyName);
-        setAddress(res.data.address);
+        setCompanyName(res.data.companyName || '');
+        setAddress(res.data.address || '');
         setMockMode(res.data.mockMode || false);
-        setAllowManualWeight(res.data.allowManualWeight !== undefined ? res.data.allowManualWeight : true);
+        setAllowManualWeight(res.data.allowManualWeight === true);
       }
       const savedCopies = localStorage.getItem('printCopiesMode');
       if (savedCopies) {
@@ -170,7 +170,7 @@ export default function Settings() {
                 <Input 
                   value={companyName} 
                   onChange={e => setCompanyName(e.target.value)} 
-                  required 
+                  placeholder="Enter Company / Project Name"
                 />
               </div>
               <div className="space-y-2">
@@ -178,7 +178,7 @@ export default function Settings() {
                 <Input 
                   value={address} 
                   onChange={e => setAddress(e.target.value)} 
-                  required 
+                  placeholder="Enter Site / Company Address"
                 />
               </div>
 

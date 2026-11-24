@@ -7,13 +7,27 @@ exports.upsertRolePermission = exports.getRolePermissions = exports.updateSettin
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getSettings = async (req, res) => {
     try {
-        let setting = await prisma_1.default.setting.findFirst();
+        // @ts-ignore
+        const userProjectId = req.user?.projectId || null;
+        let setting = null;
+        if (userProjectId) {
+            setting = await prisma_1.default.setting.findFirst({
+                where: { id: `proj_${userProjectId}` }
+            });
+        }
+        if (!setting) {
+            setting = await prisma_1.default.setting.findFirst({
+                where: { id: { not: { startsWith: 'proj_' } } }
+            });
+        }
         // Create default setting if it doesn't exist
         if (!setting) {
             setting = await prisma_1.default.setting.create({
                 data: {
-                    companyName: 'Default Company Ltd',
-                    address: '123 Main Street',
+                    id: userProjectId ? `proj_${userProjectId}` : undefined,
+                    companyName: '',
+                    address: '',
+                    allowManualWeight: false
                 }
             });
         }
@@ -27,12 +41,26 @@ exports.getSettings = getSettings;
 const updateSettings = async (req, res) => {
     try {
         const { id } = req.params;
+        // @ts-ignore
+        const userProjectId = req.user?.projectId || null;
         const { companyName, address, logoUrl, printerConfig, slipFormat, theme, mockMode, allowManualWeight } = req.body;
-        const setting = await prisma_1.default.setting.update({
-            where: { id: id },
-            data: {
-                companyName,
-                address,
+        const targetId = String(userProjectId ? `proj_${userProjectId}` : id);
+        const setting = await prisma_1.default.setting.upsert({
+            where: { id: targetId },
+            update: {
+                companyName: companyName !== undefined ? companyName : '',
+                address: address !== undefined ? address : '',
+                logoUrl,
+                printerConfig,
+                slipFormat,
+                theme,
+                mockMode: mockMode === true,
+                allowManualWeight: allowManualWeight !== undefined ? allowManualWeight === true : undefined
+            },
+            create: {
+                id: targetId,
+                companyName: companyName !== undefined ? companyName : '',
+                address: address !== undefined ? address : '',
                 logoUrl,
                 printerConfig,
                 slipFormat,
@@ -44,6 +72,7 @@ const updateSettings = async (req, res) => {
         res.json(setting);
     }
     catch (error) {
+        console.error('Error updating settings:', error);
         res.status(400).json({ error: 'Failed to update settings' });
     }
 };
