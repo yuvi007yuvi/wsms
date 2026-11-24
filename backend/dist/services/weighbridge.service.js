@@ -1,5 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateAgentStatus = updateAgentStatus;
+exports.markAgentSeen = markAgentSeen;
+exports.getAgentState = getAgentState;
 exports.getWeighbridgeState = getWeighbridgeState;
 exports.setupWeighbridge = setupWeighbridge;
 exports.runDiagnostic = runDiagnostic;
@@ -11,6 +14,22 @@ let lastStatus = 'Disconnected';
 let recentSamples = [];
 let activePort = null;
 let portPath = null;
+let agentState = null;
+let agentLastSeen = 0;
+const AGENT_TIMEOUT_MS = 15000;
+function updateAgentStatus(state) {
+    agentState = { ...state, recentSamples: (state.recentSamples || []).slice(-20).map(String) };
+    agentLastSeen = Date.now();
+}
+function markAgentSeen(weight) {
+    agentLastSeen = Date.now();
+    if (agentState && typeof weight === 'number')
+        agentState.lastWeight = weight;
+}
+function getAgentState() {
+    const online = agentState !== null && Date.now() - agentLastSeen < AGENT_TIMEOUT_MS;
+    return { online, lastSeen: agentLastSeen ? new Date(agentLastSeen).toISOString() : null, ...(agentState || {}) };
+}
 function getWeighbridgeState() {
     return {
         isConnected,
@@ -82,6 +101,37 @@ async function setupWeighbridge(io) {
  * reports its state. If not, temporarily opens the port for testing.
  */
 async function runDiagnostic() {
+    // Cloud deployment: the weighbridge is read by the local agent on the cabin PC.
+    const agent = getAgentState();
+    if (agent.online) {
+        const samples = agent.recentSamples || [];
+        const parsedWeights = [];
+        for (const s of samples) {
+            const m = s.match(/(\d+)/);
+            if (m)
+                parsedWeights.push(parseInt(m[0], 10));
+        }
+        if (!agent.portOpen) {
+            return {
+                dataReceived: false,
+                message: `Agent on ${agent.hostname || 'cabin PC'} is online but no COM port is open. ${agent.lastError || ''} Ports seen: ${(agent.comPorts || []).map(p => p.path).join(', ') || 'none'}.`,
+                samples: [], parsedWeights: [],
+            };
+        }
+        if (samples.length === 0) {
+            return {
+                dataReceived: false,
+                message: `Agent ${agent.version ? 'v' + agent.version : '(OLD version - download the new weighbridge_agent.js)'} on ${agent.hostname || 'cabin PC'} opened ${agent.activePort} @ ${agent.baudRate} baud${agent.pollCommand ? `, sending request ${JSON.stringify(agent.pollCommand)}` : ''}, but no data received. Total bytes from the indicator since the agent started${agent.startedAt ? ` (${new Date(agent.startedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })})` : ''}: ${agent.totalBytes ?? 'unknown'}. ${agent.lastError || 'Check indicator serial output and cable wiring.'}`,
+                samples: [], parsedWeights: [],
+            };
+        }
+        return {
+            dataReceived: true,
+            message: `Agent on ${agent.hostname || 'cabin PC'} reading ${agent.activePort} @ ${agent.baudRate} baud.`,
+            samples,
+            parsedWeights: [...new Set(parsedWeights)].slice(0, 20),
+        };
+    }
     // If the main connection is already active and receiving data, report that
     if (isConnected && recentSamples.length > 0) {
         const parsedWeights = [];
@@ -116,7 +166,7 @@ async function runDiagnostic() {
         if (ports.length === 0) {
             return {
                 dataReceived: false,
-                message: 'No COM ports detected. Check USB/RS232 cable and drivers.',
+                message: 'No weighbridge agent connected and this server has no COM ports. Run start_agent.bat on the weighbridge cabin PC.',
                 samples: [],
                 parsedWeights: [],
             };

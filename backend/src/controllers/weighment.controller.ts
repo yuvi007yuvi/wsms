@@ -125,7 +125,9 @@ export const createWeighmentSlip = async (req: Request, res: Response) => {
         netWeight,
         // @ts-ignore
         operator: { connect: { id: req.user.id } },
-        remarks,
+        remarks: process.env.IS_OFFLINE_NODE === 'true' 
+          ? (remarks ? `${remarks} [OFFLINE_PENDING]` : '[OFFLINE_PENDING]') 
+          : remarks,
         driverName,
         // @ts-ignore
         ...(req.user.projectId ? { project: { connect: { id: req.user.projectId } } } : {})
@@ -404,5 +406,94 @@ export const getVehicleLatestSlip = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching vehicle latest slip:', error);
     res.status(500).json({ error: 'Failed to fetch vehicle latest slip' });
+  }
+};
+
+export const syncOfflineSlip = async (req: Request, res: Response) => {
+  try {
+    const {
+      slipNumber,
+      vehicleNumber,
+      materialName,
+      sourceName,
+      destinationName,
+      grossWeight,
+      tareWeight,
+      netWeight,
+      driverName,
+      date,
+      remarks
+    } = req.body;
+
+    if (!slipNumber || !vehicleNumber) {
+      res.status(400).json({ error: 'Missing slipNumber or vehicleNumber' });
+      return;
+    }
+
+    // Check if slip already exists to prevent duplicate
+    const existing = await prisma.weighmentSlip.findUnique({
+      where: { slipNumber }
+    });
+
+    if (existing) {
+      res.json({ message: 'Slip already synced', slip: existing });
+      return;
+    }
+
+    // Find or connect vehicle
+    let vehicle = await prisma.vehicle.findUnique({ where: { vehicleNumber } });
+    if (!vehicle) {
+      const defaultType = await prisma.vehicleType.findFirst() || await prisma.vehicleType.create({ data: { name: 'TRUCK', tareWeight: 0 } });
+      vehicle = await prisma.vehicle.create({
+        data: {
+          vehicleNumber,
+          vehicleTypeId: defaultType.id,
+          driverName: driverName || '-'
+        }
+      });
+    }
+
+    // Find or connect material
+    let material = await prisma.material.findFirst({ where: { name: materialName || 'SOLID WASTE' } });
+    if (!material) {
+      material = await prisma.material.create({ data: { name: materialName || 'SOLID WASTE' } });
+    }
+
+    // Find or connect source (customer/ward)
+    let source = await prisma.source.findFirst({ where: { name: sourceName || 'CUSTOMER' } });
+    if (!source) {
+      source = await prisma.source.create({ data: { name: sourceName || 'CUSTOMER' } });
+    }
+
+    // Find or connect destination
+    let destination = await prisma.destination.findFirst({ where: { name: destinationName || 'PROCESSING PLANT' } });
+    if (!destination) {
+      destination = await prisma.destination.create({ data: { name: destinationName || 'PROCESSING PLANT', isDefault: true } });
+    }
+
+    // Operator
+    const adminUser = await prisma.user.findFirst({ where: { role: 'admin' } }) || await prisma.user.findFirst();
+
+    const newSlip = await prisma.weighmentSlip.create({
+      data: {
+        slipNumber,
+        vehicleId: vehicle.id,
+        materialId: material.id,
+        sourceId: source.id,
+        destinationId: destination.id,
+        grossWeight: Number(grossWeight) || 0,
+        tareWeight: Number(tareWeight) || 0,
+        netWeight: Number(netWeight) || 0,
+        driverName: driverName || vehicle.driverName,
+        date: date ? new Date(date) : new Date(),
+        operatorId: adminUser?.id || '',
+        remarks: remarks || '[OFFLINE_SYNCED]'
+      }
+    });
+
+    res.status(201).json({ message: 'Slip synced to cloud', slip: newSlip });
+  } catch (error) {
+    console.error('Error syncing offline slip to cloud:', error);
+    res.status(500).json({ error: 'Failed to sync offline slip' });
   }
 };

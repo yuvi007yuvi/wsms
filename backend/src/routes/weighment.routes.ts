@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { checkSubscription } from '../middleware/checkSubscription';
-import { createWeighmentSlip, getWeighmentSlips, deleteWeighmentSlip, getWeighmentSummary, getVehicleLatestSlip } from '../controllers/weighment.controller';
+import { createWeighmentSlip, getWeighmentSlips, deleteWeighmentSlip, getWeighmentSummary, getVehicleLatestSlip, syncOfflineSlip } from '../controllers/weighment.controller';
 
 const router = Router();
+
+// Allow offline sync endpoint
+router.post('/sync-offline', syncOfflineSlip);
 
 router.use(authenticateToken, checkSubscription);
 

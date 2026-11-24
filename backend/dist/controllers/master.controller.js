@@ -13,16 +13,32 @@ const createCrudHandlers = (modelName) => {
                 const page = parseInt(req.query.page) || 1;
                 const limit = parseInt(req.query.limit) || 10;
                 const skip = (page - 1) * limit;
+                // @ts-ignore
+                const authUser = req.user;
+                const whereClause = { isActive: true };
+                // For Source (Ward) and Destination (Work), isolate by project
+                // Operators/admins of a project see their project's records OR legacy/Nature Green records (projectId: null)
+                if (modelName === 'source' || modelName === 'destination') {
+                    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+                        whereClause.OR = [
+                            { projectId: authUser.projectId },
+                            { projectId: null }
+                        ];
+                    }
+                    else if (req.query.projectId && req.query.projectId !== 'all') {
+                        whereClause.projectId = req.query.projectId;
+                    }
+                }
                 const [data, total] = await Promise.all([
                     // @ts-ignore
                     prisma_1.default[modelName].findMany({
-                        where: { isActive: true },
+                        where: whereClause,
                         skip,
                         take: limit,
                         orderBy: { createdAt: 'desc' }
                     }),
                     // @ts-ignore
-                    prisma_1.default[modelName].count({ where: { isActive: true } })
+                    prisma_1.default[modelName].count({ where: whereClause })
                 ]);
                 res.json({ data, total });
             }
@@ -48,9 +64,10 @@ const createCrudHandlers = (modelName) => {
         create: async (req, res) => {
             try {
                 const payload = { ...req.body };
-                if (modelName === 'vehicle') {
-                    // @ts-ignore
-                    payload.projectId = req.user?.projectId || null;
+                // @ts-ignore
+                const authUser = req.user;
+                if (modelName === 'vehicle' || modelName === 'source' || modelName === 'destination') {
+                    payload.projectId = authUser?.projectId || req.body.projectId || null;
                 }
                 // @ts-ignore
                 const data = await prisma_1.default[modelName].create({
@@ -60,15 +77,21 @@ const createCrudHandlers = (modelName) => {
             }
             catch (error) {
                 console.error(error);
+                if (error.code === 'P2002') {
+                    return res.status(400).json({ error: `This ${modelName} already exists or a unique constraint was violated.` });
+                }
                 res.status(400).json({ error: `Failed to create ${modelName}` });
             }
         },
         update: async (req, res) => {
             try {
                 const payload = { ...req.body };
-                if (modelName === 'vehicle') {
-                    // @ts-ignore
-                    payload.projectId = req.user?.projectId || null;
+                // @ts-ignore
+                const authUser = req.user;
+                if (modelName === 'vehicle' || modelName === 'source' || modelName === 'destination') {
+                    if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+                        payload.projectId = authUser.projectId;
+                    }
                 }
                 // @ts-ignore
                 const data = await prisma_1.default[modelName].update({
@@ -78,6 +101,10 @@ const createCrudHandlers = (modelName) => {
                 res.json(data);
             }
             catch (error) {
+                console.error(error);
+                if (error.code === 'P2002') {
+                    return res.status(400).json({ error: `This ${modelName} already exists or a unique constraint was violated.` });
+                }
                 res.status(400).json({ error: `Failed to update ${modelName}` });
             }
         },
@@ -115,18 +142,130 @@ const createCrudHandlers = (modelName) => {
 };
 exports.vehicleController = {
     ...createCrudHandlers('vehicle'),
+    create: async (req, res) => {
+        try {
+            const payload = { ...req.body };
+            // @ts-ignore
+            const authUser = req.user;
+            // Allow passing explicit projectId if superadmin; otherwise default to logged in user's projectId
+            if (authUser?.role === 'superadmin' && payload.projectId) {
+                // keep provided payload.projectId
+            }
+            else {
+                payload.projectId = authUser?.projectId || null;
+            }
+            const existing = await prisma_1.default.vehicle.findUnique({
+                where: { vehicleNumber: payload.vehicleNumber }
+            });
+            if (existing) {
+                if (!existing.isActive) {
+                    const data = await prisma_1.default.vehicle.update({
+                        where: { id: existing.id },
+                        data: { ...payload, isActive: true },
+                        include: {
+                            project: { select: { id: true, name: true } },
+                            vehicleType: { select: { id: true, name: true, tareWeight: true } }
+                        }
+                    });
+                    return res.status(201).json(data);
+                }
+                else {
+                    return res.status(400).json({ error: `Vehicle number ${payload.vehicleNumber} already exists.` });
+                }
+            }
+            const data = await prisma_1.default.vehicle.create({
+                data: payload,
+                include: {
+                    project: { select: { id: true, name: true } },
+                    vehicleType: { select: { id: true, name: true, tareWeight: true } }
+                }
+            });
+            res.status(201).json(data);
+        }
+        catch (error) {
+            console.error(error);
+            if (error.code === 'P2002') {
+                return res.status(400).json({ error: `Vehicle number ${req.body.vehicleNumber} already exists or a unique constraint was violated.` });
+            }
+            res.status(400).json({ error: 'Failed to create vehicle' });
+        }
+    },
+    update: async (req, res) => {
+        try {
+            const payload = { ...req.body };
+            // @ts-ignore
+            const authUser = req.user;
+            if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+                payload.projectId = authUser.projectId;
+            }
+            const data = await prisma_1.default.vehicle.update({
+                where: { id: req.params.id },
+                data: payload,
+                include: {
+                    project: { select: { id: true, name: true } },
+                    vehicleType: { select: { id: true, name: true, tareWeight: true } }
+                }
+            });
+            res.json(data);
+        }
+        catch (error) {
+            console.error(error);
+            if (error.code === 'P2002') {
+                return res.status(400).json({ error: `Vehicle number ${req.body.vehicleNumber} already exists in the system (it may be inactive/deleted).` });
+            }
+            res.status(400).json({ error: 'Failed to update vehicle' });
+        }
+    },
     getAll: async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const search = req.query.search;
+            const projectIdQuery = req.query.projectId;
+            // @ts-ignore
+            const authUser = req.user;
             const skip = (page - 1) * limit;
-            const whereClause = search ? {
-                isActive: true,
-                OR: [
-                    { vehicleNumber: { contains: search, mode: 'insensitive' } }
-                ]
-            } : { isActive: true };
+            const isActiveParam = req.query.isActive;
+            const isActiveFilter = String(isActiveParam) === 'false' ? false : true;
+            const whereClause = { isActive: isActiveFilter };
+            // Apply project isolation
+            // Vehicles belonging to the user's project OR global vehicles (projectId: null)
+            if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+                if (projectIdQuery === 'unassigned') {
+                    whereClause.projectId = null;
+                }
+                else {
+                    whereClause.OR = [
+                        { projectId: authUser.projectId },
+                        { projectId: null }
+                    ];
+                }
+            }
+            else if (projectIdQuery && projectIdQuery !== 'all') {
+                if (projectIdQuery === 'unassigned' || projectIdQuery === 'null') {
+                    whereClause.projectId = null;
+                }
+                else {
+                    whereClause.projectId = projectIdQuery;
+                }
+            }
+            if (search) {
+                const searchCondition = [
+                    { vehicleNumber: { contains: search, mode: 'insensitive' } },
+                    { driverName: { contains: search, mode: 'insensitive' } },
+                    { owner: { contains: search, mode: 'insensitive' } }
+                ];
+                if (whereClause.OR) {
+                    whereClause.AND = [
+                        { OR: whereClause.OR },
+                        { OR: searchCondition }
+                    ];
+                    delete whereClause.OR;
+                }
+                else {
+                    whereClause.OR = searchCondition;
+                }
+            }
             const [data, total] = await Promise.all([
                 prisma_1.default.vehicle.findMany({
                     where: whereClause,
@@ -141,6 +280,8 @@ exports.vehicleController = {
                         owner: true,
                         tareWeight: true,
                         isActive: true,
+                        projectId: true,
+                        project: { select: { id: true, name: true } },
                         createdAt: true,
                         vehicleType: { select: { id: true, name: true, tareWeight: true } }
                     }
@@ -177,12 +318,24 @@ exports.destinationController = {
     ...createCrudHandlers('destination'),
     create: async (req, res) => {
         try {
+            // @ts-ignore
+            const authUser = req.user;
+            const targetProjectId = authUser?.projectId || req.body.projectId || null;
             if (req.body.isDefault) {
                 // @ts-ignore
-                await prisma_1.default.destination.updateMany({ data: { isDefault: false } });
+                await prisma_1.default.destination.updateMany({
+                    // @ts-ignore
+                    where: (targetProjectId ? { projectId: targetProjectId } : {}),
+                    data: { isDefault: false }
+                });
             }
             // @ts-ignore
-            const data = await prisma_1.default.destination.create({ data: req.body });
+            const data = await prisma_1.default.destination.create({
+                data: {
+                    ...req.body,
+                    projectId: targetProjectId
+                }
+            });
             res.status(201).json(data);
         }
         catch (error) {
@@ -192,14 +345,24 @@ exports.destinationController = {
     },
     update: async (req, res) => {
         try {
+            // @ts-ignore
+            const authUser = req.user;
+            const targetProjectId = authUser?.projectId || req.body.projectId || null;
             if (req.body.isDefault) {
                 // @ts-ignore
-                await prisma_1.default.destination.updateMany({ data: { isDefault: false } });
+                await prisma_1.default.destination.updateMany({
+                    // @ts-ignore
+                    where: (targetProjectId ? { projectId: targetProjectId } : {}),
+                    data: { isDefault: false }
+                });
             }
             // @ts-ignore
             const data = await prisma_1.default.destination.update({
                 where: { id: req.params.id },
-                data: req.body
+                data: {
+                    ...req.body,
+                    ...(targetProjectId && authUser?.role !== 'superadmin' ? { projectId: targetProjectId } : {})
+                }
             });
             res.json(data);
         }

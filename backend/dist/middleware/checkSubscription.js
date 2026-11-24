@@ -13,6 +13,10 @@ const checkSubscription = async (req, res, next) => {
         res.status(401).json({ error: 'Unauthorized' });
         return;
     }
+    // Service accounts (such as Green Assist API integration) bypass individual user checks
+    if (req.user.isServiceAccount) {
+        return next();
+    }
     try {
         const userId = req.user.id;
         const now = Date.now();

@@ -8,6 +8,8 @@ const prisma_1 = __importDefault(require("../utils/prisma"));
 const getDashboardStats = async (req, res) => {
     try {
         const { dateFrom, dateTo, vehicleType, materialId, sourceId } = req.query;
+        // @ts-ignore
+        const authUser = req.user;
         // Determine the date range needed. We need at least the last 7 days for the trend chart,
         // plus whatever range the user requested.
         const today = new Date();
@@ -29,14 +31,19 @@ const getDashboardStats = async (req, res) => {
             if (filterTo > maxDate)
                 maxDate = filterTo;
         }
+        const whereClause = {
+            date: {
+                gte: minDate,
+                lte: maxDate
+            }
+        };
+        // Filter dashboard by project if logged-in user belongs to a project
+        if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+            whereClause.projectId = authUser.projectId;
+        }
         // Fetch ONLY the required fields to keep the query lightning fast and memory small
         const slips = await prisma_1.default.weighmentSlip.findMany({
-            where: {
-                date: {
-                    gte: minDate,
-                    lte: maxDate
-                }
-            },
+            where: whereClause,
             select: {
                 id: true,
                 date: true,
@@ -128,7 +135,10 @@ const getDashboardStats = async (req, res) => {
         const hourly = [];
         for (let i = 6; i < 20; i += 2) {
             const hourSlips = todaySlips.filter((s) => {
-                const h = new Date(s.date).getHours();
+                // Convert to IST to get the correct hour
+                const d = new Date(s.date);
+                const istTime = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+                const h = istTime.getHours();
                 return h >= i && h < i + 2;
             });
             hourly.push({
@@ -179,13 +189,14 @@ const getDashboardStats = async (req, res) => {
         });
         const destBreakdown = Array.from(destMap.values());
         const recentSlips = todaySlips.slice(0, 5);
+        const lowestSlips = [...todaySlips].sort((a, b) => (a.netWeight || 0) - (b.netWeight || 0)).slice(0, 10);
         const peakHour = hourly.reduce((max, h) => h.slips > max.slips ? h : max, { name: '-', slips: 0, weight: 0 });
         res.json({
             data: {
                 totalSlipsToday, totalNetWeight, totalGrossWeight, totalTareWeight, vehicleVisits,
                 uniqueVehiclesToday, avgNetWeight, slipChange, weightChange, visitChange,
                 dailyTrend, hourly, vehicleTypes, materialBreakdown, sourceBreakdown, destBreakdown,
-                recentSlips, peakHour, totalSlipsAllTime: slips.length // Approximate or we could run a real count.
+                recentSlips, lowestSlips, peakHour, totalSlipsAllTime: slips.length // Approximate or we could run a real count.
             }
         });
     }

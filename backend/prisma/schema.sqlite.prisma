@@ -1,11 +1,10 @@
-generator client {
-  provider = "prisma-client-js"
-  output   = "../node_modules/@prisma/client-sqlite"
-}
-
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
 }
 
 model User {
@@ -23,6 +22,8 @@ model User {
   weighmentSlips WeighmentSlip[]
   project        Project?        @relation(fields: [projectId], references: [id])
   projectId      String?
+
+  @@index([projectId])
 }
 
 model VehicleType {
@@ -35,6 +36,7 @@ model VehicleType {
   updatedAt DateTime @updatedAt
 
   vehicles Vehicle[]
+  weighmentSlips WeighmentSlip[]
 }
 
 model Vehicle {
@@ -53,6 +55,9 @@ model Vehicle {
   weighmentSlips WeighmentSlip[]
   project        Project?        @relation(fields: [projectId], references: [id])
   projectId      String?
+
+  @@index([projectId])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Material {
@@ -68,18 +73,22 @@ model Material {
 
 model Source {
   id        String   @id @default(uuid())
-  name      String   @unique
+  name      String
   location  String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   weighmentSlips WeighmentSlip[]
+  project        Project?        @relation(fields: [projectId], references: [id])
+  projectId      String?
+
+  @@index([projectId])
 }
 
 model Destination {
   id        String   @id @default(uuid())
-  name      String   @unique
+  name      String
   location  String?
   isActive  Boolean  @default(true)
   isDefault Boolean  @default(false)
@@ -87,6 +96,10 @@ model Destination {
   updatedAt DateTime @updatedAt
 
   weighmentSlips WeighmentSlip[]
+  project        Project?        @relation(fields: [projectId], references: [id])
+  projectId      String?
+
+  @@index([projectId])
 }
 
 model WeighmentSlip {
@@ -96,6 +109,9 @@ model WeighmentSlip {
 
   vehicleId String
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  vehicleTypeId String?
+  vehicleType   VehicleType? @relation(fields: [vehicleTypeId], references: [id])
 
   materialId String
   material   Material @relation(fields: [materialId], references: [id])
@@ -114,11 +130,19 @@ model WeighmentSlip {
   operator   User   @relation(fields: [operatorId], references: [id])
 
   remarks String?
+  driverName String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   project   Project? @relation(fields: [projectId], references: [id])
   projectId String?
+
+  @@index([date(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([projectId, date(sort: Desc)])
+  @@index([vehicleId])
+  @@index([operatorId])
+  @@index([materialId])
 }
 
 model AuditLog {
@@ -131,15 +155,16 @@ model AuditLog {
 }
 
 model Setting {
-  id            String   @id @default(uuid())
-  companyName   String
-  address       String
-  logoUrl       String?
-  printerConfig String? // e.g., thermal, A4
-  slipFormat    String?
-  theme         String?
-  mockMode      Boolean  @default(false)
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  companyName      String
+  address          String
+  logoUrl          String?
+  printerConfig    String? // e.g., thermal, A4
+  slipFormat       String?
+  theme            String?
+  mockMode         Boolean  @default(false)
+  allowManualWeight Boolean @default(true)
+  updatedAt        DateTime @updatedAt
 }
 
 model RolePermission {
@@ -152,11 +177,49 @@ model RolePermission {
 model Project {
   id                 String          @id @default(uuid())
   name               String          @unique
+  address            String?
   subscriptionExpiry DateTime?
+  disableReason      String?
   isActive           Boolean         @default(true)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   users              User[]
   vehicles           Vehicle[]
   weighmentSlips     WeighmentSlip[]
+  sources            Source[]
+  destinations       Destination[]
+  invoices           Invoice[]
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  date          DateTime      @default(now())
+  
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
+  clientName    String
+  clientAddress String?
+  clientPhone   String?
+  
+  subtotal      Float
+  taxRate       Float
+  total         Float
+
+  items         InvoiceItem[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  description String
+  quantity    Int
+  price       Float
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

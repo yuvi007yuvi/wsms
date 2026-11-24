@@ -2,10 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
 import cron from 'node-cron';
 import prisma from './utils/prisma';
 import { setupWeighbridge, updateAgentStatus, markAgentSeen } from './services/weighbridge.service';
+import { startOfflineSyncWorker } from './services/sync.service';
 
 dotenv.config();
 
@@ -21,6 +23,10 @@ app.use(cors({
   origin: '*'
 }));
 app.use(express.json());
+
+// Serve built frontend assets if running offline on local machine
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
 
 import authRoutes from './routes/auth.routes';
 import masterRoutes from './routes/master.routes';
@@ -48,8 +54,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // Root route for ping services like cron-job.org
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
+app.get('/', (req, res, next) => {
+  const indexPath = path.join(frontendDist, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.json({ status: 'ok', timestamp: new Date(), message: 'WSMS API is running' });
+    }
+  });
 });
 
 // Socket.io for Real-time Weight Updates
@@ -121,6 +132,9 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  if (process.env.IS_OFFLINE_NODE === 'true') {
+    startOfflineSyncWorker();
+  }
 });
 
 // Scheduled cron job to check subscription expirations every hour

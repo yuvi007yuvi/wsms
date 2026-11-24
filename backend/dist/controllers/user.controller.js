@@ -11,14 +11,24 @@ const getUsers = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const projectIdQuery = req.query.projectId;
+        const authUser = req.user;
+        const where = {
+            role: { not: 'superadmin' },
+            isActive: true
+        };
+        // If user is not superadmin and belongs to a project, lock to their project
+        if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+            where.projectId = authUser.projectId;
+        }
+        else if (projectIdQuery && projectIdQuery !== 'all') {
+            where.projectId = projectIdQuery;
+        }
         const [users, total] = await Promise.all([
             prisma_1.default.user.findMany({
                 skip,
                 take: limit,
-                where: {
-                    role: { not: 'superadmin' },
-                    isActive: true
-                },
+                where,
                 select: {
                     id: true,
                     username: true,
@@ -26,16 +36,13 @@ const getUsers = async (req, res) => {
                     designation: true,
                     role: true,
                     isActive: true,
+                    projectId: true,
+                    project: { select: { id: true, name: true } },
                     createdAt: true,
                 },
                 orderBy: { createdAt: 'desc' }
             }),
-            prisma_1.default.user.count({
-                where: {
-                    role: { not: 'superadmin' },
-                    isActive: true
-                }
-            })
+            prisma_1.default.user.count({ where })
         ]);
         res.json({ data: users, total });
     }
@@ -46,7 +53,8 @@ const getUsers = async (req, res) => {
 exports.getUsers = getUsers;
 const createUser = async (req, res) => {
     try {
-        const { username, password, role, fullName, designation } = req.body;
+        const { username, password, role, fullName, designation, projectId } = req.body;
+        const authUser = req.user;
         if (role === 'superadmin') {
             res.status(403).json({ error: 'Cannot create superadmin from this endpoint' });
             return;
@@ -56,6 +64,11 @@ const createUser = async (req, res) => {
             res.status(400).json({ error: 'Username already exists' });
             return;
         }
+        // Determine target project: non-superadmin users can only create for their own project
+        let targetProjectId = projectId || null;
+        if (authUser?.role !== 'superadmin' && authUser?.projectId) {
+            targetProjectId = authUser.projectId;
+        }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const user = await prisma_1.default.user.create({
             data: {
@@ -63,7 +76,11 @@ const createUser = async (req, res) => {
                 password: hashedPassword,
                 fullName,
                 designation,
-                role: role || 'operator'
+                role: role || 'operator',
+                projectId: targetProjectId
+            },
+            include: {
+                project: { select: { id: true, name: true } }
             }
         });
         // Remove password before returning
@@ -101,12 +118,17 @@ const updateUser = async (req, res) => {
             designation,
             role
         };
-        if (authUser?.role === 'superadmin' && projectId !== undefined) {
-            dataToUpdate.projectId = projectId || null;
+        if (projectId !== undefined) {
+            if (authUser?.role === 'superadmin') {
+                dataToUpdate.projectId = projectId || null;
+            }
         }
         const user = await prisma_1.default.user.update({
             where: { id },
-            data: dataToUpdate
+            data: dataToUpdate,
+            include: {
+                project: { select: { id: true, name: true } }
+            }
         });
         const { password: _, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
