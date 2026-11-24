@@ -1,0 +1,13 @@
+{
+  "name": "wsms-desktop",
+  "version": "1.0.0",
+  "description": "WSMS Desktop - Standalone Offline Weighbridge Management Application",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:all": "cd frontend && npm run build && cd ../backend && npx tsc"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3"
+  }
+}

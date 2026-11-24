@@ -1,1 +1,4 @@
 backend/scripts/weighbridge_raw_log.txt*
+node_modules/
+dist/
+*.log
