@@ -251,9 +251,9 @@ exports.vehicleController = {
             }
             if (search) {
                 const searchCondition = [
-                    { vehicleNumber: { contains: search, mode: 'insensitive' } },
-                    { driverName: { contains: search, mode: 'insensitive' } },
-                    { owner: { contains: search, mode: 'insensitive' } }
+                    { vehicleNumber: { contains: search } },
+                    { driverName: { contains: search } },
+                    { owner: { contains: search } }
                 ];
                 if (whereClause.OR) {
                     whereClause.AND = [

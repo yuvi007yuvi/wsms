@@ -205,11 +205,11 @@ const getWeighmentSlips = async (req, res) => {
         if (search) {
             const q = String(search).toLowerCase();
             where.OR = [
-                { slipNumber: { contains: q, mode: 'insensitive' } },
-                { remarks: { contains: q, mode: 'insensitive' } },
-                { vehicle: { vehicleNumber: { contains: q, mode: 'insensitive' } } },
-                { material: { name: { contains: q, mode: 'insensitive' } } },
-                { operator: { username: { contains: q, mode: 'insensitive' } } }
+                { slipNumber: { contains: q } },
+                { remarks: { contains: q } },
+                { vehicle: { vehicleNumber: { contains: q } } },
+                { material: { name: { contains: q } } },
+                { operator: { username: { contains: q } } }
             ];
         }
         const [slips, total] = await Promise.all([

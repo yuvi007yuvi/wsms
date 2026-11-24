@@ -62,9 +62,9 @@ router.get('/projects/:projectId/slips', authenticateToken, async (req: Request,
     if (search) {
       const q = String(search);
       where.OR = [
-        { slipNumber: { contains: q, mode: 'insensitive' } },
-        { vehicle: { vehicleNumber: { contains: q, mode: 'insensitive' } } },
-        { material: { name: { contains: q, mode: 'insensitive' } } }
+        { slipNumber: { contains: q } },
+        { vehicle: { vehicleNumber: { contains: q } } },
+        { material: { name: { contains: q } } }
       ];
     }
 

@@ -61,9 +61,9 @@ router.get('/projects/:projectId/slips', auth_middleware_1.authenticateToken, as
         if (search) {
             const q = String(search);
             where.OR = [
-                { slipNumber: { contains: q, mode: 'insensitive' } },
-                { vehicle: { vehicleNumber: { contains: q, mode: 'insensitive' } } },
-                { material: { name: { contains: q, mode: 'insensitive' } } }
+                { slipNumber: { contains: q } },
+                { vehicle: { vehicleNumber: { contains: q } } },
+                { material: { name: { contains: q } } }
             ];
         }
         const [slips, total, aggregates] = await Promise.all([

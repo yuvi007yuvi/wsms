@@ -56,66 +56,93 @@ export function getWeighbridgeState() {
 }
 
 export async function setupWeighbridge(io: any) {
-  try {
-    const ports = await SerialPort.list();
-    if (ports.length === 0) {
-      console.log('No COM ports detected for weighbridge.');
-      return;
+  // Retry periodically if no port found or port disconnected
+  const tryConnect = async () => {
+    if (isConnected && activePort && activePort.isOpen) return;
+
+    try {
+      const ports = await SerialPort.list();
+      if (ports.length === 0) {
+        return;
+      }
+
+      // Prioritize USB-serial adapters (CH340, FTDI, CP210x, Prolific)
+      const rankedPorts = [...ports].sort((a, b) => {
+        const aDesc = `${a.manufacturer || ''} ${a.pnpId || ''}`.toLowerCase();
+        const bDesc = `${b.manufacturer || ''} ${b.pnpId || ''}`.toLowerCase();
+        const aIsUsb = aDesc.includes('usb') || aDesc.includes('ch34') || aDesc.includes('ftdi') || aDesc.includes('prolific');
+        const bIsUsb = bDesc.includes('usb') || bDesc.includes('ch34') || bDesc.includes('ftdi') || bDesc.includes('prolific');
+        if (aIsUsb && !bIsUsb) return -1;
+        if (!aIsUsb && bIsUsb) return 1;
+        return 0;
+      });
+
+      portPath = rankedPorts[0].path;
+      console.log(`[HARDWARE] Attempting weighbridge connection on ${portPath}...`);
+
+      if (activePort && activePort.isOpen) {
+        try { activePort.close(); } catch {}
+      }
+
+      activePort = new SerialPort({
+        path: portPath,
+        baudRate: 9600,
+        autoOpen: true
+      });
+
+      // Raise DTR/RTS lines (required by USB-serial indicators)
+      activePort.on('open', () => {
+        console.log(`[HARDWARE] Successfully opened weighbridge on ${portPath}`);
+        isConnected = true;
+        lastStatus = 'Connected';
+        try {
+          activePort?.set({ dtr: true, rts: true });
+        } catch {}
+      });
+
+      let buffer = '';
+      activePort.on('data', (data) => {
+        buffer += data.toString();
+        const rawStr = data.toString().trim();
+        if (rawStr) {
+          recentSamples.push(rawStr);
+          if (recentSamples.length > 50) recentSamples.shift();
+        }
+
+        const match = buffer.match(/(\d+)/);
+        if (match) {
+          const weight = parseInt(match[0], 10);
+          if (!isNaN(weight)) {
+            lastWeight = weight;
+            lastStatus = 'Stable';
+            io.emit('weight-update', { weight, status: 'Stable' });
+          }
+          buffer = '';
+        }
+        if (buffer.length > 100) buffer = '';
+      });
+
+      activePort.on('error', (err) => {
+        console.log(`[HARDWARE] Port error on ${portPath}:`, err.message);
+        isConnected = false;
+        lastStatus = 'Disconnected';
+        io.emit('weight-update', { weight: 0, status: 'Disconnected' });
+      });
+
+      activePort.on('close', () => {
+        isConnected = false;
+        lastStatus = 'Disconnected';
+        io.emit('weight-update', { weight: 0, status: 'Disconnected' });
+      });
+
+    } catch (err: any) {
+      // Keep silent on polling retry
     }
+  };
 
-    portPath = ports[0].path;
-    console.log(`Connecting to weighbridge on ${portPath}...`);
-
-    activePort = new SerialPort({
-      path: portPath,
-      baudRate: 9600,
-      autoOpen: true
-    });
-
-    activePort.on('open', () => {
-      console.log(`Successfully opened ${portPath}`);
-      isConnected = true;
-      lastStatus = 'Connected';
-    });
-
-    let buffer = '';
-    activePort.on('data', (data) => {
-      buffer += data.toString();
-      const rawStr = data.toString().trim();
-      if (rawStr) {
-        // Keep last 50 samples for diagnostics
-        recentSamples.push(rawStr);
-        if (recentSamples.length > 50) recentSamples.shift();
-      }
-
-      const match = buffer.match(/(\d+)/);
-      if (match) {
-        const weight = parseInt(match[0], 10);
-        lastWeight = weight;
-        lastStatus = 'Stable';
-        io.emit('weight-update', { weight, status: 'Stable' });
-        buffer = '';
-      }
-      if (buffer.length > 100) buffer = '';
-    });
-
-    activePort.on('error', (err) => {
-      console.error('Serial port error:', err.message);
-      isConnected = false;
-      lastStatus = 'Disconnected';
-      io.emit('weight-update', { weight: 0, status: 'Disconnected' });
-    });
-
-    activePort.on('close', () => {
-      console.log(`Serial port ${portPath} closed`);
-      isConnected = false;
-      lastStatus = 'Disconnected';
-      io.emit('weight-update', { weight: 0, status: 'Disconnected' });
-    });
-
-  } catch (err) {
-    console.error('Error setting up weighbridge:', err);
-  }
+  await tryConnect();
+  // Continuously scan for plugged/unplugged weighbridge every 5 seconds
+  setInterval(tryConnect, 5000);
 }
 
 /**
