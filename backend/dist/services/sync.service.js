@@ -197,16 +197,25 @@ async function pullCloudData() {
             const vData = await vRes.json();
             const list = vData?.data || vData || [];
             if (Array.isArray(list)) {
+                // Pre-fetch local projects and vehicle types to avoid foreign key violations
+                const localProjects = await prisma_1.default.project.findMany({ select: { id: true } });
+                const localProjectIds = new Set(localProjects.map((p) => p.id));
+                const localVTypes = await prisma_1.default.vehicleType.findMany({ select: { id: true, name: true } });
+                const localVTypeIds = new Set(localVTypes.map((vt) => vt.id));
                 for (const v of list) {
-                    // Resolve a valid vehicleTypeId
+                    // Resolve a valid local vehicleTypeId
                     let vTypeId = v.vehicleTypeId || v.vehicleType?.id;
-                    if (!vTypeId && v.vehicleType?.name) {
-                        const foundType = await prisma_1.default.vehicleType.findUnique({ where: { name: v.vehicleType.name } });
-                        vTypeId = foundType?.id;
+                    if (!vTypeId || !localVTypeIds.has(vTypeId)) {
+                        if (v.vehicleType?.name) {
+                            const foundType = localVTypes.find((vt) => vt.name === v.vehicleType.name);
+                            vTypeId = foundType?.id;
+                        }
                     }
-                    if (!vTypeId) {
+                    if (!vTypeId || !localVTypeIds.has(vTypeId)) {
                         vTypeId = defaultVehicleType.id;
                     }
+                    // Resolve a valid local projectId
+                    const validProjectId = (v.projectId && localProjectIds.has(v.projectId)) ? v.projectId : null;
                     // Check if vehicle exists either by vehicleNumber or by id
                     const existingVeh = await prisma_1.default.vehicle.findFirst({
                         where: {
@@ -225,7 +234,7 @@ async function pullCloudData() {
                                 tareWeight: v.tareWeight || 0,
                                 isActive: v.isActive ?? true,
                                 vehicleTypeId: vTypeId,
-                                projectId: v.projectId || existingVeh.projectId
+                                projectId: validProjectId ?? existingVeh.projectId
                             }
                         }).catch(() => { });
                     }
@@ -238,7 +247,7 @@ async function pullCloudData() {
                                 driverName: v.driverName,
                                 tareWeight: v.tareWeight || 0,
                                 isActive: v.isActive ?? true,
-                                projectId: v.projectId || null
+                                projectId: validProjectId
                             }
                         }).catch((err) => console.error(`[SYNC] Failed to create vehicle ${v.vehicleNumber}:`, err.message));
                     }

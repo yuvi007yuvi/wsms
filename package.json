@@ -5,9 +5,31 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build:all": "cd frontend && npm run build && cd ../backend && npx tsc"
+    "build:all": "cd frontend && npm run build && cd ../backend && npx tsc",
+    "build:exe": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.weightt360pro.desktop",
+    "productName": "WeightT360Pro",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "win": {
+      "target": ["portable"],
+      "signAndEditExecutable": false
+    },
+    "files": [
+      "electron/**/*",
+      "backend/dist/**/*",
+      "backend/prisma/**/*",
+      "backend/package.json",
+      "backend/node_modules/**/*",
+      "frontend/dist/**/*"
+    ],
+    "asar": false
   },
   "devDependencies": {
-    "electron": "^28.3.3"
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
   }
 }
