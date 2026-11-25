@@ -105,12 +105,18 @@ export default function Weighment() {
     localStorage.setItem('urban_pending_tare_vehicles', JSON.stringify(list));
   };
 
-  // Auto-fill driver name for vehicle
+  // Auto-fill driver name and vehicle type for selected vehicle
   useEffect(() => {
     if (selectedVehicle?.driverName) {
       setDriverName(selectedVehicle.driverName);
     } else {
       setDriverName('');
+    }
+
+    if (selectedVehicle?.vehicleTypeId) {
+      setVehicleTypeId(selectedVehicle.vehicleTypeId);
+    } else if (selectedVehicle?.vehicleType?.id) {
+      setVehicleTypeId(selectedVehicle.vehicleType.id);
     }
 
     if (isUrbanEnviro && vehicleId) {
