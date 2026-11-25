@@ -4,7 +4,7 @@ color 0A
 
 echo ========================================================
 echo         WSMS OFFLINE WEIGHBRIDGE SYSTEM
-echo      (100%% Operational Without Internet)
+echo   (All-in-One: Server + Weighbridge Reader + Auto-Sync)
 echo ========================================================
 echo.
 
@@ -61,7 +61,7 @@ if not exist "prisma\dev.db" (
     )
 )
 
-echo [4/4] Starting Local WSMS Server on port 5000...
+echo [4/4] Starting Local WSMS Server, Weighbridge Reader & Cloud Sync on port 5000...
 start "" "http://localhost:5000"
 
 :: Start Node.js server
