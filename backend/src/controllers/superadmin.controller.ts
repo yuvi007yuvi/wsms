@@ -219,12 +219,35 @@ export const superadminController = {
         prisma.vehicle.count({ where: { isActive: false } }),
         prisma.weighmentSlip.findFirst({ orderBy: { date: 'asc' }, select: { date: true } })
       ]);
+
+      let usedBytes = 0;
+      try {
+        if (process.env.IS_OFFLINE_NODE === 'true') {
+          const fs = require('fs');
+          const path = require('path');
+          const dbPath = path.join(process.cwd(), 'prisma/dev.db');
+          if (fs.existsSync(dbPath)) usedBytes = fs.statSync(dbPath).size;
+        } else {
+          const sizeRes: any = await prisma.$queryRaw`SELECT pg_database_size(current_database())::bigint AS size`;
+          usedBytes = Number(sizeRes?.[0]?.size || 0);
+        }
+      } catch {}
+
+      const bytesPerGB = 1024 * 1024 * 1024;
+      const limitGB = 0.5; // Supabase free tier 500 MB (0.5 GB)
+      const usedGB = Number((usedBytes / bytesPerGB).toFixed(4));
+      const freeGB = Number(Math.max(0, limitGB - usedGB).toFixed(4));
+
       res.json({
         slipsCount,
         auditLogsCount,
         activeVehicles,
         inactiveVehicles,
-        oldestSlipDate: oldestSlip?.date || null
+        oldestSlipDate: oldestSlip?.date || null,
+        usedBytes,
+        usedGB,
+        freeGB,
+        limitGB
       });
     } catch (error) {
       console.error(error);

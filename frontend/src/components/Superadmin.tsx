@@ -540,26 +540,12 @@ export default function Superadmin() {
         </CardHeader>
         <CardContent className="p-5 space-y-4">
           {storageStats && (() => {
-            const total =
-              (storageStats.slipsCount || 0) +
-              (storageStats.auditLogsCount || 0) +
-              (storageStats.activeVehicles || 0) +
-              (storageStats.inactiveVehicles || 0);
-            const slices = [
-              { label: 'Weighment Slips', value: storageStats.slipsCount || 0, color: '#10b981' },
-              { label: 'Audit Logs', value: storageStats.auditLogsCount || 0, color: '#f59e0b' },
-              { label: 'Active Vehicles', value: storageStats.activeVehicles || 0, color: '#3b82f6' },
-              { label: 'Inactive Vehicles', value: storageStats.inactiveVehicles || 0, color: '#ef4444' },
-            ];
-            let cumulative = 0;
-            const gradientStops = total > 0
-              ? slices.map((s) => {
-                  const start = (cumulative / total) * 100;
-                  cumulative += s.value;
-                  const end = (cumulative / total) * 100;
-                  return `${s.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
-                }).join(', ')
-              : '#e2e8f0 0% 100%';
+            const usedGB = storageStats.usedGB ?? 0;
+            const limitGB = storageStats.limitGB ?? 0.5;
+            const freeGB = storageStats.freeGB ?? Math.max(0, limitGB - usedGB);
+            const usedPct = limitGB > 0 ? Math.min(100, (usedGB / limitGB) * 100) : 0;
+            const freePct = Math.max(0, 100 - usedPct);
+            const gradientStops = `#ef4444 0% ${usedPct.toFixed(1)}%, #10b981 ${usedPct.toFixed(1)}% 100%`;
 
             return (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -568,23 +554,29 @@ export default function Superadmin() {
                     className="w-24 h-24 rounded-full shrink-0 relative flex items-center justify-center shadow-inner"
                     style={{ background: `conic-gradient(${gradientStops})` }}
                   >
-                    <div className="w-12 h-12 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Total</span>
-                      <span className="text-xs font-black text-slate-800">{total}</span>
+                    <div className="w-14 h-14 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Used</span>
+                      <span className="text-[11px] font-black text-slate-800">{usedGB.toFixed(3)} GB</span>
                     </div>
                   </div>
-                  <div className="space-y-1.5 text-xs flex-1">
-                    {slices.map((s) => (
-                      <div key={s.label} className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: s.color }} />
-                          {s.label}
-                        </span>
-                        <span className="font-bold text-slate-900">
-                          {total > 0 ? `${Math.round((s.value / total) * 100)}%` : '0%'}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="space-y-2 text-xs flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full inline-block bg-red-500" />
+                        Used Space
+                      </span>
+                      <span className="font-bold text-slate-900">{usedGB.toFixed(4)} GB ({usedPct.toFixed(1)}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full inline-block bg-emerald-500" />
+                        Free Space
+                      </span>
+                      <span className="font-bold text-slate-900">{freeGB.toFixed(4)} GB ({freePct.toFixed(1)}%)</span>
+                    </div>
+                    <div className="pt-1 border-t text-[11px] text-slate-500 font-semibold">
+                      Total Quota: {limitGB} GB
+                    </div>
                   </div>
                 </div>
 
