@@ -15,6 +15,7 @@ const generateSlipNumber = async (projectId?: string | null) => {
   // Determine prefix based on project
   // Default prefix for Nature Green, global or unassigned projects is pure 'WS'
   let projectPrefix = 'WS'; 
+  let isAligarhSimpleSeq = false;
   if (projectId) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -23,11 +24,11 @@ const generateSlipNumber = async (projectId?: string | null) => {
 
     if (project?.name) {
       const lower = project.name.toLowerCase();
-      if (lower.includes('nature') || lower.includes('green')) {
+      if (lower.includes('aligarh') || lower.includes('urban') || lower.includes('ecostan')) {
+        isAligarhSimpleSeq = true;
+      } else if (lower.includes('nature') || lower.includes('green')) {
         // Original Nature Green project keeps pure WS{YYMMDD}-XXXX
         projectPrefix = 'WS';
-      } else if (lower.includes('urban')) {
-        projectPrefix = 'UE';
       } else {
         // Derive clean 2-4 uppercase acronym from new project name
         const cleanName = project.name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
@@ -39,6 +40,28 @@ const generateSlipNumber = async (projectId?: string | null) => {
         }
       }
     }
+  }
+
+  // For Aligarh project: simple sequential serial number starting from 1 (1, 2, 3...)
+  if (isAligarhSimpleSeq && projectId) {
+    const existingSlips = await prisma.weighmentSlip.findMany({
+      where: { projectId },
+      select: { slipNumber: true }
+    });
+    let maxNum = 0;
+    for (const s of existingSlips) {
+      if (/^\d+$/.test(s.slipNumber)) {
+        const n = parseInt(s.slipNumber, 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    let nextNum = maxNum + 1;
+    let candidate = String(nextNum);
+    while (await prisma.weighmentSlip.findUnique({ where: { slipNumber: candidate }, select: { id: true } })) {
+      nextNum++;
+      candidate = String(nextNum);
+    }
+    return candidate;
   }
 
   // Find the last slip for THIS specific project & date prefix

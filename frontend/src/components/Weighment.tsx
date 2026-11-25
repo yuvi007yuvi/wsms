@@ -437,14 +437,16 @@ export default function Weighment() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
-                  <SearchableSelect
-                    value={vehicleTypeId}
-                    onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
-                    options={[
-                      { label: t('All Types'), value: 'all' },
-                      ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
-                    ]}
-                    placeholder={t('Search Vehicle Type...')}
+                  <Input
+                    value={
+                      selectedVehicle?.vehicleType?.name ||
+                      vehicleTypes.find((vt: any) => vt.id === vehicleTypeId)?.name ||
+                      ''
+                    }
+                    placeholder={t('Auto-filled from Vehicle')}
+                    readOnly
+                    disabled
+                    className="bg-slate-100 text-slate-700 font-medium cursor-not-allowed"
                   />
                 </div>
               </>
@@ -498,18 +500,12 @@ export default function Weighment() {
               <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">
                 {isUrbanEnviro ? t('Customer Name') : t('Source')}
               </Label>
-              <Select onValueChange={setSourceId} value={sourceId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isUrbanEnviro ? t('Select Customer Name') : t('Select Source')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sources.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={sourceId}
+                onValueChange={setSourceId}
+                options={sources.map((s: any) => ({ label: s.name, value: s.id }))}
+                placeholder={isUrbanEnviro ? t('Search Customer Name...') : t('Search Source...')}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Destination')}</Label>
