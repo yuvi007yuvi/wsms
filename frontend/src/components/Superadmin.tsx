@@ -539,28 +539,78 @@ export default function Superadmin() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
-          {storageStats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-md bg-slate-50 border">
-                <div className="text-slate-500 font-semibold">Weighment Slips</div>
-                <div className="text-lg font-black text-slate-900">{storageStats.slipsCount}</div>
-              </div>
-              <div className="p-3 rounded-md bg-slate-50 border">
-                <div className="text-slate-500 font-semibold">Audit Logs</div>
-                <div className="text-lg font-black text-slate-900">{storageStats.auditLogsCount}</div>
-              </div>
-              <div className="p-3 rounded-md bg-slate-50 border">
-                <div className="text-slate-500 font-semibold">Active / Inactive Vehicles</div>
-                <div className="text-lg font-black text-slate-900">{storageStats.activeVehicles} / {storageStats.inactiveVehicles}</div>
-              </div>
-              <div className="p-3 rounded-md bg-slate-50 border">
-                <div className="text-slate-500 font-semibold">Oldest Slip</div>
-                <div className="text-sm font-bold text-slate-900 mt-1">
-                  {storageStats.oldestSlipDate ? format(new Date(storageStats.oldestSlipDate), 'dd MMM yyyy') : 'None'}
+          {storageStats && (() => {
+            const total =
+              (storageStats.slipsCount || 0) +
+              (storageStats.auditLogsCount || 0) +
+              (storageStats.activeVehicles || 0) +
+              (storageStats.inactiveVehicles || 0);
+            const slices = [
+              { label: 'Weighment Slips', value: storageStats.slipsCount || 0, color: '#10b981' },
+              { label: 'Audit Logs', value: storageStats.auditLogsCount || 0, color: '#f59e0b' },
+              { label: 'Active Vehicles', value: storageStats.activeVehicles || 0, color: '#3b82f6' },
+              { label: 'Inactive Vehicles', value: storageStats.inactiveVehicles || 0, color: '#ef4444' },
+            ];
+            let cumulative = 0;
+            const gradientStops = total > 0
+              ? slices.map((s) => {
+                  const start = (cumulative / total) * 100;
+                  cumulative += s.value;
+                  const end = (cumulative / total) * 100;
+                  return `${s.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
+                }).join(', ')
+              : '#e2e8f0 0% 100%';
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div className="flex items-center gap-4 p-4 rounded-md bg-slate-50 border">
+                  <div
+                    className="w-24 h-24 rounded-full shrink-0 relative flex items-center justify-center shadow-inner"
+                    style={{ background: `conic-gradient(${gradientStops})` }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Total</span>
+                      <span className="text-xs font-black text-slate-800">{total}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 text-xs flex-1">
+                    {slices.map((s) => (
+                      <div key={s.label} className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: s.color }} />
+                          {s.label}
+                        </span>
+                        <span className="font-bold text-slate-900">
+                          {total > 0 ? `${Math.round((s.value / total) * 100)}%` : '0%'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-md bg-slate-50 border">
+                    <div className="text-slate-500 font-semibold">Weighment Slips</div>
+                    <div className="text-lg font-black text-slate-900">{storageStats.slipsCount}</div>
+                  </div>
+                  <div className="p-3 rounded-md bg-slate-50 border">
+                    <div className="text-slate-500 font-semibold">Audit Logs</div>
+                    <div className="text-lg font-black text-slate-900">{storageStats.auditLogsCount}</div>
+                  </div>
+                  <div className="p-3 rounded-md bg-slate-50 border">
+                    <div className="text-slate-500 font-semibold">Active / Inactive Vehicles</div>
+                    <div className="text-lg font-black text-slate-900">{storageStats.activeVehicles} / {storageStats.inactiveVehicles}</div>
+                  </div>
+                  <div className="p-3 rounded-md bg-slate-50 border">
+                    <div className="text-slate-500 font-semibold">Oldest Slip</div>
+                    <div className="text-sm font-bold text-slate-900 mt-1">
+                      {storageStats.oldestSlipDate ? format(new Date(storageStats.oldestSlipDate), 'dd MMM yyyy') : 'None'}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div className="space-y-1">
