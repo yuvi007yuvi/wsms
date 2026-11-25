@@ -125,7 +125,6 @@ export async function setupWeighbridge(io: any) {
         lastStatus = 'Connected';
         openedAt = Date.now();
         lastDataAt = 0;
-        io.emit('weight-update', { weight: lastWeight, status: 'Connected' });
         try {
           activePort?.set({ dtr: true, rts: true });
         } catch {}
