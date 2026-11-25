@@ -40,19 +40,44 @@ function getWeighbridgeState() {
     };
 }
 async function setupWeighbridge(io) {
-    // Retry periodically if no port found or port disconnected
+    const BAUD_RATES = [9600, 2400, 4800, 1200, 19200];
+    let baudIdx = 0;
+    let portIdx = 0;
+    let lastDataAt = 0;
+    let openedAt = 0;
+    // Retry periodically if no port found, port disconnected, or no data received
     const tryConnect = async () => {
-        if (isConnected && activePort && activePort.isOpen)
-            return;
+        if (isConnected && activePort && activePort.isOpen) {
+            // If we've been open for > 8s with zero data, cycle to next baud rate / port
+            const now = Date.now();
+            if (lastDataAt === 0 && openedAt > 0 && now - openedAt > 8000) {
+                console.log(`[HARDWARE] No data on ${portPath} @ ${BAUD_RATES[baudIdx]} baud. Trying next...`);
+                isConnected = false;
+                try {
+                    activePort.close();
+                }
+                catch { }
+                baudIdx++;
+            }
+            else {
+                return;
+            }
+        }
         try {
             const ports = await serialport_1.SerialPort.list();
             if (ports.length === 0) {
                 return;
             }
-            // Prioritize USB-serial adapters (CH340, FTDI, CP210x, Prolific)
+            // Prioritize USB-serial adapters (CH340, FTDI, CP210x, Prolific) and deprioritize Bluetooth
             const rankedPorts = [...ports].sort((a, b) => {
                 const aDesc = `${a.manufacturer || ''} ${a.pnpId || ''}`.toLowerCase();
                 const bDesc = `${b.manufacturer || ''} ${b.pnpId || ''}`.toLowerCase();
+                const aIsBt = aDesc.includes('bthenum') || aDesc.includes('bluetooth');
+                const bIsBt = bDesc.includes('bthenum') || bDesc.includes('bluetooth');
+                if (aIsBt && !bIsBt)
+                    return 1;
+                if (!aIsBt && bIsBt)
+                    return -1;
                 const aIsUsb = aDesc.includes('usb') || aDesc.includes('ch34') || aDesc.includes('ftdi') || aDesc.includes('prolific');
                 const bIsUsb = bDesc.includes('usb') || bDesc.includes('ch34') || bDesc.includes('ftdi') || bDesc.includes('prolific');
                 if (aIsUsb && !bIsUsb)
@@ -61,8 +86,15 @@ async function setupWeighbridge(io) {
                     return 1;
                 return 0;
             });
-            portPath = rankedPorts[0].path;
-            console.log(`[HARDWARE] Attempting weighbridge connection on ${portPath}...`);
+            if (baudIdx >= BAUD_RATES.length) {
+                baudIdx = 0;
+                portIdx = (portIdx + 1) % rankedPorts.length;
+            }
+            if (portIdx >= rankedPorts.length)
+                portIdx = 0;
+            portPath = rankedPorts[portIdx].path;
+            const baudRate = BAUD_RATES[baudIdx];
+            console.log(`[HARDWARE] Attempting weighbridge connection on ${portPath} @ ${baudRate} baud...`);
             if (activePort && activePort.isOpen) {
                 try {
                     activePort.close();
@@ -71,14 +103,17 @@ async function setupWeighbridge(io) {
             }
             activePort = new serialport_1.SerialPort({
                 path: portPath,
-                baudRate: 9600,
+                baudRate,
                 autoOpen: true
             });
             // Raise DTR/RTS lines (required by USB-serial indicators)
             activePort.on('open', () => {
-                console.log(`[HARDWARE] Successfully opened weighbridge on ${portPath}`);
+                console.log(`[HARDWARE] Successfully opened weighbridge on ${portPath} @ ${baudRate} baud`);
                 isConnected = true;
                 lastStatus = 'Connected';
+                openedAt = Date.now();
+                lastDataAt = 0;
+                io.emit('weight-update', { weight: lastWeight, status: 'Connected' });
                 try {
                     activePort?.set({ dtr: true, rts: true });
                 }
@@ -86,6 +121,7 @@ async function setupWeighbridge(io) {
             });
             let buffer = '';
             activePort.on('data', (data) => {
+                lastDataAt = Date.now();
                 buffer += data.toString();
                 const rawStr = data.toString().trim();
                 if (rawStr) {
