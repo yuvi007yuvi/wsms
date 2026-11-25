@@ -31,4 +31,7 @@ router.get('/invoices', superadminController.getInvoices);
 router.post('/invoices', superadminController.createInvoice);
 router.delete('/invoices/:id', superadminController.deleteInvoice);
 
+router.get('/storage-stats', superadminController.getStorageStats);
+router.post('/cleanup-data', superadminController.cleanupOldData);
+
 export default router;

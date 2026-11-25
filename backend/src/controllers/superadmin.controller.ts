@@ -208,5 +208,63 @@ export const superadminController = {
       console.error(error);
       res.status(500).json({ error: 'Failed to delete invoice' });
     }
+  },
+
+  getStorageStats: async (req: Request, res: Response) => {
+    try {
+      const [slipsCount, auditLogsCount, activeVehicles, inactiveVehicles, oldestSlip] = await Promise.all([
+        prisma.weighmentSlip.count(),
+        prisma.auditLog.count(),
+        prisma.vehicle.count({ where: { isActive: true } }),
+        prisma.vehicle.count({ where: { isActive: false } }),
+        prisma.weighmentSlip.findFirst({ orderBy: { date: 'asc' }, select: { date: true } })
+      ]);
+      res.json({
+        slipsCount,
+        auditLogsCount,
+        activeVehicles,
+        inactiveVehicles,
+        oldestSlipDate: oldestSlip?.date || null
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch storage stats' });
+    }
+  },
+
+  cleanupOldData: async (req: Request, res: Response) => {
+    try {
+      const { target, beforeDate, projectId } = req.body;
+      let deletedCount = 0;
+
+      if (target === 'slips') {
+        if (!beforeDate) return res.status(400).json({ error: 'beforeDate is required' });
+        const cutoff = new Date(`${beforeDate}T23:59:59.999Z`);
+        const where: any = { date: { lt: cutoff } };
+        if (projectId && projectId !== 'all') where.projectId = projectId;
+        const result = await prisma.weighmentSlip.deleteMany({ where });
+        deletedCount = result.count;
+      } else if (target === 'auditLogs') {
+        if (!beforeDate) return res.status(400).json({ error: 'beforeDate is required' });
+        const cutoff = new Date(`${beforeDate}T23:59:59.999Z`);
+        const result = await prisma.auditLog.deleteMany({ where: { timestamp: { lt: cutoff } } });
+        deletedCount = result.count;
+      } else if (target === 'inactiveVehicles') {
+        const result = await prisma.vehicle.deleteMany({
+          where: {
+            isActive: false,
+            weighmentSlips: { none: {} }
+          }
+        });
+        deletedCount = result.count;
+      } else {
+        return res.status(400).json({ error: 'Invalid cleanup target' });
+      }
+
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      console.error('Cleanup error:', error);
+      res.status(500).json({ error: 'Failed to clean up old data' });
+    }
   }
 };

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Pencil, MapPin, Calendar, Clock, Plus } from 'lucide-react';
+import { Pencil, MapPin, Calendar, Clock, Plus, Trash2, Database } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function Superadmin() {
@@ -28,6 +28,46 @@ export default function Superadmin() {
   // New User Form State
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  // Storage & Cleanup State
+  const [storageStats, setStorageStats] = useState<any>(null);
+  const [cleanupTarget, setCleanupTarget] = useState<'slips' | 'auditLogs' | 'inactiveVehicles'>('slips');
+  const [cleanupBeforeDate, setCleanupBeforeDate] = useState('');
+  const [cleanupProjectId, setCleanupProjectId] = useState('all');
+  const [cleaningUp, setCleaningUp] = useState(false);
+
+  const fetchStorageStats = async () => {
+    try {
+      const res = await api.get('/superadmin/storage-stats');
+      setStorageStats(res.data);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchStorageStats();
+  }, []);
+
+  const handleCleanup = async () => {
+    if (cleanupTarget !== 'inactiveVehicles' && !cleanupBeforeDate) {
+      toast({ title: 'Select a date', description: 'Please choose a cutoff date before deleting.', variant: 'destructive' });
+      return;
+    }
+    if (!window.confirm('Are you sure you want to permanently delete this old data? This cannot be undone.')) return;
+    setCleaningUp(true);
+    try {
+      const res = await api.post('/superadmin/cleanup-data', {
+        target: cleanupTarget,
+        beforeDate: cleanupBeforeDate,
+        projectId: cleanupProjectId,
+      });
+      toast({ title: 'Cleanup Complete', description: `Deleted ${res.data.deletedCount} old record(s) to free space.` });
+      fetchStorageStats();
+    } catch (err: any) {
+      toast({ title: 'Cleanup Failed', description: err.response?.data?.error || 'Could not delete data', variant: 'destructive' });
+    } finally {
+      setCleaningUp(false);
+    }
+  };
   const [newFullName, setNewFullName] = useState('');
   const [newDesignation, setNewDesignation] = useState('');
   const [newRole, setNewRole] = useState('operator');
@@ -489,6 +529,92 @@ export default function Superadmin() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Database Storage & Cleanup (Superadmin Only) */}
+      <Card className="border-red-200 shadow-sm">
+        <CardHeader className="py-3 px-5 bg-red-50/50 border-b border-red-100">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-red-900 flex items-center gap-2">
+            <Database className="w-4 h-4 text-red-600" />
+            Database Storage & Old Data Cleanup (Superadmin Only)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 space-y-4">
+          {storageStats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-md bg-slate-50 border">
+                <div className="text-slate-500 font-semibold">Weighment Slips</div>
+                <div className="text-lg font-black text-slate-900">{storageStats.slipsCount}</div>
+              </div>
+              <div className="p-3 rounded-md bg-slate-50 border">
+                <div className="text-slate-500 font-semibold">Audit Logs</div>
+                <div className="text-lg font-black text-slate-900">{storageStats.auditLogsCount}</div>
+              </div>
+              <div className="p-3 rounded-md bg-slate-50 border">
+                <div className="text-slate-500 font-semibold">Active / Inactive Vehicles</div>
+                <div className="text-lg font-black text-slate-900">{storageStats.activeVehicles} / {storageStats.inactiveVehicles}</div>
+              </div>
+              <div className="p-3 rounded-md bg-slate-50 border">
+                <div className="text-slate-500 font-semibold">Oldest Slip</div>
+                <div className="text-sm font-bold text-slate-900 mt-1">
+                  {storageStats.oldestSlipDate ? format(new Date(storageStats.oldestSlipDate), 'dd MMM yyyy') : 'None'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold uppercase text-slate-600">Data to Delete</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={cleanupTarget}
+                onChange={(e) => setCleanupTarget(e.target.value as any)}
+              >
+                <option value="slips">Old Weighment Slips</option>
+                <option value="auditLogs">Old Audit Logs</option>
+                <option value="inactiveVehicles">Unused Inactive Vehicles</option>
+              </select>
+            </div>
+
+            {cleanupTarget === 'slips' && (
+              <div className="space-y-1">
+                <Label className="text-xs font-bold uppercase text-slate-600">Project</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={cleanupProjectId}
+                  onChange={(e) => setCleanupProjectId(e.target.value)}
+                >
+                  <option value="all">All Projects</option>
+                  {projects.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {cleanupTarget !== 'inactiveVehicles' && (
+              <div className="space-y-1">
+                <Label className="text-xs font-bold uppercase text-slate-600">Delete Before Date</Label>
+                <Input
+                  type="date"
+                  value={cleanupBeforeDate}
+                  onChange={(e) => setCleanupBeforeDate(e.target.value)}
+                />
+              </div>
+            )}
+
+            <Button
+              variant="destructive"
+              onClick={handleCleanup}
+              disabled={cleaningUp}
+              className="gap-2 font-bold"
+            >
+              <Trash2 className="w-4 h-4" />
+              {cleaningUp ? 'Deleting...' : 'Delete Old Data'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
