@@ -424,27 +424,55 @@ export default function Weighment() {
             <CardTitle className="text-base">{t('Weighment Entry')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
-            <div className="space-y-1">
-              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
-              <SearchableSelect
-                value={vehicleTypeId}
-                onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
-                options={[
-                  { label: t('All Types'), value: 'all' },
-                  ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
-                ]}
-                placeholder={t('Search Vehicle Type...')}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
-              <SearchableSelect
-                value={vehicleId}
-                onValueChange={setVehicleId}
-                options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))}
-                placeholder={t('Search Vehicle...')}
-              />
-            </div>
+            {isUrbanEnviro ? (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
+                  <SearchableSelect
+                    value={vehicleId}
+                    onValueChange={setVehicleId}
+                    options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))}
+                    placeholder={t('Search Vehicle...')}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
+                  <SearchableSelect
+                    value={vehicleTypeId}
+                    onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
+                    options={[
+                      { label: t('All Types'), value: 'all' },
+                      ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
+                    ]}
+                    placeholder={t('Search Vehicle Type...')}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle Type')}</Label>
+                  <SearchableSelect
+                    value={vehicleTypeId}
+                    onValueChange={(val) => { setVehicleTypeId(val); setVehicleId(''); }}
+                    options={[
+                      { label: t('All Types'), value: 'all' },
+                      ...vehicleTypes.map((vt: any) => ({ label: vt.name, value: vt.id }))
+                    ]}
+                    placeholder={t('Search Vehicle Type...')}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Vehicle')}</Label>
+                  <SearchableSelect
+                    value={vehicleId}
+                    onValueChange={setVehicleId}
+                    options={vehicles.map((v: any) => ({ label: `${v.vehicleNumber} (${v.vehicleType?.name || 'Unknown'})`, value: v.id }))}
+                    placeholder={t('Search Vehicle...')}
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-1">
               <Label className="text-xs uppercase text-slate-500 font-bold tracking-wider">{t('Driver Name')}</Label>
               <Input
