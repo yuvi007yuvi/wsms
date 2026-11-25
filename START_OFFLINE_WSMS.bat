@@ -22,6 +22,9 @@ set IS_OFFLINE_NODE=true
 set DATABASE_URL=file:./dev.db
 set CLOUD_SERVER_URL=https://wsms-1.onrender.com/api
 
+echo [0/4] Checking for online app updates...
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'https://wsms-1.onrender.com/api/health' -TimeoutSec 4 -UseBasicParsing; if ($r.StatusCode -eq 200) { Write-Host 'Internet detected. Downloading latest offline update...'; $zip = Join-Path $env:TEMP 'wsms_update.zip'; $ext = Join-Path $env:TEMP 'wsms_update_dir'; Invoke-WebRequest -Uri 'https://wsms-1.onrender.com/api/system/download-offline-package' -OutFile $zip -TimeoutSec 30 -UseBasicParsing; if (Test-Path $ext) { Remove-Item -Recurse -Force $ext }; Expand-Archive -Path $zip -DestinationPath $ext -Force; Copy-Item -Recurse -Force (Join-Path $ext 'dist') . ; Copy-Item -Recurse -Force (Join-Path $ext 'public') . ; if (Test-Path (Join-Path $ext 'electron')) { Copy-Item -Recurse -Force (Join-Path $ext 'electron') . }; Copy-Item -Force (Join-Path $ext 'prisma\schema.sqlite.prisma') 'prisma\' ; Copy-Item -Force (Join-Path $ext 'package.json') . ; Remove-Item -Force $zip; Remove-Item -Recurse -Force $ext; Write-Host 'App updated successfully!' } } catch { Write-Host 'Offline mode: skipping update check.' }"
+
 echo [1/4] Checking Node.js environment...
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (

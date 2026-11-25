@@ -289,7 +289,8 @@ export async function pullCloudData() {
             const op = await (prisma as any).user.findFirst();
 
             if (veh && mat && op) {
-              const slipProjectId = s.project?.id || (s.slipNumber.startsWith('UE') ? aligarhProj.id : null);
+              const isAligarhSlip = s.project?.name?.toLowerCase().includes('aligarh') || s.slipNumber.startsWith('UE');
+              const slipProjectId = isAligarhSlip ? aligarhProj.id : null;
               
               let src = await (prisma as any).source.findFirst({ where: { name: s.source?.name || 'Default Source' } });
               if (!src) {

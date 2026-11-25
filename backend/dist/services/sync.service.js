@@ -279,7 +279,8 @@ async function pullCloudData() {
                         const mat = s.material?.name ? await prisma_1.default.material.findUnique({ where: { name: s.material.name } }) : null;
                         const op = await prisma_1.default.user.findFirst();
                         if (veh && mat && op) {
-                            const slipProjectId = s.project?.id || (s.slipNumber.startsWith('UE') ? aligarhProj.id : null);
+                            const isAligarhSlip = s.project?.name?.toLowerCase().includes('aligarh') || s.slipNumber.startsWith('UE');
+                            const slipProjectId = isAligarhSlip ? aligarhProj.id : null;
                             let src = await prisma_1.default.source.findFirst({ where: { name: s.source?.name || 'Default Source' } });
                             if (!src) {
                                 src = await prisma_1.default.source.create({
